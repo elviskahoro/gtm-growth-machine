@@ -52,6 +52,11 @@ def to_filesystem(
     secrets=[
         modal.Secret.from_name("dlt-octolens_mentions"),
     ],
+    cloud="aws",
+    region="us-west-2",
+    allow_concurrent_inputs=1000,
+    enable_memory_snapshot=True,
+    retries=0,
 )
 @modal.web_endpoint(
     method="POST",
