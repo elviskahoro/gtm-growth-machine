@@ -32,13 +32,13 @@ lint:
   enabled:
     - semgrep@1.97.0
     - actionlint@1.7.4
-    - checkov@3.2.314
+    - checkov@3.2.322
     - git-diff-check
     - markdownlint@0.43.0
     - osv-scanner@1.9.1
     - oxipng@9.1.2
     - pyright@1.1.389
-    - ruff@0.8.0
+    - ruff@0.8.1
     - shellcheck@0.10.0
     - shfmt@3.6.0
     - svgo@3.3.2
