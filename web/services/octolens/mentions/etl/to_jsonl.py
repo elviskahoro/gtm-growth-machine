@@ -52,11 +52,10 @@ def to_filesystem(
     secrets=[
         modal.Secret.from_name("dlt-octolens_mentions"),
     ],
-    cloud="aws",
-    region="us-west-2",
+    # cloud="aws", This feature is available on the Team and Enterprise plans, read more at https://modal.com/docs/guide/region-selection
+    # region="us-west-2", This feature is available on the Team and Enterprise plans, read more at https://modal.com/docs/guide/region-selection
     allow_concurrent_inputs=1000,
     enable_memory_snapshot=True,
-    retries=0,
 )
 @modal.web_endpoint(
     method="POST",
