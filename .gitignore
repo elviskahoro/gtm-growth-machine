@@ -88,3 +88,4 @@ wheels/
 *.db
 *.py[cod]
 *.zip
+**/sample.json

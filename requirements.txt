@@ -1,1 +1,6 @@
+dlt
+modal
+orjson
+python-dotenv
 reflex
+s3fs
