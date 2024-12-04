@@ -89,3 +89,4 @@ wheels/
 *.py[cod]
 *.zip
 **/sample.json
+**/*-sample-*.json
