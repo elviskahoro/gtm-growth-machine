@@ -11,7 +11,7 @@ from dlt.destinations import filesystem
 
 from web.services.octolens.mentions import Mention
 
-OCTOLENS_MENTIONS: str = "octolens_mentions"
+APP_NAME: str = "octolens_mentions"
 
 image = modal.Image.debian_slim().pip_install(
     "fastapi[standard]",
@@ -20,7 +20,7 @@ image = modal.Image.debian_slim().pip_install(
     "python-dotenv",
 )
 app = modal.App(
-    name=OCTOLENS_MENTIONS,
+    name=APP_NAME,
     image=image,
 )
 
@@ -32,7 +32,7 @@ def to_filesystem(
 ) -> str:
     os.environ["DATA_WRITER__DISABLE_COMPRESSION"] = str(True)
     pipeline = dlt.pipeline(
-        pipeline_name=OCTOLENS_MENTIONS,
+        pipeline_name=APP_NAME,
         destination=filesystem(
             bucket_url=bucket_url,
             destination_name=destination_name,
@@ -40,7 +40,7 @@ def to_filesystem(
     )
     dlt_resource = dlt.resource(
         octolens_mentions,
-        name=OCTOLENS_MENTIONS,
+        name=APP_NAME,
     )
     return pipeline.run(
         data=dlt_resource,
