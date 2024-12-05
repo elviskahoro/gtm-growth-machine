@@ -1,6 +1,7 @@
 dlt
 modal
 orjson
+polars
 python-dotenv
 reflex
 s3fs
