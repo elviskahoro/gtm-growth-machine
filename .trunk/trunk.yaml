@@ -9,18 +9,18 @@ cli:
 plugins:
   sources:
     - id: trunk
-      ref: v1.6.5
+      ref: v1.6.6
       uri: https://github.com/trunk-io/plugins
 
     - id: oss-linter-trunk
-      ref: v0.2024.11.20.21.37
+      ref: v0.2024.12.17.15.18
       uri: https://github.com/elviskahoro/oss-linter-trunk
 
 # Many linters and tools depend on runtimes - configure them here. (https://docs.trunk.io/runtimes)
 runtimes:
   enabled:
     - go@1.21.0
-    - node@18.12.1
+    - node@18.20.5
     - python@>3.10.0
 
   definitions:
@@ -30,21 +30,21 @@ runtimes:
 # This is the section where you manage your linters. (https://docs.trunk.io/check/configuration)
 lint:
   enabled:
-    - semgrep@1.97.0
-    - actionlint@1.7.4
-    - checkov@3.2.322
+    - semgrep@1.101.0
+    - actionlint@1.7.5
+    - checkov@3.2.344
     - git-diff-check
     - markdownlint@0.43.0
-    - osv-scanner@1.9.1
-    - oxipng@9.1.2
-    - pyright@1.1.389
-    - ruff@0.8.1
+    - osv-scanner@1.9.2
+    - oxipng@9.1.3
+    - pyright@1.1.391
+    - ruff@0.8.4
     - shellcheck@0.10.0
     - shfmt@3.6.0
     - svgo@3.3.2
     - taplo@0.9.3
-    - trivy@0.56.2
-    - trufflehog@3.84.1
+    - trivy@0.58.1
+    - trufflehog@3.88.0
     - yamllint@1.35.1
 
   disabled:
