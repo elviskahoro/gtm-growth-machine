@@ -3,5 +3,6 @@ modal
 orjson
 polars
 python-dotenv
+pydantic
 reflex
 s3fs
