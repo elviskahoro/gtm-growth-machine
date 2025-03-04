@@ -2,28 +2,21 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import TypeVar
 
 import dlt
 import dotenv
 import modal
 import orjson
 from dlt.destinations import filesystem
-from pydantic import BaseModel
 
 from web.services.octolens.mentions import Mention
 
-T = TypeVar(
-    "T",
-    bound=BaseModel,
-)
-
-APP_NAME: str = "linkedin_connections"
+APP_NAME: str = "octolens_mentions"
 
 image = modal.Image.debian_slim().pip_install(
     "fastapi[standard]",
     "dlt",
-    "dlt[s3]",
+    "dlt[gs]",
     "python-dotenv",
 )
 app = modal.App(
@@ -37,6 +30,7 @@ def to_filesystem(
     bucket_url: str,
     destination_name: str,
 ) -> str:
+    # Needed to keep the data as a json and not .gz
     os.environ["DATA_WRITER__DISABLE_COMPRESSION"] = str(True)
     pipeline = dlt.pipeline(
         pipeline_name=APP_NAME,
@@ -57,7 +51,7 @@ def to_filesystem(
 
 @app.function(
     secrets=[
-        modal.Secret.from_name(APP_NAME),
+        modal.Secret.from_name(name="devx-growth-gcp"),
     ],
     # cloud="aws", This feature is available on the Team and Enterprise plans, read more at https://modal.com/docs/guide/region-selection
     # region="us-west-2", This feature is available on the Team and Enterprise plans, read more at https://modal.com/docs/guide/region-selection
@@ -71,18 +65,22 @@ def to_filesystem(
 def web(
     data: Mention,
 ) -> str:
-    os.environ["DESTINATION__CREDENTIALS__AWS_ACCESS_KEY_ID"] = os.environ.get(
-        "AWS_ACCESS_KEY_ID",
+    os.environ["DESTINATION__CREDENTIALS__PROJECT_ID"] = os.environ.get(
+        "GCP_PROJECT_ID",
         "",
     )
-    os.environ["DESTINATION__CREDENTIALS__AWS_SECRET_ACCESS_KEY"] = os.environ.get(
-        "AWS_SECRET_ACCESS_KEY",
+    os.environ["DESTINATION__CREDENTIALS__PRIVATE_KEY"] = os.environ.get(
+        "GCP_PRIVATE_KEY",
+        "",
+    )
+    os.environ["DESTINATION__CREDENTIALS__CLIENT_EMAIL"] = os.environ.get(
+        "GCP_CLIENT_EMAIL",
         "",
     )
     response: str = to_filesystem(
         octolens_mentions=[data],
-        bucket_url="s3://elviskahoro-ai-octolens",
-        destination_name="aws-bucket-elviskahoro-ai-octolens",
+        bucket_url="gs://chalk-ai-devx-octolens-mentions",
+        destination_name="devx-octolens_mentions-bucket",
     )
     return response
 
@@ -93,7 +91,6 @@ def local(
 ) -> None:
     dotenv.load_dotenv()
     file_path = Path.cwd() / input_file
-
     octolens_mention_obj: dict = orjson.loads(file_path.read_text())
     octolens_mention: Mention = Mention.model_validate(
         obj=octolens_mention_obj,
@@ -104,61 +101,3 @@ def local(
         destination_name="local_filesystem",
     )
     print(response)
-
-
-def load_csv_to_pydantic(
-    csv_path: str,
-    model_class: type[T],
-) -> list[T]:
-    """Loads CSV data into a list of Pydantic models.
-
-    Args:
-        csv_path: Path to the CSV file
-        model_class: The Pydantic model class to use
-
-    Returns:
-        List of instantiated Pydantic models
-    """
-    # Read CSV into pandas DataFrame
-    df = pd.read_csv(csv_path)
-
-    # Convert DataFrame records to list of dicts
-    records = df.to_dict("records")
-
-    # Create Pydantic models from records
-    models = [model_class.model_validate(record) for record in records]
-
-    return models
-
-
-# Example usage
-class YourModel(BaseModel):
-    field1: str
-    field2: int
-
-
-models = load_csv_to_pydantic("path/to/your.csv", YourModel)
-
-T = TypeVar("T", bound=BaseModel)
-
-
-def load_csv_to_pydantic(csv_path: str, model_class: type[T]) -> list[T]:
-    """Loads CSV data into a list of Pydantic models.
-
-    Args:
-        csv_path: Path to the CSV file
-        model_class: The Pydantic model class to use
-
-    Returns:
-        List of instantiated Pydantic models
-    """
-    # Read CSV into pandas DataFrame
-    df = pd.read_csv(csv_path)
-
-    # Convert DataFrame records to list of dicts
-    records = df.to_dict("records")
-
-    # Create Pydantic models from records
-    models = [model_class.model_validate(record) for record in records]
-
-    return models
