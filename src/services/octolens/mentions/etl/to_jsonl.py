@@ -95,14 +95,16 @@ def web(
         None,
     )
     if private_key:
-        private_key = private_key.replace('\\n', '\n')
+        private_key = private_key.replace("\\n", "\n")
 
     client_email: str | None = os.environ.get(
         "GCP_CLIENT_EMAIL",
         None,
     )
     if project_id is None or private_key is None or client_email is None:
-        raise ValueError("GCP_PROJECT_ID, GCP_PRIVATE_KEY, and GCP_CLIENT_EMAIL must be set")
+        raise ValueError(
+            "GCP_PROJECT_ID, GCP_PRIVATE_KEY, and GCP_CLIENT_EMAIL must be set"
+        )
 
     os.environ["DESTINATION__CREDENTIALS__PROJECT_ID"] = project_id
     os.environ["DESTINATION__CREDENTIALS__PRIVATE_KEY"] = private_key
@@ -132,9 +134,11 @@ def local_paths(
     )
     return input_file_path, output_file_path
 
+
 class TestDestination(str, Enum):
     LOCAL_FILESYSTEM = "local_filesystem"
     GCS = "gcs"
+
 
 @app.local_entrypoint()
 def local(
