@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import os
+from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import dlt
-import dotenv
 import modal
 from dlt.destinations import filesystem
 from modal import Image
@@ -17,8 +17,8 @@ from src.services.octolens import Mention
 
 BASE_MODEL: type[BaseModel] = Mention
 
-DLT_DESTINATION_NAME: str = "devx-octolens_mentions-bucket"
-DLT_DESTINATION_URL_GCP: str = "gs://chalk-ai-devx-octolens-mentions"
+DLT_DESTINATION_NAME: str = "dlt_octolens_mentions"
+DLT_DESTINATION_URL_GCP: str = "gs://chalk-ai-devx-dlt-octolens-mentions"
 
 DLT_DESTINATION_URL_FILESYSTEM_RELATIVE_TO_CWD: str = f"out/{DLT_DESTINATION_NAME}"
 
@@ -28,7 +28,6 @@ image: Image = modal.Image.debian_slim().pip_install(
     "fastapi[standard]",
     "dlt>=1.8.0",
     "dlt[gs]",
-    "gcsfs>=2025.2.0",
     "python-dotenv",
 )
 image.add_local_python_source(
@@ -84,20 +83,30 @@ def to_filesystem(
     docs=True,
 )
 def web(
-    data: Mention,  # MODAL: Change this BaseModel if you're bootstrapping a new pipeline
+    data: Mention,  # DEVX: Change this BaseModel if you're bootstrapping a new pipeline
 ) -> str:
-    os.environ["DESTINATION__CREDENTIALS__PROJECT_ID"] = os.environ.get(
+
+    project_id: str | None = os.environ.get(
         "GCP_PROJECT_ID",
-        "",
+        None,
     )
-    os.environ["DESTINATION__CREDENTIALS__PRIVATE_KEY"] = os.environ.get(
+    private_key: str | None = os.environ.get(
         "GCP_PRIVATE_KEY",
-        "",
+        None,
     )
-    os.environ["DESTINATION__CREDENTIALS__CLIENT_EMAIL"] = os.environ.get(
+    if private_key:
+        private_key = private_key.replace('\\n', '\n')
+
+    client_email: str | None = os.environ.get(
         "GCP_CLIENT_EMAIL",
-        "",
+        None,
     )
+    if project_id is None or private_key is None or client_email is None:
+        raise ValueError("GCP_PROJECT_ID, GCP_PRIVATE_KEY, and GCP_CLIENT_EMAIL must be set")
+
+    os.environ["DESTINATION__CREDENTIALS__PROJECT_ID"] = project_id
+    os.environ["DESTINATION__CREDENTIALS__PRIVATE_KEY"] = private_key
+    os.environ["DESTINATION__CREDENTIALS__CLIENT_EMAIL"] = client_email
     response: str = to_filesystem(
         base_models=[data],
         bucket_url=DLT_DESTINATION_URL_GCP,
@@ -123,24 +132,43 @@ def local_paths(
     )
     return input_file_path, output_file_path
 
+class TestDestination(str, Enum):
+    LOCAL_FILESYSTEM = "local_filesystem"
+    GCS = "gcs"
 
 @app.local_entrypoint()
 def local(
     input_file: str,
+    destination: str,
 ) -> None:
-    dotenv.load_dotenv()
     input_file_path: Path
     output_file_path: Path
     input_file_path, output_file_path = local_paths(
         input_file=input_file,
     )
+
+    bucket_url: str
+    destination_name: str
+    match destination:
+        case TestDestination(destination):
+            bucket_url = str(output_file_path)
+            destination_name = "local_filesystem"
+
+        case TestDestination.GCS:
+            bucket_url = DLT_DESTINATION_URL_GCP
+            destination_name = DLT_DESTINATION_NAME
+
+        case _:
+            error_msg: str = f"Invalid destination: {destination}"
+            raise ValueError(error_msg)
+
     base_model: Mention = Mention.model_validate_json(
         json_data=input_file_path.read_text(),
     )
     response: str = to_filesystem(
         base_models=[base_model],
-        bucket_url=str(output_file_path),
-        destination_name="local_filesystem",
+        bucket_url=bucket_url,
+        destination_name=destination_name,
     )
     print("--- response ---")
     print(response)
