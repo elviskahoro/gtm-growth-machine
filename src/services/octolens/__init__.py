@@ -1,3 +1,6 @@
-from .mentions import Mention
+from .mentions import Mention, MentionData
 
-__all__ = ["Mention"]
+__all__ = [
+    "Mention",
+    "MentionData",
+]
