@@ -11,7 +11,11 @@ from dlt.destinations import filesystem
 from modal import Image
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from pydantic import BaseModel
+
+from pydantic import ValidationError
 
 from src.services.octolens import Mention
 
@@ -32,8 +36,6 @@ image: Image = modal.Image.debian_slim().pip_install(
 )
 image.add_local_python_source(
     *[
-        "data",
-        "out",
         "src",
     ],
 )
@@ -67,25 +69,7 @@ def to_filesystem(
     ).asstr()
 
 
-@app.function(
-    secrets=[
-        modal.Secret.from_name(
-            name=MODAL_SECRET_COLLECTION_NAME,
-        ),
-    ],
-    # cloud="aws", This feature is available on the Team and Enterprise plans, read more at https://modal.com/docs/guide/region-selection
-    # region="us-west-2", This feature is available on the Team and Enterprise plans, read more at https://modal.com/docs/guide/region-selection
-    allow_concurrent_inputs=1000,
-    enable_memory_snapshot=True,
-)
-@modal.web_endpoint(
-    method="POST",
-    docs=True,
-)
-def web(
-    data: Mention,  # DEVX: Change this BaseModel if you're bootstrapping a new pipeline
-) -> str:
-
+def set_env_vars() -> None:
     project_id: str | None = os.environ.get(
         "GCP_PROJECT_ID",
         None,
@@ -109,6 +93,27 @@ def web(
     os.environ["DESTINATION__CREDENTIALS__PROJECT_ID"] = project_id
     os.environ["DESTINATION__CREDENTIALS__PRIVATE_KEY"] = private_key
     os.environ["DESTINATION__CREDENTIALS__CLIENT_EMAIL"] = client_email
+
+
+@app.function(
+    secrets=[
+        modal.Secret.from_name(
+            name=MODAL_SECRET_COLLECTION_NAME,
+        ),
+    ],
+    # cloud="aws", This feature is available on the Team and Enterprise plans, read more at https://modal.com/docs/guide/region-selection
+    # region="us-west-2", This feature is available on the Team and Enterprise plans, read more at https://modal.com/docs/guide/region-selection
+    allow_concurrent_inputs=1000,
+    enable_memory_snapshot=True,
+)
+@modal.web_endpoint(
+    method="POST",
+    docs=True,
+)
+def web(
+    data: Mention,  # DEVX: Change this BaseModel if you're bootstrapping a new pipeline
+) -> str:
+    set_env_vars()
     response: str = to_filesystem(
         base_models=[data],
         bucket_url=DLT_DESTINATION_URL_GCP,
@@ -117,48 +122,48 @@ def web(
     return response
 
 
-def local_paths(
-    input_file: str,
-) -> tuple[
-    Path,
-    Path,
-]:
+def get_paths(
+    input_folder: str,
+) -> Iterator[Path]:
     cwd: str = str(Path.cwd())
-    input_file_path: Path = Path(f"{cwd}{input_file}")
-    print(f"File path: {input_file_path}")
-    if not input_file_path.is_file():
-        raise AssertionError(f"File {input_file_path} does not exist")
+    input_folder_path: Path = Path(f"{cwd}/{input_folder}")
+    if not input_folder_path.exists() or not input_folder_path.is_dir():
+        raise AssertionError(f"Input folder '{input_folder_path}' does not exist")
 
-    output_file_path: Path = Path(
-        f"{cwd}{DLT_DESTINATION_URL_FILESYSTEM_RELATIVE_TO_CWD}",
+    return (f for f in input_folder_path.iterdir() if f.is_file())
+
+
+def ensure_output_dir(
+    output_dir: str,
+) -> Path:
+    cwd: str = str(Path.cwd())
+    output_path: Path = Path(f"{cwd}/{output_dir}")
+    output_path.mkdir(
+        parents=True,
+        exist_ok=True,
     )
-    return input_file_path, output_file_path
+    return output_path
 
 
 class TestDestination(str, Enum):
-    LOCAL_FILESYSTEM = "local_filesystem"
-    GCS = "gcs"
+    LOCAL = "local"
+    GCP = "gcp"
 
 
 @app.local_entrypoint()
 def local(
-    input_file: str,
+    input_folder: str,
     destination: str,
 ) -> None:
-    input_file_path: Path
-    output_file_path: Path
-    input_file_path, output_file_path = local_paths(
-        input_file=input_file,
-    )
-
     bucket_url: str
     destination_name: str
     match destination:
-        case TestDestination(destination):
-            bucket_url = str(output_file_path)
+        case TestDestination.LOCAL:
+            cwd: str = str(Path.cwd())
+            bucket_url = f"{cwd}/{DLT_DESTINATION_URL_FILESYSTEM_RELATIVE_TO_CWD}"
             destination_name = "local_filesystem"
 
-        case TestDestination.GCS:
+        case TestDestination.GCP:
             bucket_url = DLT_DESTINATION_URL_GCP
             destination_name = DLT_DESTINATION_NAME
 
@@ -166,13 +171,28 @@ def local(
             error_msg: str = f"Invalid destination: {destination}"
             raise ValueError(error_msg)
 
-    base_model: Mention = Mention.model_validate_json(
-        json_data=input_file_path.read_text(),
-    )
+    paths: Iterator[Path] = get_paths(input_folder)
+    base_models: list[BaseModel] = []
+    current_path: Path | None = None
+    try:
+        path: Path
+        for path in paths:
+            current_path = path
+            base_models.append(
+                Mention.model_validate_json(
+                    json_data=path.read_text(),
+                ),
+            )
+
+    except ValidationError as e:
+        print(e)
+        print(current_path)
+        raise
+
+    print(len(base_models))
     response: str = to_filesystem(
-        base_models=[base_model],
+        base_models=base_models,
         bucket_url=bucket_url,
         destination_name=destination_name,
     )
-    print("--- response ---")
     print(response)

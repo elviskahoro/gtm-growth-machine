@@ -3,51 +3,102 @@ from __future__ import annotations
 from datetime import datetime  # trunk-ignore(ruff/TC003)
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import AliasChoices, BaseModel, Field, field_validator
 
 
 class MentionData(BaseModel):
     url: str = Field(
-        alias="URL",
+        validation_alias=AliasChoices(
+            "url",
+            "URL",
+        ),
     )
-    title: str = Field(
-        alias="Title",
+    title: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "title",
+            "Title",
+        ),
     )
     body: str = Field(
-        alias="Body",
+        validation_alias=AliasChoices(
+            "body",
+            "Body",
+        ),
     )
     timestamp: datetime = Field(
-        alias="Timestamp",
+        validation_alias=AliasChoices(
+            "timestamp",
+            "Timestamp",
+        ),
     )
-    imageUrl: str = Field(
-        alias="Image URL",
+    image_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "image_url",
+            "Image URL",
+            "imageUrl",
+        ),
     )
     source: str = Field(
-        alias="Source",
+        validation_alias=AliasChoices(
+            "source",
+            "Source",
+        ),
     )
-    sourceId: str = Field(
-        alias="Source ID",
+    source_id: str = Field(
+        validation_alias=AliasChoices(
+            "source_id",
+            "Source ID",
+            "sourceId",
+        ),
     )
     author: str = Field(
-        alias="Author",
+        validation_alias=AliasChoices(
+            "author",
+            "Author",
+        ),
     )
-    authorAvatarUrl: str = Field(
-        alias="Author Avatar URL",
+    author_avatar_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "author_avatar_url",
+            "Author Avatar URL",
+            "authorAvatarUrl",
+        ),
     )
-    authorProfileLink: str = Field(
-        alias="Author Profile Link",
+    author_profile_link: str = Field(
+        validation_alias=AliasChoices(
+            "author_profile_link",
+            "Author Profile Link",
+            "authorProfileLink",
+        ),
     )
-    relevanceScore: str = Field(
-        alias="Relevance Score",
+    relevance_score: str = Field(
+        validation_alias=AliasChoices(
+            "relevance_score",
+            "Relevance Score",
+            "relevanceScore",
+        ),
     )
-    relevanceComment: str = Field(
-        alias="Relevance Comment",
+    relevance_comment: str = Field(
+        validation_alias=AliasChoices(
+            "relevance_comment",
+            "Relevance Comment",
+            "relevanceComment",
+        ),
     )
     language: str = Field(
-        alias="Language",
+        validation_alias=AliasChoices(
+            "language",
+            "Language",
+        ),
     )
     keyword: str = Field(
-        alias="Keyword",
+        validation_alias=AliasChoices(
+            "keyword",
+            "Keyword",
+        ),
     )
     bookmarked: bool = False
 
@@ -55,11 +106,17 @@ class MentionData(BaseModel):
     @classmethod
     def parse_timestamp(cls, value: Any) -> datetime:
         if isinstance(value, str):
+            # Try original format first
             try:
                 return datetime.strptime(value, "%a %b %d %Y %H:%M:%S GMT%z")
 
-            except ValueError as e:
-                raise ValueError(f"Invalid timestamp format: {value}") from e
+            except ValueError:
+                # Try ISO 8601 format
+                try:
+                    return datetime.fromisoformat(value)
+
+                except ValueError as e:
+                    raise ValueError(f"Invalid timestamp format: {value}") from e
 
         return value
 

@@ -76,10 +76,9 @@ def local(
     output_dir: Path = ensure_output_dir(
         output_dir="out",
     )
-    count: int = 0
-    for mention_data in mention_data_list:
+    for count, mention_data in enumerate(mention_data_list, start=1):
         print(count)
-        output_file_path: Path = output_dir / f"{count:06d}.json"
+        output_file_path: Path = output_dir / "from_csv" / f"{count:06d}.json"
         mention: Mention = Mention(
             action="mention_created",
             data=mention_data,
@@ -88,6 +87,6 @@ def local(
             file=output_file_path,
             mode="w+",
         ) as f:
-            f.write(mention.model_dump_json())
-
-        count += 1
+            f.write(
+                mention.model_dump_json(),
+            )
