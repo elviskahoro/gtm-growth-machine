@@ -22,7 +22,7 @@ from src.services.octolens import Mention
 BASE_MODEL: type[BaseModel] = Mention
 
 DLT_DESTINATION_NAME: str = "dlt_octolens_mentions"
-DLT_DESTINATION_URL_GCP: str = "gs://chalk-ai-devx-dlt-octolens-mentions"
+DLT_DESTINATION_URL_GCP: str = "gs://chalk-ai-devx-octolens-mentions-dlt"
 
 DLT_DESTINATION_URL_FILESYSTEM_RELATIVE_TO_CWD: str = f"out/{DLT_DESTINATION_NAME}"
 
