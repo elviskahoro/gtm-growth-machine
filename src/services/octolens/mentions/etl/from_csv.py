@@ -5,15 +5,10 @@ import polars as pl
 
 from src.services.octolens import Mention
 
-from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import modal
 from modal import Image
-
-if TYPE_CHECKING:
-    from pydantic import BaseModel
 
 from src.services.octolens import MentionData
 
