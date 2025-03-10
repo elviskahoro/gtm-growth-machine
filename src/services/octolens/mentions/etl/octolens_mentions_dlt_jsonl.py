@@ -145,7 +145,7 @@ def local(
             base_model=Mention,  # trunk-ignore(pyright/reportArgumentType)
         )
     )
-    print(len(mentions))
+    print(f"Exporting {len(mentions)} mentions to {bucket_url}")
     response: str = to_filesystem(
         base_models=mentions,
         bucket_url=bucket_url,
