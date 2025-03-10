@@ -33,7 +33,7 @@ app = modal.App(
 )
 
 
-def set_env_vars() -> None:
+def _set_env_vars() -> None:
     project_id: str | None = os.environ.get(
         "GCP_PROJECT_ID",
         None,
@@ -111,7 +111,7 @@ def to_filesystem(
 def web(
     data: Mention,  # MODAL: Change this BaseModel if you're bootstrapping a new pipeline
 ) -> str:
-    set_env_vars()
+    _set_env_vars()
     response: str = to_filesystem(
         base_models=[data],
         bucket_url=DLT_DESTINATION_URL_GCP,
