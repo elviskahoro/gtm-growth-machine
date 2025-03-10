@@ -86,7 +86,6 @@ def to_filesystem(
     dlt_resource = dlt.resource(
         base_models,
         name=DEVX_PIPELINE_NAME,
-        write_disposition="merge",
     )
     try:
         return pipeline.run(
