@@ -17,8 +17,6 @@ from src.services.octolens import Mention
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from pydantic import BaseModel
-
 
 DLT_PIPELINE_NAME: str = "octolens_mentions_dlt"
 DLT_DESTINATION_URL_GCP: str = "gs://chalk-ai-devx-octolens-mentions-dlt"
@@ -74,7 +72,7 @@ def set_env_vars() -> None:
 
 
 def to_filesystem(
-    base_models: list[BaseModel],
+    base_models: list[Mention],
     bucket_url: str,
 ) -> str:
     # Needed to keep the data as a json and not .gz
@@ -155,9 +153,9 @@ def local(
 
     def get_mentions(
         input_folder: str,
-    ) -> list[BaseModel]:
+    ) -> list[Mention]:
         paths: Iterator[Path] = get_paths(input_folder)
-        mentions: list[BaseModel] = []
+        mentions: list[Mention] = []
         current_path: Path | None = None
         try:
             path: Path
@@ -176,7 +174,7 @@ def local(
 
         return mentions
 
-    mentions: list[BaseModel] = get_mentions(
+    mentions: list[Mention] = get_mentions(
         input_folder=input_folder,
     )
     print(len(mentions))
