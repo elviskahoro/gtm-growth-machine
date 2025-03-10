@@ -32,7 +32,6 @@ image: Image = modal.Image.debian_slim().pip_install(
     "fastapi[standard]",
     "dlt>=1.8.0",
     "dlt[gs]",  # https://github.com/fsspec/gcsfs
-    "python-dotenv",
 )
 image.add_local_python_source(
     *[
