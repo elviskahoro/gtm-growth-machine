@@ -1,22 +1,17 @@
 from __future__ import annotations
 
 import os
-from enum import Enum
-from pathlib import Path
-from typing import TYPE_CHECKING
 
 import dlt
 import modal
 from dlt.destinations import filesystem
 from modal import Image
-from pydantic import ValidationError
 
-from src.services.local.filesystem import get_paths
 from src.services.octolens import Mention
-
-if TYPE_CHECKING:
-    from collections.abc import Iterator
-
+from src.services.octolens.mentions.etl._modal_local_entrypoint import (
+    DestinationType,
+    get_data_from_input_folder,
+)
 
 DEVX_PIPELINE_NAME: str = "octolens_mentions_dlt"
 DLT_DESTINATION_URL_GCP: str = "gs://chalk-ai-devx-octolens-mentions-dlt"
@@ -127,59 +122,32 @@ def web(
 @app.local_entrypoint()
 def local(
     input_folder: str,
-    destination: str,
+    destination_type: str,
 ) -> None:
+    destination_type_enum: DestinationType = DestinationType(destination_type)
+    bucket_url: str
+    match destination_type_enum:
+        case DestinationType.LOCAL:
+            bucket_url = DestinationType.get_bucket_url_for_local(
+                pipeline_name=DEVX_PIPELINE_NAME,
+            )
 
-    def get_bucket_url(
-        destination: str,
-    ) -> str:
-        class TestDestination(str, Enum):
-            LOCAL = "local"
-            GCP = "gcp"
+        case DestinationType.GCP:
+            bucket_url = DLT_DESTINATION_URL_GCP
 
-        match destination:
-            case TestDestination.LOCAL:
-                cwd: str = str(Path.cwd())
-                return f"{cwd}/out/{DEVX_PIPELINE_NAME}"
+        case _:
+            error_msg: str = f"Invalid destination type: {destination_type_enum}"
+            raise ValueError(error_msg)
 
-            case TestDestination.GCP:
-                return DLT_DESTINATION_URL_GCP
-
-            case _:
-                error_msg: str = f"Invalid destination: {destination}"
-                raise ValueError(error_msg)
-
-    def get_mentions(
-        input_folder: str,
-    ) -> list[Mention]:
-        paths: Iterator[Path] = get_paths(input_folder)
-        mentions: list[Mention] = []
-        current_path: Path | None = None
-        try:
-            path: Path
-            for path in paths:
-                current_path = path
-                mentions.append(
-                    Mention.model_validate_json(
-                        json_data=path.read_text(),
-                    ),
-                )
-
-        except ValidationError as e:
-            print(e)
-            print(current_path)
-            raise
-
-        return mentions
-
-    mentions: list[Mention] = get_mentions(
-        input_folder=input_folder,
+    mentions: list[Mention] = (  # trunk-ignore(pyright/reportAssignmentType)
+        get_data_from_input_folder(
+            input_folder=input_folder,
+            base_model=Mention,  # trunk-ignore(pyright/reportArgumentType)
+        )
     )
     print(len(mentions))
     response: str = to_filesystem(
         base_models=mentions,
-        bucket_url=get_bucket_url(
-            destination=destination,
-        ),
+        bucket_url=bucket_url,
     )
     print(response)
