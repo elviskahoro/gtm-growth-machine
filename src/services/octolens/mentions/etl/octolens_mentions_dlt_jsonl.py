@@ -80,7 +80,10 @@ def set_env_vars() -> None:
         None,
     )
     if private_key:
-        private_key = private_key.replace("\\n", "\n")
+        private_key = private_key.replace(
+            "\\n",
+            "\n",
+        )
 
     client_email: str | None = os.environ.get(
         "GCP_CLIENT_EMAIL",
