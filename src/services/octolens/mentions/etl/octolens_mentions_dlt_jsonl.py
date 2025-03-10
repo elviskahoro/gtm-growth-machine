@@ -31,7 +31,7 @@ MODAL_SECRET_COLLECTION_NAME: str = "devx-growth-gcp"
 image: Image = modal.Image.debian_slim().pip_install(
     "fastapi[standard]",
     "dlt>=1.8.0",
-    "dlt[gs]",
+    "dlt[gs]",  # https://github.com/fsspec/gcsfs
     "python-dotenv",
 )
 image.add_local_python_source(
