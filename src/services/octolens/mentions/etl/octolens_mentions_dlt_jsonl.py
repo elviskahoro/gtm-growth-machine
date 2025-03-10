@@ -18,9 +18,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
-DLT_PIPELINE_NAME: str = "octolens_mentions_dlt"
+DEVX_PIPELINE_NAME: str = "octolens_mentions_dlt"
 DLT_DESTINATION_URL_GCP: str = "gs://chalk-ai-devx-octolens-mentions-dlt"
-
 MODAL_SECRET_COLLECTION_NAME: str = "devx-growth-gcp"  # trunk-ignore(ruff/S105)
 
 image: Image = modal.Image.debian_slim().pip_install(
@@ -34,7 +33,7 @@ image.add_local_python_source(
     ],
 )
 app = modal.App(
-    name=DLT_PIPELINE_NAME,
+    name=DEVX_PIPELINE_NAME,
     image=image,
 )
 
@@ -78,15 +77,15 @@ def to_filesystem(
     # Needed to keep the data as a json and not .gz
     os.environ["DATA_WRITER__DISABLE_COMPRESSION"] = str(True)
     pipeline = dlt.pipeline(
-        pipeline_name=DLT_PIPELINE_NAME,
+        pipeline_name=DEVX_PIPELINE_NAME,
         destination=filesystem(
             bucket_url=bucket_url,
-            destination_name=DLT_PIPELINE_NAME,
+            destination_name=DEVX_PIPELINE_NAME,
         ),
     )
     dlt_resource = dlt.resource(
         base_models,
-        name=DLT_PIPELINE_NAME,
+        name=DEVX_PIPELINE_NAME,
         write_disposition="merge",
     )
     try:
@@ -142,7 +141,7 @@ def local(
         match destination:
             case TestDestination.LOCAL:
                 cwd: str = str(Path.cwd())
-                return f"{cwd}/out/{DLT_PIPELINE_NAME}"
+                return f"{cwd}/out/{DEVX_PIPELINE_NAME}"
 
             case TestDestination.GCP:
                 return DLT_DESTINATION_URL_GCP
