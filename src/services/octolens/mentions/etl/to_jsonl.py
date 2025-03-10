@@ -62,6 +62,7 @@ def to_filesystem(
     dlt_resource = dlt.resource(
         base_models,
         name=DLT_DESTINATION_NAME,
+        write_disposition="merge",
     )
     return pipeline.run(
         data=dlt_resource,
