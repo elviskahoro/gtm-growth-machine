@@ -21,10 +21,10 @@ from src.services.octolens import Mention
 
 BASE_MODEL: type[BaseModel] = Mention
 
-DLT_DESTINATION_NAME: str = "dlt_octolens_mentions"
+PIPELINE_NAME: str = "octolens_mentions_dlt"
 DLT_DESTINATION_URL_GCP: str = "gs://chalk-ai-devx-octolens-mentions-dlt"
 
-DLT_DESTINATION_URL_FILESYSTEM_RELATIVE_TO_CWD: str = f"out/{DLT_DESTINATION_NAME}"
+DLT_DESTINATION_URL_FILESYSTEM_RELATIVE_TO_CWD: str = f"out/{PIPELINE_NAME}"
 
 MODAL_SECRET_COLLECTION_NAME: str = "devx-growth-gcp"
 
@@ -40,7 +40,7 @@ image.add_local_python_source(
     ],
 )
 app = modal.App(
-    name=DLT_DESTINATION_NAME,
+    name=PIPELINE_NAME,
     image=image,
 )
 
@@ -53,7 +53,7 @@ def to_filesystem(
     # Needed to keep the data as a json and not .gz
     os.environ["DATA_WRITER__DISABLE_COMPRESSION"] = str(True)
     pipeline = dlt.pipeline(
-        pipeline_name=DLT_DESTINATION_NAME,
+        pipeline_name=PIPELINE_NAME,
         destination=filesystem(
             bucket_url=bucket_url,
             destination_name=destination_name,
@@ -61,7 +61,7 @@ def to_filesystem(
     )
     dlt_resource = dlt.resource(
         base_models,
-        name=DLT_DESTINATION_NAME,
+        name=PIPELINE_NAME,
         write_disposition="merge",
     )
     return pipeline.run(
@@ -118,7 +118,7 @@ def web(
     response: str = to_filesystem(
         base_models=[data],
         bucket_url=DLT_DESTINATION_URL_GCP,
-        destination_name=DLT_DESTINATION_NAME,
+        destination_name=PIPELINE_NAME,
     )
     return response
 
@@ -166,7 +166,7 @@ def local(
 
         case TestDestination.GCP:
             bucket_url = DLT_DESTINATION_URL_GCP
-            destination_name = DLT_DESTINATION_NAME
+            destination_name = PIPELINE_NAME
 
         case _:
             error_msg: str = f"Invalid destination: {destination}"
