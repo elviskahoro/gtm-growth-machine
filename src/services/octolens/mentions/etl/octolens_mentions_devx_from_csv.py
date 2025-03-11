@@ -34,9 +34,7 @@ def local(
         input_folder=input_folder,
         extension=".csv",
     )
-    df_list: Iterator[pl.DataFrame] = (
-        pl.read_csv(path) for path in sub_paths
-    )
+    df_list: Iterator[pl.DataFrame] = (pl.read_csv(path) for path in sub_paths)
     df_full: pl.DataFrame = pl.concat(
         df_list,
         how="align",
