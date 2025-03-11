@@ -207,7 +207,7 @@ def to_filesystem(
     docs=True,
 )
 def web(
-    data: dict,  # MODAL: Change this BaseModel if you're bootstrapping a new pipeline
+    data: dict,
 ) -> str:
     _get_env_vars()
     jsons: str = orjson.dumps(data).decode("utf-8")
