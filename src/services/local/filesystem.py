@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 def get_paths(
     input_folder: str,
+    extension: str | None,
 ) -> Iterator[Path]:
     cwd: str = str(Path.cwd())
     input_folder_path: Path = Path(f"{cwd}/{input_folder}")
@@ -18,4 +19,8 @@ def get_paths(
             error_msg,
         )
 
-    return (f for f in input_folder_path.iterdir() if f.is_file())
+    return (
+        f
+        for f in input_folder_path.iterdir()
+        if f.is_file() and (extension is None or f.suffix == extension)
+    )

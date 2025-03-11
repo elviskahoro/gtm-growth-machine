@@ -28,7 +28,10 @@ def get_data_from_input_folder(
     input_folder: str,
     base_model: BaseModel,
 ) -> list[BaseModel]:
-    paths: Iterator[Path] = get_paths(input_folder)
+    paths: Iterator[Path] = get_paths(
+        input_folder=input_folder,
+        extension=".json",
+    )
     data: list[BaseModel] = []
     current_path: Path | None = None
     try:

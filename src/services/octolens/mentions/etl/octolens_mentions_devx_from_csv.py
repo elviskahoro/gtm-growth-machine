@@ -22,7 +22,6 @@ image.add_local_python_source(
     ],
 )
 app = modal.App(
-    name="",
     image=image,
 )
 
@@ -31,8 +30,13 @@ app = modal.App(
 def local(
     input_folder: str,
 ) -> None:
-    sub_paths: list[Path] = list(get_paths(input_folder))
-    df_list: list[pl.DataFrame] = [pl.read_csv(path) for path in sub_paths]
+    sub_paths: Iterator[Path] = get_paths(
+        input_folder=input_folder,
+        extension=".csv",
+    )
+    df_list: Iterator[pl.DataFrame] = (
+        pl.read_csv(path) for path in sub_paths
+    )
     df_full: pl.DataFrame = pl.concat(
         df_list,
         how="align",
@@ -52,6 +56,9 @@ def local(
         parents=True,
         exist_ok=True,
     )
+
+    count: int
+    mention_data: MentionData
     for count, mention_data in enumerate(
         mention_data_list,
         start=1,
