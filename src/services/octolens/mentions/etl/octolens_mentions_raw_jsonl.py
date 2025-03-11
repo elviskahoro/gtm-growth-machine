@@ -9,7 +9,7 @@ import modal
 from modal import Image
 
 from src.services.octolens import Mention
-from src.services.octolens.mentions.etl._modal_local_entrypoint import (
+from services.modal.local_entrypoint import (
     DestinationType,
     get_data_from_input_folder,
 )
