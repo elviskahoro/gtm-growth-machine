@@ -2,15 +2,12 @@
 from __future__ import annotations
 
 import os
-import re
 from pathlib import Path
 
 import gcsfs
 import modal
 from modal import Image
-from uuid_extensions import uuid7
 
-from src.services.local.regex import FILE_SYSTEM_TRANSLATION
 from src.services.octolens import Mention
 from src.services.octolens.mentions.etl._modal_local_entrypoint import (
     DestinationType,
@@ -124,35 +121,10 @@ def to_filesystem(
     base_models: list[Mention],
     bucket_url: str = DLT_DESTINATION_URL_GCP,
 ) -> str:
-
-    def get_output_path(
-        mention: Mention,
-    ) -> str:
-        uuid: str = str(
-            uuid7(
-                as_type="str",
-            ),
-        )
-        file_name: str = f"{uuid}.jsonl"
-        source: str = mention.data.source.replace(" ", "·")
-        keyword: str = mention.data.keyword.replace(" ", "·")
-        # Clean author string using regex with a translation dictionary
-        author: str = re.sub(
-            r"[ /\\()]",
-            lambda m: FILE_SYSTEM_TRANSLATION[m.group(0)],
-            mention.data.author,
-        )
-        timestamp: str = mention.data.timestamp.strftime("%Y%m%d_%H%M%S")
-        file_name: str = f"{source}-{keyword}-{author}-{timestamp}.jsonl"
-        output_path: str = f"{bucket_url}/{file_name}"
-        return output_path
-
     data_to_upload: list[tuple[Mention, str]] = [
         (
             mention,
-            get_output_path(
-                mention=mention,
-            ),
+            f"{bucket_url}/{mention.get_file_name()}",
         )
         for mention in base_models
     ]

@@ -56,12 +56,14 @@ def local(
         mention_data_list,
         start=1,
     ):
-        print(count)
-        output_file_path: Path = output_dir / f"{count:06d}.json"
         mention: Mention = Mention(
             action="mention_created",
             data=mention_data,
         )
+        output_file_path: Path = output_dir / mention.get_file_name(
+            extension=".json",
+        )
+        print(f"{count:06d}: {output_file_path}")
         with output_file_path.open(
             mode="w",
         ) as f:

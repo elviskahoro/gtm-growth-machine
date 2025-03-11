@@ -1,9 +1,13 @@
+# trunk-ignore-all(ruff/ANN401)
 from __future__ import annotations
 
-from datetime import datetime  # trunk-ignore(ruff/TC003)
+import re
+from datetime import datetime
 from typing import Any
 
 from pydantic import AliasChoices, BaseModel, Field, field_validator
+
+from src.services.local.regex import FILE_SYSTEM_TRANSLATION
 
 
 class MentionData(BaseModel):
@@ -102,25 +106,56 @@ class MentionData(BaseModel):
     )
     bookmarked: bool = False
 
-    @field_validator("timestamp", mode="before")
+    @field_validator(
+        "timestamp",
+        mode="before",
+    )
     @classmethod
-    def parse_timestamp(cls, value: Any) -> datetime:
-        if isinstance(value, str):
-            # Try original format first
+    def parse_timestamp(
+        cls,
+        value: Any,
+    ) -> datetime:
+        if not isinstance(value, str):
+            error_msg: str = f"Invalid timestamp format: {value}"
+            raise TypeError(error_msg)
+
+        # Try original format first
+        try:
+            return datetime.strptime(value, "%a %b %d %Y %H:%M:%S GMT%z")
+
+        except ValueError:
+            # Try ISO 8601 format
             try:
-                return datetime.strptime(value, "%a %b %d %Y %H:%M:%S GMT%z")
+                return datetime.fromisoformat(value)
 
-            except ValueError:
-                # Try ISO 8601 format
-                try:
-                    return datetime.fromisoformat(value)
+            except ValueError as e:
+                error_msg: str = f"Invalid timestamp format: {value}"
+                raise ValueError(error_msg) from e
 
-                except ValueError as e:
-                    raise ValueError(f"Invalid timestamp format: {value}") from e
-
-        return value
+    def get_file_name(
+        self,
+        extension: str = ".jsonl",
+    ) -> str:
+        source: str = self.source.replace(" ", "·")
+        keyword: str = self.keyword.replace(" ", "·")
+        # Clean author string using regex with a translation dictionary
+        author: str = re.sub(
+            r"[ /\\()]",
+            lambda m: FILE_SYSTEM_TRANSLATION[m.group(0)],
+            self.author,
+        )
+        timestamp: str = self.timestamp.strftime("%Y%m%d_%H%M%S")
+        return f"{source}-{keyword}-{author}-{timestamp}{extension}"
 
 
 class Mention(BaseModel):
     action: str = "mention_created"
     data: MentionData
+
+    def get_file_name(
+        self,
+        extension: str = ".jsonl",
+    ) -> str:
+        return self.data.get_file_name(
+            extension=extension,
+        )
