@@ -8,11 +8,11 @@ import gcsfs
 import modal
 from modal import Image
 
-from src.services.octolens import Mention
+from src.services.local.filesystem import get_data_from_input_folder
 from services.modal.local_entrypoint import (
     DestinationType,
-    get_data_from_input_folder,
 )
+from src.services.octolens import Mention
 
 DEVX_PIPELINE_NAME: str = "octolens_mentions_raw"
 DLT_DESTINATION_URL_GCP: str = "gs://chalk-ai-devx-octolens-mentions-raw"

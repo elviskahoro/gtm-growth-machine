@@ -7,9 +7,9 @@ import modal
 from dlt.destinations import filesystem
 from modal import Image
 
+from src.services.local.filesystem import get_data_from_input_folder
 from src.services.modal.local_entrypoint import (
     DestinationType,
-    get_data_from_input_folder,
 )
 from src.services.octolens import Mention
 
