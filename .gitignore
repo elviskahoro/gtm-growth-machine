@@ -1,3 +1,4 @@
+.states
 .DS_Store
 .Python
 .coverage
@@ -67,7 +68,6 @@ htmlcov/
 instance/
 lib/
 lib64/
-local/
 local_settings.py
 MANIFEST
 nosetests.xml
