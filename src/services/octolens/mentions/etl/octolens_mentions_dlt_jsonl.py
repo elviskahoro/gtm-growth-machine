@@ -7,11 +7,11 @@ import modal
 from dlt.destinations import filesystem
 from modal import Image
 
-from src.services.octolens import Mention
-from services.modal.local_entrypoint import (
+from src.services.modal.local_entrypoint import (
     DestinationType,
     get_data_from_input_folder,
 )
+from src.services.octolens import Mention
 
 DEVX_PIPELINE_NAME: str = "octolens_mentions_dlt"
 DLT_DESTINATION_URL_GCP: str = "gs://chalk-ai-devx-octolens-mentions-dlt"
