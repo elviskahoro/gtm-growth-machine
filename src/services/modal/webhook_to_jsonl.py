@@ -31,6 +31,7 @@ MODAL_SECRET_COLLECTION_NAME: str = "devx-growth-gcp"  # trunk-ignore(ruff/S105)
 image: Image = modal.Image.debian_slim().pip_install(
     "fastapi[standard]",
     "gcsfs",  # https://github.com/fsspec/gcsfs
+    "orjson",
     "uuid7",
 )
 image.add_local_python_source(
