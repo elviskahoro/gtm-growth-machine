@@ -6,18 +6,25 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import gcsfs
+
 import modal
 from modal import Image
-
 from src.services.local.filesystem import get_data_from_input_folder
 from src.services.modal.filesystem import convert_bucket_url_to_pipeline_name
 from src.services.modal.local_entrypoint import (
     DestinationType,
 )
-from src.services.octolens import Mention, MentionData
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+
+    from pydantic import BaseModel
+
+from src.services.octolens import Mention
+
+
+class WebhookModel(Mention): ...
+
 
 DLT_DESTINATION_URL_GCP: str = "gs://chalk-ai-devx-octolens-mentions-etl"
 DEVX_PIPELINE_NAME: str = convert_bucket_url_to_pipeline_name(
@@ -70,11 +77,11 @@ def _get_env_vars() -> None:
 
 
 def _to_filesystem_local(
-    data_to_upload: Iterator[tuple[MentionData, str]],
+    data_to_upload: Iterator[tuple[BaseModel, str]],
 ) -> None:
     output_path_str: str
-    mention_data: MentionData
-    for count, (mention_data, output_path_str) in enumerate(
+    etl_data: BaseModel
+    for count, (etl_data, output_path_str) in enumerate(
         data_to_upload,
         start=1,
     ):
@@ -84,15 +91,16 @@ def _to_filesystem_local(
             mode="w+",
         ) as f:
             f.write(
-                mention_data.model_dump_json(
+                etl_data.model_dump_json(
                     indent=None,
                 ),
             )
 
 
 def _to_filesystem_gcs(
-    data_to_upload: Iterator[tuple[MentionData, str]],
+    data_to_upload: Iterator[tuple[BaseModel, str]],
 ) -> None:
+    _get_env_vars()
     if gcp_project_id is None or gcp_private_key is None or gcp_client_email is None:
         error_msg: str = (
             "GCP_PROJECT_ID, GCP_PRIVATE_KEY, and GCP_CLIENT_EMAIL must be set"
@@ -111,8 +119,8 @@ def _to_filesystem_gcs(
         },
     )
     output_path: str
-    mention_data: MentionData
-    for count, (mention_data, output_path) in enumerate(
+    etl_data: BaseModel
+    for count, (etl_data, output_path) in enumerate(
         data_to_upload,
         start=1,
     ):
@@ -122,24 +130,23 @@ def _to_filesystem_gcs(
             mode="w",
         ) as f:
             f.write(
-                mention_data.model_dump_json(
+                etl_data.model_dump_json(
                     indent=None,
                 ),
             )
 
 
 def to_filesystem(
-    mentions_data: Iterator[MentionData],
+    etl_data: Iterator[BaseModel],
     bucket_url: str = DLT_DESTINATION_URL_GCP,
 ) -> str:
-    data_to_upload: Iterator[tuple[MentionData, str]] = (
+    data_to_upload: Iterator[tuple[BaseModel, str]] = (
         (
-            mention_data,
-            f"{bucket_url}/{mention_data.get_file_name()}",
+            etl_data,
+            f"{bucket_url}/{etl_data.get_file_name()}",
         )
-        for mention_data in mentions_data
+        for etl_data in etl_data
     )
-
     match bucket_url:
         case str() as url if url.startswith("gs://"):
             _to_filesystem_gcs(
@@ -174,25 +181,16 @@ def to_filesystem(
     docs=True,
 )
 def web(
-    mention: Mention,  # MODAL: Change this BaseModel if you're bootstrapping a new pipeline
+    webhook: WebhookModel,
 ) -> str:
-    def mention_created(
-        mention: Mention,
-    ) -> str:
-        return to_filesystem(
-            mentions_data=[mention.data],  # trunk-ignore(pyright/reportArgumentType)
-            bucket_url=DLT_DESTINATION_URL_GCP,
-        )
+    if not webhook.etl_is_valid_webhook():
+        return webhook.etl_get_invalid_webhook_error_msg()
 
-    match mention.action:
-        case "mention_created":
-            _get_env_vars()
-            return mention_created(
-                mention=mention,
-            )
-
-        case _:
-            return "Invalid action: " + mention.action
+    etl_data: BaseModel = webhook.etl_get_data()
+    return to_filesystem(
+        etl_data=[etl_data],  # trunk-ignore(pyright/reportArgumentType)
+        bucket_url=DLT_DESTINATION_URL_GCP,
+    )
 
 
 @app.local_entrypoint()
@@ -209,22 +207,21 @@ def local(
             )
 
         case DestinationType.GCP:
-            _get_env_vars()
             bucket_url = DLT_DESTINATION_URL_GCP
 
         case _:
             error_msg: str = f"Invalid destination type: {destination_type_enum}"
             raise ValueError(error_msg)
 
-    mentions: list[Mention] = (  # trunk-ignore(pyright/reportAssignmentType)
+    webhook_data: list[WebhookModel] = (  # trunk-ignore(pyright/reportAssignmentType)
         get_data_from_input_folder(
             input_folder=input_folder,
-            base_model=Mention,  # trunk-ignore(pyright/reportArgumentType)
+            base_model=WebhookModel,  # trunk-ignore(pyright/reportArgumentType)
         )
     )
-    print(f"Exporting {len(mentions)} mentions to {bucket_url}")
+    print(f"Exporting {len(webhook_data)} mentions to {bucket_url}")
     response: str = to_filesystem(
-        mentions_data=(mention.data for mention in mentions),
+        etl_data=(webhook.etl_get_data() for webhook in webhook_data),
         bucket_url=bucket_url,
     )
     print(response)
