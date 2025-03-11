@@ -197,7 +197,6 @@ def to_filesystem(
             name=MODAL_SECRET_COLLECTION_NAME,
         ),
     ],
-    # cloud="aws", This feature is available on the Team and Enterprise plans, read more at https://modal.com/docs/guide/region-selection
     region="us-east4", # This feature is available on the Team and Enterprise plans, read more at https://modal.com/docs/guide/region-selection
     allow_concurrent_inputs=1000,
     enable_memory_snapshot=True,
