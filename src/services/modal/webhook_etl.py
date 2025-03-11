@@ -1,16 +1,16 @@
-# trunk-ignore-all(ruff/PLW0603)
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING
-
-import gcsfs
 
 import modal
 from modal import Image
 from src.services.local.filesystem import get_data_from_input_folder
-from src.services.modal.filesystem import convert_bucket_url_to_pipeline_name
+from src.services.modal.filesystem import (
+    convert_bucket_url_to_pipeline_name,
+    to_filesystem_gcs,
+    to_filesystem_local,
+)
 from src.services.modal.local_entrypoint import (
     DestinationType,
 )
@@ -47,110 +47,26 @@ app = modal.App(
     image=image,
 )
 
-gcp_project_id: str | None = None
-gcp_private_key: str | None = None
-gcp_client_email: str | None = None
-
-
-def _get_env_vars() -> None:
-    global gcp_project_id
-    global gcp_private_key
-    global gcp_client_email
-    gcp_project_id = os.environ.get(
-        "GCP_PROJECT_ID",
-        None,
-    )
-    gcp_private_key = os.environ.get(
-        "GCP_PRIVATE_KEY",
-        None,
-    )
-    if gcp_private_key:
-        gcp_private_key = gcp_private_key.replace(
-            "\\n",
-            "\n",
-        )
-
-    gcp_client_email = os.environ.get(
-        "GCP_CLIENT_EMAIL",
-        None,
-    )
-
-
-def _to_filesystem_local(
-    data_to_upload: Iterator[tuple[BaseModel, str]],
-) -> None:
-    etl_data: BaseModel
-    output_path_str: str
-    for count, (etl_data, output_path_str) in enumerate(
-        data_to_upload,
-        start=1,
-    ):
-        print(f"{count:06d}: {output_path_str}")
-        output_path: Path = Path(output_path_str)
-        with output_path.open(
-            mode="w+",
-        ) as f:
-            f.write(
-                etl_data.model_dump_json(
-                    indent=None,
-                ),
-            )
-
-
-def _to_filesystem_gcs(
-    data_to_upload: Iterator[tuple[BaseModel, str]],
-) -> None:
-    _get_env_vars()
-    if gcp_project_id is None or gcp_private_key is None or gcp_client_email is None:
-        error_msg: str = (
-            "GCP_PROJECT_ID, GCP_PRIVATE_KEY, and GCP_CLIENT_EMAIL must be set"
-        )
-        raise ValueError(
-            error_msg,
-        )
-
-    fs: gcsfs.GCSFileSystem = gcsfs.GCSFileSystem(
-        project=gcp_project_id,
-        token={
-            "client_email": gcp_client_email,
-            "private_key": gcp_private_key,
-            "project_id": gcp_project_id,
-            "token_uri": "https://oauth2.googleapis.com/token",
-        },
-    )
-    output_path: str
-    etl_data: BaseModel
-    for count, (etl_data, output_path) in enumerate(
-        data_to_upload,
-        start=1,
-    ):
-        print(f"{count:06d}: {output_path}")
-        with fs.open(
-            path=output_path,
-            mode="w",
-        ) as f:
-            f.write(
-                etl_data.model_dump_json(
-                    indent=None,
-                ),
-            )
-
 
 def to_filesystem(
     etl_data: Iterator[BaseModel],
     bucket_url: str = DLT_DESTINATION_URL_GCP,
 ) -> str:
-    data_to_upload: Iterator[tuple[BaseModel, str]] = (
-        (
-            etl_data,
-            f"{bucket_url}/{etl_data.get_file_name()}",
-        )
-        for etl_data in etl_data
+    data: zip[tuple[str, str]] = zip(
+        *(
+            (
+                etl_data.model_dump_json(
+                    indent=None,
+                ),
+                f"{bucket_url}/{etl_data.get_file_name()}",
+            )
+            for etl_data in etl_data
+        ),
     )
     match bucket_url:
         case str() as url if url.startswith("gs://"):
-            _to_filesystem_gcs(
-                data_to_upload=data_to_upload,
+            to_filesystem_gcs(
+                data=data,
             )
 
         case _:
@@ -159,8 +75,8 @@ def to_filesystem(
                 parents=True,
                 exist_ok=True,
             )
-            _to_filesystem_local(
-                data_to_upload=data_to_upload,
+            to_filesystem_local(
+                data=data,
             )
 
     return "Successfully uploaded"
