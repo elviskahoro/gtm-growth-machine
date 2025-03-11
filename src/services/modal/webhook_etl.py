@@ -79,8 +79,8 @@ def _get_env_vars() -> None:
 def _to_filesystem_local(
     data_to_upload: Iterator[tuple[BaseModel, str]],
 ) -> None:
-    output_path_str: str
     etl_data: BaseModel
+    output_path_str: str
     for count, (etl_data, output_path_str) in enumerate(
         data_to_upload,
         start=1,
@@ -163,7 +163,7 @@ def to_filesystem(
                 data_to_upload=data_to_upload,
             )
 
-    return "Successfully uploaded all mentions"
+    return "Successfully uploaded"
 
 
 @app.function(
@@ -219,7 +219,7 @@ def local(
             base_model=WebhookModel,  # trunk-ignore(pyright/reportArgumentType)
         )
     )
-    print(f"Exporting {len(webhook_data)} mentions to {bucket_url}")
+    print(f"Exporting {len(webhook_data)} webhooks to {bucket_url}")
     response: str = to_filesystem(
         etl_data=(webhook.etl_get_data() for webhook in webhook_data),
         bucket_url=bucket_url,
