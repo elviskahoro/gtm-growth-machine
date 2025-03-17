@@ -9,15 +9,15 @@ from uuid_extensions import uuid7
 
 import modal
 from modal import Image
-from src.services.local.filesystem import get_paths
-from src.services.modal.filesystem import (
+from src.services.dlt.destination_type import (
+    DestinationType,
+)
+from src.services.dlt.filesystem import (
     convert_bucket_url_to_pipeline_name,
     to_filesystem_gcs,
     to_filesystem_local,
 )
-from src.services.modal.local_entrypoint import (
-    DestinationType,
-)
+from src.services.local.filesystem import get_paths
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
