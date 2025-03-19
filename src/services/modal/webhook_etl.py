@@ -70,6 +70,7 @@ def to_filesystem(
 
         case _:
             bucket_url_path: Path = Path(bucket_url)
+            print(bucket_url_path)
             bucket_url_path.mkdir(
                 parents=True,
                 exist_ok=True,
