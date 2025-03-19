@@ -30,7 +30,7 @@ def get_paths(
 
 class FileData(NamedTuple):
     path: Path
-    data: BaseModel
+    base_model: BaseModel
 
 
 def get_data_from_input_folder(
@@ -48,7 +48,7 @@ def get_data_from_input_folder(
             current_path = path
             yield FileData(
                 path=path,
-                data=base_model.model_validate_json(
+                base_model=base_model.model_validate_json(
                     json_data=path.read_text(),
                 ),
             )
