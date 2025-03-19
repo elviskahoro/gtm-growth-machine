@@ -61,7 +61,6 @@ def to_filesystem(
         )
         for base_model in base_models
     )
-
     match bucket_url:
         case str() as url if url.startswith("gs://"):
             to_filesystem_gcs(
