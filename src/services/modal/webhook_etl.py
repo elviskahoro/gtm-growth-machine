@@ -49,20 +49,19 @@ app = modal.App(
 
 
 def to_filesystem(
-    etl_data: Iterator[BaseModel],
+    base_models: Iterator[BaseModel],
     bucket_url: str = DLT_DESTINATION_URL_GCP,
 ) -> str:
-    data: zip[tuple[str, str]] = zip(
-        *(
-            (
-                etl_data.model_dump_json(
-                    indent=None,
-                ),
-                f"{bucket_url}/{etl_data.etl_get_file_name()}",
-            )
-            for etl_data in etl_data
-        ),
+    data: Iterator[tuple[str, str]] = (
+        (
+            base_model.model_dump_json(
+                indent=None,
+            ),
+            f"{bucket_url}/{base_model.etl_get_file_name()}",
+        )
+        for base_model in base_models
     )
+
     match bucket_url:
         case str() as url if url.startswith("gs://"):
             to_filesystem_gcs(
@@ -104,9 +103,21 @@ def web(
 
     etl_data: BaseModel = webhook.etl_get_data()
     return to_filesystem(
-        etl_data=[etl_data],  # trunk-ignore(pyright/reportArgumentType)
+        base_models=[etl_data],  # trunk-ignore(pyright/reportArgumentType)
         bucket_url=DLT_DESTINATION_URL_GCP,
     )
+
+
+def _process_file_data(
+    file_data: Iterator[FileData],
+) -> Iterator[BaseModel]:
+    for individual_file_data in file_data:
+        try:
+            yield individual_file_data.base_model.etl_get_data()
+
+        except AttributeError:
+            print(individual_file_data.path)
+            raise
 
 
 @app.local_entrypoint()
@@ -133,22 +144,11 @@ def local(
         input_folder=input_folder,
         base_model=WebhookModel,  # trunk-ignore(pyright/reportArgumentType)
     )
-
-    individual_file_data: FileData
-    etl_data: list[BaseModel] = []
-    print(f"Exporting webhooks to {bucket_url}")
-    for individual_file_data in file_data:
-        print(individual_file_data.path)
-        try:
-            etl_data.append(
-                individual_file_data.data.etl_get_data(),
-            )
-
-        except AttributeError as e:
-            print(e)
-
+    base_models: Iterator[BaseModel] = _process_file_data(
+        file_data=file_data,
+    )
     response: str = to_filesystem(
-        etl_data=etl_data,  # trunk-ignore(pyright/reportArgumentType)
+        base_models=base_models,
         bucket_url=bucket_url,
     )
     print(response)
