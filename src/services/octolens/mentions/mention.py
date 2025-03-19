@@ -152,7 +152,7 @@ class Mention(BaseModel):
     action: str = "mention_created"
     data: MentionData
 
-    def get_file_name(
+    def etl_get_file_name(
         self,
         extension: str = ".jsonl",
     ) -> str:

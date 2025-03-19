@@ -58,7 +58,7 @@ def to_filesystem(
                 etl_data.model_dump_json(
                     indent=None,
                 ),
-                f"{bucket_url}/{etl_data.get_file_name()}",
+                f"{bucket_url}/{etl_data.etl_get_file_name()}",
             )
             for etl_data in etl_data
         ),
