@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from typing import NamedTuple
+from pathlib import Path
+from typing import TYPE_CHECKING, NamedTuple
 
 from pydantic import BaseModel, ValidationError
-from pathlib import Path
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

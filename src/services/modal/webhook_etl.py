@@ -5,15 +5,15 @@ from typing import TYPE_CHECKING
 
 import modal
 from modal import Image
+from src.services.dlt.destination_type import (
+    DestinationType,
+)
 from src.services.dlt.filesystem import (
     convert_bucket_url_to_pipeline_name,
     to_filesystem_gcs,
     to_filesystem_local,
 )
-from src.services.dlt.destination_type import (
-    DestinationType,
-)
-from src.services.local.filesystem import get_data_from_input_folder, FileData
+from src.services.local.filesystem import FileData, get_data_from_input_folder
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
