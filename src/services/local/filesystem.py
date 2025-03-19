@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import NamedTuple
+
 from pydantic import BaseModel, ValidationError
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -27,22 +29,27 @@ def get_paths(
     )
 
 
+class FileData(NamedTuple):
+    path: Path
+    data: BaseModel
+
+
 def get_data_from_input_folder(
     input_folder: str,
     base_model: BaseModel,
-) -> list[BaseModel]:
+) -> Iterator[FileData]:
     paths: Iterator[Path] = get_paths(
         input_folder=input_folder,
         extension=".json",
     )
-    data: list[BaseModel] = []
     current_path: Path | None = None
     try:
         path: Path
         for path in paths:
             current_path = path
-            data.append(
-                base_model.model_validate_json(
+            yield FileData(
+                path=path,
+                data=base_model.model_validate_json(
                     json_data=path.read_text(),
                 ),
             )
@@ -51,5 +58,3 @@ def get_data_from_input_folder(
         print(e)
         print(current_path)
         raise
-
-    return data

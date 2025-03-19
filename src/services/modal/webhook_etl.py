@@ -13,7 +13,7 @@ from src.services.dlt.filesystem import (
 from src.services.dlt.destination_type import (
     DestinationType,
 )
-from src.services.local.filesystem import get_data_from_input_folder
+from src.services.local.filesystem import get_data_from_input_folder, FileData
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -129,15 +129,26 @@ def local(
             error_msg: str = f"Invalid destination type: {destination_type_enum}"
             raise ValueError(error_msg)
 
-    webhook_data: list[WebhookModel] = (  # trunk-ignore(pyright/reportAssignmentType)
-        get_data_from_input_folder(
-            input_folder=input_folder,
-            base_model=WebhookModel,  # trunk-ignore(pyright/reportArgumentType)
-        )
+    file_data: Iterator[FileData] = get_data_from_input_folder(
+        input_folder=input_folder,
+        base_model=WebhookModel,  # trunk-ignore(pyright/reportArgumentType)
     )
-    print(f"Exporting {len(webhook_data)} webhooks to {bucket_url}")
+
+    individual_file_data: FileData
+    etl_data: list[BaseModel] = []
+    print(f"Exporting webhooks to {bucket_url}")
+    for individual_file_data in file_data:
+        print(individual_file_data.path)
+        try:
+            etl_data.append(
+                individual_file_data.data.etl_get_data(),
+            )
+
+        except AttributeError as e:
+            print(e)
+
     response: str = to_filesystem(
-        etl_data=(webhook.etl_get_data() for webhook in webhook_data),
+        etl_data=etl_data,  # trunk-ignore(pyright/reportArgumentType)
         bucket_url=bucket_url,
     )
     print(response)
