@@ -75,11 +75,7 @@ def to_filesystem_gcs(
     )
     json: str
     output_path: str
-    for count, (json, output_path) in enumerate(
-        data,
-        start=1,
-    ):
-        print(f"{count:06d}: {output_path}")
+    for json, output_path in data:
         with fs.open(
             path=output_path,
             mode="w",
@@ -94,11 +90,7 @@ def to_filesystem_local(
 ) -> None:
     json: str
     output_path_str: str
-    for count, (json, output_path_str) in enumerate(
-        data,
-        start=1,
-    ):
-        print(f"{count:06d}: {output_path_str}")
+    for json, output_path_str in data:
         output_path: Path = Path(output_path_str)
         with output_path.open(
             mode="w+",
