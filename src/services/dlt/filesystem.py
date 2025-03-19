@@ -5,6 +5,8 @@ from typing import NamedTuple
 
 import gcsfs
 
+from src.services.local.filesystem import DestinationFileData
+
 
 class GCPCredentials(NamedTuple):
     project_id: str | None
@@ -49,7 +51,7 @@ def _get_env_vars() -> GCPCredentials:
 
 
 def to_filesystem_gcs(
-    data: Iterator[tuple[str, str]],
+    data: Iterator[DestinationFileData],
 ) -> None:
     credentials: GCPCredentials = _get_env_vars()
     if (
@@ -73,28 +75,27 @@ def to_filesystem_gcs(
             "token_uri": "https://oauth2.googleapis.com/token",
         },
     )
-    json: str
-    output_path: str
-    for json, output_path in data:
+    for json_data in data:
         with fs.open(
-            path=output_path,
+            path=json_data.path,
             mode="w",
         ) as f:
             f.write(
-                json,
+                json_data.json,
             )
 
 
 def to_filesystem_local(
-    data: Iterator[tuple[str, str]],
+    data: Iterator[DestinationFileData],
 ) -> None:
-    json: str
-    output_path_str: str
-    for json, output_path_str in data:
-        output_path: Path = Path(output_path_str)
-        with output_path.open(
+    # cwd = Path.cwd()
+    for json_data in data:
+        file_path: Path = Path(json_data.path)
+        # relative_path: Path = file_path.relative_to(cwd)
+        # print(relative_path)
+        with file_path.open(
             mode="w+",
         ) as f:
             f.write(
-                json,
+                json_data.json,
             )

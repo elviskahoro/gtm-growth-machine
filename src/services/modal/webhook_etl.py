@@ -13,12 +13,16 @@ from src.services.dlt.filesystem import (
     to_filesystem_gcs,
     to_filesystem_local,
 )
-from src.services.local.filesystem import FileData, get_data_from_input_folder
+from src.services.local.filesystem import (
+    DestinationFileData,
+    SourceFileData,
+    get_file_data_from_input_folder,
+    get_json_data_from_file_data,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from pydantic import BaseModel
 
 from src.services.octolens.mentions.etl.webhook import Webhook
 
@@ -49,18 +53,9 @@ app = modal.App(
 
 
 def to_filesystem(
-    base_models: Iterator[BaseModel],
+    data: Iterator[DestinationFileData],
     bucket_url: str = DLT_DESTINATION_URL_GCP,
 ) -> str:
-    data: Iterator[tuple[str, str]] = (
-        (
-            base_model.model_dump_json(
-                indent=None,
-            ),
-            f"{bucket_url}/{base_model.etl_get_file_name()}",
-        )
-        for base_model in base_models
-    )
     match bucket_url:
         case str() as url if url.startswith("gs://"):
             to_filesystem_gcs(
@@ -98,27 +93,26 @@ def to_filesystem(
 def web(
     webhook: WebhookModel,
 ) -> str:
+    def generate_destination_file_data(
+        webhook: WebhookModel,
+        bucket_url: str,
+    ) -> Iterator[DestinationFileData]:
+        yield DestinationFileData(
+            json=webhook.etl_get_json(),
+            path=f"{bucket_url}/{webhook.etl_get_file_name()}",
+        )
+
     if not webhook.etl_is_valid_webhook():
         return webhook.etl_get_invalid_webhook_error_msg()
 
-    etl_data: BaseModel = webhook.etl_get_data()
-    return to_filesystem(
-        base_models=[etl_data],  # trunk-ignore(pyright/reportArgumentType)
+    data: Iterator[DestinationFileData] = generate_destination_file_data(
+        webhook=webhook,
         bucket_url=DLT_DESTINATION_URL_GCP,
     )
-
-
-def _process_file_data(
-    file_data: Iterator[FileData],
-) -> Iterator[BaseModel]:
-    for individual_file_data in file_data:
-        try:
-            yield individual_file_data.base_model.etl_get_data()
-
-        except (AttributeError, ValueError):
-            error_msg: str = f"Error processing file: {individual_file_data.path}"
-            print(error_msg)
-            raise
+    return to_filesystem(
+        data=data,
+        bucket_url=DLT_DESTINATION_URL_GCP,
+    )
 
 
 @app.local_entrypoint()
@@ -141,15 +135,16 @@ def local(
             error_msg: str = f"Invalid destination type: {destination_type_enum}"
             raise ValueError(error_msg)
 
-    file_data: Iterator[FileData] = get_data_from_input_folder(
+    file_data: Iterator[SourceFileData] = get_file_data_from_input_folder(
         input_folder=input_folder,
         base_model=WebhookModel,  # trunk-ignore(pyright/reportArgumentType)
     )
-    base_models: Iterator[BaseModel] = _process_file_data(
+    data: Iterator[DestinationFileData] = get_json_data_from_file_data(
         file_data=file_data,
+        bucket_url=bucket_url,
     )
     response: str = to_filesystem(
-        base_models=base_models,
+        data=data,
         bucket_url=bucket_url,
     )
     print(response)

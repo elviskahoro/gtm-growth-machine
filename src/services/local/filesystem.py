@@ -28,15 +28,15 @@ def get_paths(
     )
 
 
-class FileData(NamedTuple):
+class SourceFileData(NamedTuple):
     path: Path
     base_model: BaseModel
 
 
-def get_data_from_input_folder(
+def get_file_data_from_input_folder(
     input_folder: str,
     base_model: BaseModel,
-) -> Iterator[FileData]:
+) -> Iterator[SourceFileData]:
     paths: Iterator[Path] = get_paths(
         input_folder=input_folder,
         extension=".json",
@@ -46,7 +46,7 @@ def get_data_from_input_folder(
         path: Path
         for path in paths:
             current_path = path
-            yield FileData(
+            yield SourceFileData(
                 path=path,
                 base_model=base_model.model_validate_json(
                     json_data=path.read_text(),
@@ -57,3 +57,25 @@ def get_data_from_input_folder(
         print(e)
         print(current_path)
         raise
+
+
+class DestinationFileData(NamedTuple):
+    json: str
+    path: str
+
+
+def get_json_data_from_file_data(
+    file_data: Iterator[SourceFileData],
+    bucket_url: str,
+) -> Iterator[DestinationFileData]:
+    for individual_file_data in file_data:
+        try:
+            yield DestinationFileData(
+                json=individual_file_data.base_model.etl_get_json(),
+                path=f"{bucket_url}/{individual_file_data.base_model.etl_get_file_name()}",
+            )
+
+        except (AttributeError, ValueError):
+            error_msg: str = f"Error processing file: {individual_file_data.path}"
+            print(error_msg)
+            raise

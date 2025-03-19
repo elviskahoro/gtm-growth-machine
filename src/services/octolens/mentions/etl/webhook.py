@@ -35,7 +35,9 @@ class Webhook(BaseModel):
     ) -> str:
         return "Invalid webhook: " + self.action
 
-    def etl_get_data(
+    def etl_get_json(
         self,
-    ) -> Mention:
-        return self.data
+    ) -> str:
+        return self.data.model_dump_json(
+            indent=None,
+        )
