@@ -116,7 +116,8 @@ def _process_file_data(
             yield individual_file_data.base_model.etl_get_data()
 
         except (AttributeError, ValueError):
-            print(individual_file_data.path)
+            error_msg: str = f"Error processing file: {individual_file_data.path}"
+            print(error_msg)
             raise
 
 
