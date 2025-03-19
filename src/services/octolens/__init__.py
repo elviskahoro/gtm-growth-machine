@@ -1,6 +1,6 @@
-from .mentions import Mention, MentionData
+from .mentions import Mention, Webhook
 
 __all__ = [
     "Mention",
-    "MentionData",
+    "Webhook",
 ]

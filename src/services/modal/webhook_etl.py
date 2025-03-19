@@ -20,10 +20,10 @@ if TYPE_CHECKING:
 
     from pydantic import BaseModel
 
-from src.services.octolens import Mention
+from src.services.octolens.mentions.etl.webhook import Webhook
 
 
-class WebhookModel(Mention): ...
+class WebhookModel(Webhook): ...
 
 
 DLT_DESTINATION_URL_GCP: str = "gs://chalk-ai-devx-octolens-mentions-etl"

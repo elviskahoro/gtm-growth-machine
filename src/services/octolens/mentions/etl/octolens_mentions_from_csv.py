@@ -8,7 +8,7 @@ import polars as pl
 from modal import Image
 
 from src.services.local.filesystem import get_paths
-from src.services.octolens import Mention, MentionData
+from src.services.octolens import Mention, Webhook
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -42,8 +42,8 @@ def local(
     df: pl.DataFrame = df_full.unique(
         subset=["URL"],
     )
-    mention_data_list: Iterator[MentionData] = (
-        MentionData.model_validate(row)
+    mention_data_list: Iterator[Mention] = (
+        Mention.model_validate(row)
         for row in df.iter_rows(
             named=True,
         )
@@ -56,12 +56,12 @@ def local(
     )
 
     count: int
-    mention_data: MentionData
+    mention_data: Mention
     for count, mention_data in enumerate(
         mention_data_list,
         start=1,
     ):
-        mention: Mention = Mention(
+        mention: Webhook = Webhook(
             action="mention_created",
             data=mention_data,
         )
