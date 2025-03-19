@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 import modal
 from modal import Image
-from services.dlt.filesystem import (
+from src.services.dlt.filesystem import (
     convert_bucket_url_to_pipeline_name,
     to_filesystem_gcs,
     to_filesystem_local,
