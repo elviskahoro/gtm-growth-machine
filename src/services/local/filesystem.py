@@ -65,7 +65,7 @@ class DestinationFileData(NamedTuple):
     path: str
 
 
-def get_json_data_from_file_data(
+def get_destination_file_data_from_source_file_data(
     source_file_data: Iterator[SourceFileData],
     bucket_url: str,
 ) -> Iterator[DestinationFileData]:

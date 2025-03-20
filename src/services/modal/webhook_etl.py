@@ -14,8 +14,8 @@ from src.services.dlt.filesystem import (
 from src.services.local.filesystem import (
     DestinationFileData,
     SourceFileData,
+    get_destination_file_data_from_source_file_data,
     get_source_file_data_from_input_folder,
-    get_json_data_from_file_data,
 )
 
 if TYPE_CHECKING:
@@ -78,9 +78,11 @@ def web(
             ),
         ],
     )
-    data: Iterator[DestinationFileData] = get_json_data_from_file_data(
-        source_file_data=file_data,
-        bucket_url=DLT_DESTINATION_URL_GCP,
+    data: Iterator[DestinationFileData] = (
+        get_destination_file_data_from_source_file_data(
+            source_file_data=file_data,
+            bucket_url=DLT_DESTINATION_URL_GCP,
+        )
     )
     return to_filesystem(
         destination_file_data=data,
@@ -116,9 +118,11 @@ def local(
             ".jsonl",
         ],
     )
-    destination_file_data: Iterator[DestinationFileData] = get_json_data_from_file_data(
-        source_file_data=source_file_data,
-        bucket_url=bucket_url,
+    destination_file_data: Iterator[DestinationFileData] = (
+        get_destination_file_data_from_source_file_data(
+            source_file_data=source_file_data,
+            bucket_url=bucket_url,
+        )
     )
     response: str = to_filesystem(
         destination_file_data=destination_file_data,
