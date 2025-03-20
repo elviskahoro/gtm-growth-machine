@@ -8,7 +8,7 @@ from src.services.dlt.destination_type import (
     DestinationType,
 )
 from src.services.dlt.filesystem_gcp import (
-    convert_bucket_url_to_pipeline_name,
+    gcp_clean_bucket_url,
     to_filesystem,
 )
 from src.services.local.filesystem import (
@@ -29,7 +29,7 @@ class WebhookModel(Webhook): ...
 
 
 DLT_DESTINATION_URL_GCP: str = "gs://chalk-ai-devx-octolens-mentions-etl"
-DEVX_PIPELINE_NAME: str = convert_bucket_url_to_pipeline_name(
+DEVX_PIPELINE_NAME: str = gcp_clean_bucket_url(
     DLT_DESTINATION_URL_GCP,
 )
 MODAL_SECRET_COLLECTION_NAME: str = "devx-growth-gcp"  # trunk-ignore(ruff/S105)

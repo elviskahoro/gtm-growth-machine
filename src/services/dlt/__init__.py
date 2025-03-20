@@ -1,11 +1,11 @@
 from .destination_type import DestinationType
 from .filesystem_gcp import (
-    convert_bucket_url_to_pipeline_name,
+    gcp_clean_bucket_url,
     to_filesystem_gcs,
 )
 
 __all__ = [
     "DestinationType",
-    "convert_bucket_url_to_pipeline_name",
+    "gcp_clean_bucket_url",
     "to_filesystem_gcs",
 ]

@@ -1,11 +1,14 @@
 import os
+import re
 from collections.abc import Iterator
+from datetime import datetime
 from pathlib import Path
 from typing import NamedTuple
 
 import gcsfs
 
-from src.services.local.filesystem import DestinationFileData, to_filesystem_local
+from src.services.dlt.filesystem_local import to_filesystem_local
+from src.services.local.filesystem import DestinationFileData
 
 
 class GCPCredentials(NamedTuple):
@@ -14,7 +17,7 @@ class GCPCredentials(NamedTuple):
     client_email: str | None
 
 
-def convert_bucket_url_to_pipeline_name(
+def gcp_clean_bucket_url(
     x: str,
 ) -> str:
     return x.replace(
@@ -23,6 +26,23 @@ def convert_bucket_url_to_pipeline_name(
     ).replace(
         "-",
         "_",
+    )
+
+
+def gcp_clean_timestamp_from_datetime(
+    dt: datetime,
+) -> str:
+    return dt.strftime("%Y_%m_%d_%H_%M_%S")
+
+
+def gcp_clean_string(
+    string: str,
+) -> str:
+    lowercase: str = string.lower()
+    return re.sub(
+        pattern="[^0-9a-zA-Z]+",
+        repl="_",
+        string=lowercase,
     )
 
 
