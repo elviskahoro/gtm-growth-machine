@@ -71,7 +71,8 @@ class Mention(BaseModel):
             "authorAvatarUrl",
         ),
     )
-    author_profile_link: str = Field(
+    author_profile_link: str | None = Field(
+        default=None,
         validation_alias=AliasChoices(
             "author_profile_link",
             "Author Profile Link",
