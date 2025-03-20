@@ -15,10 +15,10 @@ class Invitee(BaseModel):
 
 class Meeting(BaseModel):
     scheduled_start_time: datetime
-    scheduled_end_time: datetime
-    scheduled_duration_in_minutes: int
+    scheduled_end_time: datetime | None
+    scheduled_duration_in_minutes: int | None
     join_url: str
     title: str
     has_external_invitees: bool | None
-    external_domains: list[ExternalDomain]
-    invitees: list[Invitee]
+    external_domains: list[ExternalDomain] | None
+    invitees: list[Invitee] | None
