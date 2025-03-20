@@ -11,8 +11,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 from src.services.dlt.filesystem_gcp import (
-    gcp_clean_timestamp_from_datetime,
     gcp_clean_string,
+    gcp_clean_timestamp_from_datetime,
 )
 from src.services.fathom.meeting.meeting import Meeting
 from src.services.fathom.recording.recording import Recording
