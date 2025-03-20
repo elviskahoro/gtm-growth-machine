@@ -9,6 +9,7 @@ from src.services.dlt.destination_type import (
 )
 from src.services.dlt.filesystem_gcp import (
     gcp_bucket_url_from_bucket_name,
+    gcp_clean_bucket_name,
     to_filesystem,
 )
 from src.services.local.filesystem import (
@@ -45,7 +46,9 @@ image.add_local_python_source(
     ],
 )
 app = modal.App(
-    name=BUCKET_NAME.replace("-", "_"),
+    name=gcp_clean_bucket_name(
+        bucket_name=BUCKET_NAME,
+    ),
     image=image,
 )
 

@@ -22,6 +22,7 @@ image.add_local_python_source(
     ],
 )
 app = modal.App(
+    name=__name__,
     image=image,
 )
 
