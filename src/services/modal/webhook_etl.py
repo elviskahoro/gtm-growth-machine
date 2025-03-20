@@ -8,7 +8,7 @@ from src.services.dlt.destination_type import (
     DestinationType,
 )
 from src.services.dlt.filesystem_gcp import (
-    gcp_clean_bucket_url,
+    gcp_bucket_url_from_bucket_name,
     to_filesystem,
 )
 from src.services.local.filesystem import (
@@ -28,9 +28,9 @@ from src.services.octolens.mentions.etl.webhook import Webhook
 class WebhookModel(Webhook): ...
 
 
-DLT_DESTINATION_URL_GCP: str = "gs://chalk-ai-devx-octolens-mentions-etl"
-DEVX_PIPELINE_NAME: str = gcp_clean_bucket_url(
-    DLT_DESTINATION_URL_GCP,
+BUCKET_NAME: str = "chalk-ai-devx-octolens-mentions-etl"
+BUCKET_URL: str = gcp_bucket_url_from_bucket_name(
+    bucket_name=BUCKET_NAME,
 )
 MODAL_SECRET_COLLECTION_NAME: str = "devx-growth-gcp"  # trunk-ignore(ruff/S105)
 
@@ -45,7 +45,7 @@ image.add_local_python_source(
     ],
 )
 app = modal.App(
-    name=DEVX_PIPELINE_NAME,
+    name=BUCKET_NAME.replace("-", "_"),
     image=image,
 )
 
@@ -81,12 +81,12 @@ def web(
     data: Iterator[DestinationFileData] = (
         get_destination_file_data_from_source_file_data(
             source_file_data=file_data,
-            bucket_url=DLT_DESTINATION_URL_GCP,
+            bucket_url=BUCKET_URL,
         )
     )
     return to_filesystem(
         destination_file_data=data,
-        bucket_url=DLT_DESTINATION_URL_GCP,
+        bucket_url=BUCKET_URL,
     )
 
 
@@ -99,12 +99,12 @@ def local(
     bucket_url: str
     match destination_type_enum:
         case DestinationType.LOCAL:
-            bucket_url = DestinationType.get_bucket_url_for_local(
-                pipeline_name=DEVX_PIPELINE_NAME,
+            bucket_url = DestinationType.get_bucket_url_from_bucket_name_for_local(
+                bucket_name=BUCKET_NAME,
             )
 
         case DestinationType.GCP:
-            bucket_url = DLT_DESTINATION_URL_GCP
+            bucket_url = BUCKET_URL
 
         case _:
             error_msg: str = f"Invalid destination type: {destination_type_enum}"
