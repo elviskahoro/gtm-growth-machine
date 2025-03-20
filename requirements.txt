@@ -1,9 +1,9 @@
 dlt
 dlt[gs]
 modal
-orjson
+orjson>=3.9.15
 polars
 python-dotenv
-pydantic
+pydantic>=2.4.0
 reflex
 s3fs
