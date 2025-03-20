@@ -32,7 +32,7 @@ def local(
 ) -> None:
     sub_paths: Iterator[Path] = get_paths(
         input_folder=input_folder,
-        extension=".csv",
+        extension=[".csv"],
     )
     df_list: Iterator[pl.DataFrame] = (pl.read_csv(path) for path in sub_paths)
     df_full: pl.DataFrame = pl.concat(

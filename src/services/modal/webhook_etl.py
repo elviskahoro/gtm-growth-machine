@@ -111,6 +111,7 @@ def local(
     file_data: Iterator[SourceFileData] = get_file_data_from_input_folder(
         input_folder=input_folder,
         base_model=WebhookModel,  # trunk-ignore(pyright/reportArgumentType)
+        extension=[".json", ".jsonl"],
     )
     data: Iterator[DestinationFileData] = get_json_data_from_file_data(
         file_data=file_data,

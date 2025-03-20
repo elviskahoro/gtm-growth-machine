@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING, NamedTuple
 from pydantic import BaseModel, ValidationError
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
 
 
 def get_paths(
     input_folder: str,
-    extension: str | None,
+    extension: Iterable[str] | None,
 ) -> Iterator[Path]:
     cwd: str = str(Path.cwd())
     input_folder_path: Path = Path(f"{cwd}/{input_folder}")
@@ -24,7 +24,7 @@ def get_paths(
     return (
         f
         for f in input_folder_path.iterdir()
-        if f.is_file() and (extension is None or f.suffix == extension)
+        if f.is_file() and (extension is None or f.suffix in extension)
     )
 
 
@@ -36,10 +36,11 @@ class SourceFileData(NamedTuple):
 def get_file_data_from_input_folder(
     input_folder: str,
     base_model: BaseModel,
+    extension: Iterable[str] | None,
 ) -> Iterator[SourceFileData]:
     paths: Iterator[Path] = get_paths(
         input_folder=input_folder,
-        extension=".json",
+        extension=extension,
     )
     current_path: Path | None = None
     try:

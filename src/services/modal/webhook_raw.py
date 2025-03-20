@@ -65,7 +65,7 @@ def _get_data_from_input_folder(
 ) -> Iterator[SourceFileRaw]:
     paths: Iterator[Path] = get_paths(
         input_folder=input_folder,
-        extension=".json",
+        extension=[".json"],
     )
     current_path: Path | None = None
     try:
