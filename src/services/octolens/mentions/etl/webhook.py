@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from pydantic import BaseModel
 
-if TYPE_CHECKING:
-    from src.services.octolens.mentions.mention import Mention
+from src.services.octolens.mentions.mention import Mention  # trunk-ignore(ruff/TC001)
 
 
 class Webhook(BaseModel):

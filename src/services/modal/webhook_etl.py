@@ -26,8 +26,11 @@ if TYPE_CHECKING:
 from src.services.octolens.mentions.etl.webhook import Webhook
 
 
-class WebhookModel(Webhook): ...
+class WebhookModel(Webhook):
+    pass
 
+
+WebhookModel.model_rebuild()
 
 BUCKET_NAME: str = "chalk-ai-devx-octolens-mentions-etl"
 BUCKET_URL: str = gcp_bucket_url_from_bucket_name(
@@ -59,9 +62,9 @@ app = modal.App(
             name=MODAL_SECRET_COLLECTION_NAME,
         ),
     ],
-    region="us-east4",  # This feature is available on the Team and Enterprise plans, read more at https://modal.com/docs/guide/region-selection
+    region="us-east4",
     allow_concurrent_inputs=1000,
-    enable_memory_snapshot=True,
+    enable_memory_snapshot=False,
 )
 @modal.web_endpoint(
     method="POST",
