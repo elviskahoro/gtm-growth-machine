@@ -51,13 +51,13 @@ def _get_env_vars() -> GCPCredentials:
 
 
 def to_filesystem(
-    data: Iterator[DestinationFileData],
+    destination_file_data: Iterator[DestinationFileData],
     bucket_url: str,
 ) -> str:
     match bucket_url:
         case str() as url if url.startswith("gs://"):
             to_filesystem_gcs(
-                data=data,
+                destination_file_data=destination_file_data,
             )
 
         case _:
@@ -68,14 +68,14 @@ def to_filesystem(
                 exist_ok=True,
             )
             to_filesystem_local(
-                data=data,
+                destination_file_data=destination_file_data,
             )
 
     return "Successfully uploaded"
 
 
 def to_filesystem_gcs(
-    data: Iterator[DestinationFileData],
+    destination_file_data: Iterator[DestinationFileData],
 ) -> None:
     credentials: GCPCredentials = _get_env_vars()
     if (
@@ -99,7 +99,7 @@ def to_filesystem_gcs(
             "token_uri": "https://oauth2.googleapis.com/token",
         },
     )
-    for json_data in data:
+    for json_data in destination_file_data:
         with fs.open(
             path=json_data.path,
             mode="w",
@@ -110,10 +110,10 @@ def to_filesystem_gcs(
 
 
 def to_filesystem_local(
-    data: Iterator[DestinationFileData],
+    destination_file_data: Iterator[DestinationFileData],
 ) -> None:
     # cwd = Path.cwd()
-    for json_data in data:
+    for json_data in destination_file_data:
         file_path: Path = Path(json_data.path)
         # relative_path: Path = file_path.relative_to(cwd)
         # print(relative_path)

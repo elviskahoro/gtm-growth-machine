@@ -83,7 +83,7 @@ def web(
         bucket_url=DLT_DESTINATION_URL_GCP,
     )
     return to_filesystem(
-        data=data,
+        destination_file_data=data,
         bucket_url=DLT_DESTINATION_URL_GCP,
     )
 
@@ -118,7 +118,7 @@ def local(
         bucket_url=bucket_url,
     )
     response: str = to_filesystem(
-        data=destination_file_data,
+        destination_file_data=destination_file_data,
         bucket_url=bucket_url,
     )
     print(response)
