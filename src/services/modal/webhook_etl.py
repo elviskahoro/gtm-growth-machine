@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import modal
@@ -10,8 +9,7 @@ from src.services.dlt.destination_type import (
 )
 from src.services.dlt.filesystem import (
     convert_bucket_url_to_pipeline_name,
-    to_filesystem_gcs,
-    to_filesystem_local,
+    to_filesystem,
 )
 from src.services.local.filesystem import (
     DestinationFileData,
@@ -52,30 +50,6 @@ app = modal.App(
 )
 
 
-def to_filesystem(
-    data: Iterator[DestinationFileData],
-    bucket_url: str = DLT_DESTINATION_URL_GCP,
-) -> str:
-    match bucket_url:
-        case str() as url if url.startswith("gs://"):
-            to_filesystem_gcs(
-                data=data,
-            )
-
-        case _:
-            bucket_url_path: Path = Path(bucket_url)
-            print(bucket_url_path)
-            bucket_url_path.mkdir(
-                parents=True,
-                exist_ok=True,
-            )
-            to_filesystem_local(
-                data=data,
-            )
-
-    return "Successfully uploaded"
-
-
 @app.function(
     secrets=[
         modal.Secret.from_name(
@@ -93,20 +67,19 @@ def to_filesystem(
 def web(
     webhook: WebhookModel,
 ) -> str:
-    def generate_destination_file_data(
-        webhook: WebhookModel,
-        bucket_url: str,
-    ) -> Iterator[DestinationFileData]:
-        yield DestinationFileData(
-            json=webhook.etl_get_json(),
-            path=f"{bucket_url}/{webhook.etl_get_file_name()}",
-        )
-
     if not webhook.etl_is_valid_webhook():
         return webhook.etl_get_invalid_webhook_error_msg()
 
-    data: Iterator[DestinationFileData] = generate_destination_file_data(
-        webhook=webhook,
+    file_data: Iterator[SourceFileData] = iter(
+        [
+            SourceFileData(
+                path=None,
+                base_model=webhook,
+            ),
+        ],
+    )
+    data: Iterator[DestinationFileData] = get_json_data_from_file_data(
+        file_data=file_data,
         bucket_url=DLT_DESTINATION_URL_GCP,
     )
     return to_filesystem(

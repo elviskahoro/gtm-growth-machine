@@ -50,6 +50,30 @@ def _get_env_vars() -> GCPCredentials:
     )
 
 
+def to_filesystem(
+    data: Iterator[DestinationFileData],
+    bucket_url: str,
+) -> str:
+    match bucket_url:
+        case str() as url if url.startswith("gs://"):
+            to_filesystem_gcs(
+                data=data,
+            )
+
+        case _:
+            bucket_url_path: Path = Path(bucket_url)
+            print(bucket_url_path)
+            bucket_url_path.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+            to_filesystem_local(
+                data=data,
+            )
+
+    return "Successfully uploaded"
+
+
 def to_filesystem_gcs(
     data: Iterator[DestinationFileData],
 ) -> None:

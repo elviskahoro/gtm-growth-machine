@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 import orjson
 from pydantic import ValidationError
@@ -14,13 +13,13 @@ from src.services.dlt.destination_type import (
 )
 from src.services.dlt.filesystem import (
     convert_bucket_url_to_pipeline_name,
-    to_filesystem_gcs,
-    to_filesystem_local,
+    to_filesystem,
 )
-from src.services.local.filesystem import get_paths
+from src.services.local.filesystem import DestinationFileData, get_paths
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from pathlib import Path
 
 DLT_DESTINATION_URL_GCP: str = "gs://chalk-ai-devx-octolens-mentions-raw"
 DEVX_PIPELINE_NAME: str = convert_bucket_url_to_pipeline_name(
@@ -56,23 +55,26 @@ def _stream_read_json_as_string(
         return "".join(line.strip() for line in f_in)
 
 
+class SourceFileRaw(NamedTuple):
+    file: Path
+    content: str
+
+
 def _get_data_from_input_folder(
     input_folder: str,
-) -> list[str]:
+) -> Iterator[SourceFileRaw]:
     paths: Iterator[Path] = get_paths(
         input_folder=input_folder,
         extension=".json",
     )
-    data: list[str] = []
     current_path: Path | None = None
     try:
         path: Path
         for path in paths:
             current_path = path
-            data.append(
-                _stream_read_json_as_string(
-                    path=path,
-                ),
+            yield SourceFileRaw(
+                file=path,
+                content=_stream_read_json_as_string(path),
             )
 
     except ValidationError as e:
@@ -80,33 +82,22 @@ def _get_data_from_input_folder(
         print(current_path)
         raise
 
-    return data
 
-
-def to_filesystem(
-    jsons: list[str],
-    bucket_url: str = DLT_DESTINATION_URL_GCP,
-) -> str:
-    output_paths: Iterator[str] = (
-        bucket_url + "/" + str(uuid7()) + ".jsonl" for _ in range(len(jsons))
-    )
-    match bucket_url:
-        case str() as url if url.startswith("gs://"):
-            to_filesystem_gcs(
-                data=zip(jsons, output_paths),
+def _get_json_data_from_file_data(
+    file_data: Iterator[SourceFileRaw],
+    bucket_url: str,
+) -> Iterator[DestinationFileData]:
+    for individual_file_data in file_data:
+        try:
+            yield DestinationFileData(
+                json=individual_file_data.content,
+                path=f"{bucket_url}/{uuid7()!s}.jsonl",
             )
 
-        case _:
-            bucket_url_path: Path = Path(bucket_url)
-            bucket_url_path.mkdir(
-                parents=True,
-                exist_ok=True,
-            )
-            to_filesystem_local(
-                data=zip(jsons, output_paths),
-            )
-
-    return "Successfully uploaded"
+        except (AttributeError, ValueError):
+            error_msg: str = f"Error processing file: {individual_file_data.path}"
+            print(error_msg)
+            raise
 
 
 @app.function(
@@ -126,12 +117,21 @@ def to_filesystem(
 def web(
     json_data: dict,
 ) -> str:
-    json: str = orjson.dumps(json_data).decode("utf-8")
-    response: str = to_filesystem(
-        jsons=[json],
+    json: str = orjson.dumps(json_data).decode(
+        encoding="utf-8",
+    )
+    data: Iterator[DestinationFileData] = iter(
+        [
+            DestinationFileData(
+                json=json,
+                path=f"{DLT_DESTINATION_URL_GCP}/{uuid7()!s}.jsonl",
+            ),
+        ],
+    )
+    return to_filesystem(
+        data=data,
         bucket_url=DLT_DESTINATION_URL_GCP,
     )
-    return response
 
 
 @app.local_entrypoint()
@@ -154,12 +154,15 @@ def local(
             error_msg: str = f"Invalid destination type: {destination_type_enum}"
             raise ValueError(error_msg)
 
-    jsons: list[str] = _get_data_from_input_folder(
+    file_data: Iterator[SourceFileRaw] = _get_data_from_input_folder(
         input_folder=input_folder,
     )
-    print(f"Exporting {len(jsons)} webhooks to {bucket_url}")
+    data: Iterator[DestinationFileData] = _get_json_data_from_file_data(
+        file_data=file_data,
+        bucket_url=bucket_url,
+    )
     response: str = to_filesystem(
-        jsons=jsons,
+        data=data,
         bucket_url=bucket_url,
     )
     print(response)

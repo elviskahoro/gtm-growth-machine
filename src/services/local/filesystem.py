@@ -29,7 +29,7 @@ def get_paths(
 
 
 class SourceFileData(NamedTuple):
-    path: Path
+    path: Path | None
     base_model: BaseModel
 
 
