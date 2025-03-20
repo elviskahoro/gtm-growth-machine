@@ -1,3 +1,4 @@
+# trunk-ignore-all(ruff/PGH003)
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -22,17 +23,19 @@ from src.services.local.filesystem import (
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+# trunk-ignore-begin(ruff/F401,pyright/reportUnusedImport)
+from src.services.fathom.transcript.etl.webhook import Webhook as FathomTranscriptWebhook # trunk-ignore(ruff/I001)
+from src.services.octolens.mention.etl.webhook import Webhook as OctolensMentionsWebhook
+# trunk-ignore-end(ruff/F401,pyright/reportUnusedImport)
 
-from src.services.octolens.mentions.etl.webhook import Webhook
 
-
-class WebhookModel(Webhook):
+class WebhookModel(Webhook): # type: ignore # trunk-ignore(ruff/F821)
     pass
 
 
 WebhookModel.model_rebuild()
 
-BUCKET_NAME: str = "chalk-ai-devx-octolens-mentions-etl"
+BUCKET_NAME: str = WebhookModel.etl_get_bucket_name()
 BUCKET_URL: str = gcp_bucket_url_from_bucket_name(
     bucket_name=BUCKET_NAME,
 )
@@ -118,7 +121,7 @@ def local(
 
     source_file_data: Iterator[SourceFileData] = get_source_file_data_from_input_folder(
         input_folder=input_folder,
-        base_model=WebhookModel,  # trunk-ignore(pyright/reportArgumentType)
+        base_model=WebhookModel,
         extension=[
             ".json",
             ".jsonl",

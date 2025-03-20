@@ -178,6 +178,10 @@ class Webhook(BaseModel):
     fathom_user: FathomUser
     transcript: Transcript
 
+    @staticmethod
+    def etl_get_bucket_name() -> str:
+        return "chalk-ai-devx-fathom-transcripts-etl"
+
     def etl_is_valid_webhook(
         self: Webhook,
     ) -> bool:

@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from src.services.octolens.mentions.mention import Mention  # trunk-ignore(ruff/TC001)
+from src.services.octolens.mention.mention import Mention  # trunk-ignore(ruff/TC001)
 
 
 class Webhook(BaseModel):
     action: str = "mention_created"
     data: Mention
+
+    @staticmethod
+    def etl_get_bucket_name() -> str:
+        return "chalk-ai-devx-octolens-mentions-etl"
 
     def etl_get_file_name(
         self,
