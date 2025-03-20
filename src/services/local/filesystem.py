@@ -33,7 +33,7 @@ class SourceFileData(NamedTuple):
     base_model: BaseModel
 
 
-def get_file_data_from_input_folder(
+def get_source_file_data_from_input_folder(
     input_folder: str,
     base_model: BaseModel,
     extension: Iterable[str] | None,

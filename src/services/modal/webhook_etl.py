@@ -14,7 +14,7 @@ from src.services.dlt.filesystem import (
 from src.services.local.filesystem import (
     DestinationFileData,
     SourceFileData,
-    get_file_data_from_input_folder,
+    get_source_file_data_from_input_folder,
     get_json_data_from_file_data,
 )
 
@@ -108,7 +108,7 @@ def local(
             error_msg: str = f"Invalid destination type: {destination_type_enum}"
             raise ValueError(error_msg)
 
-    source_file_data: Iterator[SourceFileData] = get_file_data_from_input_folder(
+    source_file_data: Iterator[SourceFileData] = get_source_file_data_from_input_folder(
         input_folder=input_folder,
         base_model=WebhookModel,  # trunk-ignore(pyright/reportArgumentType)
         extension=[
