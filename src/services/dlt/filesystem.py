@@ -60,7 +60,7 @@ def to_filesystem(
                 destination_file_data=destination_file_data,
             )
 
-        case _:
+        case str():
             bucket_url_path: Path = Path(bucket_url)
             print(bucket_url_path)
             bucket_url_path.mkdir(
@@ -70,6 +70,10 @@ def to_filesystem(
             to_filesystem_local(
                 destination_file_data=destination_file_data,
             )
+
+        case _:
+            error_msg: str = f"Invalid bucket url: {bucket_url}"
+            raise ValueError(error_msg)
 
     return "Successfully uploaded"
 
