@@ -66,10 +66,10 @@ class DestinationFileData(NamedTuple):
 
 
 def get_json_data_from_file_data(
-    file_data: Iterator[SourceFileData],
+    source_file_data: Iterator[SourceFileData],
     bucket_url: str,
 ) -> Iterator[DestinationFileData]:
-    for individual_file_data in file_data:
+    for individual_file_data in source_file_data:
         try:
             yield DestinationFileData(
                 json=individual_file_data.base_model.etl_get_json(),

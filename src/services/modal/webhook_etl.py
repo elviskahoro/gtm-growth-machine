@@ -79,7 +79,7 @@ def web(
         ],
     )
     data: Iterator[DestinationFileData] = get_json_data_from_file_data(
-        file_data=file_data,
+        source_file_data=file_data,
         bucket_url=DLT_DESTINATION_URL_GCP,
     )
     return to_filesystem(
@@ -117,7 +117,7 @@ def local(
         ],
     )
     destination_file_data: Iterator[DestinationFileData] = get_json_data_from_file_data(
-        file_data=source_file_data,
+        source_file_data=source_file_data,
         bucket_url=bucket_url,
     )
     response: str = to_filesystem(
