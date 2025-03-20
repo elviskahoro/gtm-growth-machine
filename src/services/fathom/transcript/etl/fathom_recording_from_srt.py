@@ -13,7 +13,8 @@ from src.services.dlt.destination_type import (
     DestinationType,
 )
 from src.services.dlt.filesystem_gcp import (
-    gcp_clean_bucket_url,
+    gcp_bucket_url_from_bucket_name,
+    gcp_clean_bucket_name,
     to_filesystem_gcs,
     to_filesystem_local,
 )
@@ -30,12 +31,10 @@ from src.services.local.filesystem import DestinationFileData, get_paths
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-DLT_DESTINATION_URL_GCP: str = "gs://chalk-ai-devx-fathom-transcripts-from_srt"
-DEVX_PIPELINE_NAME: str = gcp_clean_bucket_url(
-    DLT_DESTINATION_URL_GCP,
+BUCKET_NAME: str = "chalk-ai-devx-fathom-transcripts-from_srt"
+BUCKET_URL: str = gcp_bucket_url_from_bucket_name(
+    bucket_name=BUCKET_NAME,
 )
-MODAL_SECRET_COLLECTION_NAME: str = "devx-growth-gcp"  # trunk-ignore(ruff/S105)
-
 
 image: Image = modal.Image.debian_slim().pip_install(
     "fastapi[standard]",
@@ -48,7 +47,9 @@ image.add_local_python_source(
     ],
 )
 app = modal.App(
-    name=DEVX_PIPELINE_NAME,
+    name=gcp_clean_bucket_name(
+        bucket_name=BUCKET_NAME,
+    ),
     image=image,
 )
 
@@ -118,7 +119,7 @@ def _get_data_from_input_folder(
 
 def _to_filesystem(
     jsons: Iterator[str],
-    bucket_url: str = DLT_DESTINATION_URL_GCP,
+    bucket_url: str = BUCKET_URL,
 ) -> str:
     destination_file_data: Iterator[DestinationFileData] = (
         DestinationFileData(
@@ -196,12 +197,12 @@ def local(
     destination_type_enum: DestinationType = DestinationType(destination_type)
     match destination_type_enum:
         case DestinationType.LOCAL:
-            bucket_url = DestinationType.get_bucket_url_for_local(
-                pipeline_name=DEVX_PIPELINE_NAME,
+            bucket_url = DestinationType.get_bucket_url_from_bucket_name_for_local(
+                bucket_name=BUCKET_NAME,
             )
 
         case DestinationType.GCP:
-            bucket_url = DLT_DESTINATION_URL_GCP
+            bucket_url = BUCKET_URL
 
         case _:
             error_msg: str = f"Invalid destination type: {destination_type_enum}"

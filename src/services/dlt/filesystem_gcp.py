@@ -17,10 +17,25 @@ class GCPCredentials(NamedTuple):
     client_email: str | None
 
 
-def gcp_clean_bucket_url(
-    x: str,
+def gcp_clean_bucket_name(
+    bucket_name: str,
 ) -> str:
-    return x.replace(
+    return bucket_name.replace(
+        "-",
+        "_",
+    )
+
+
+def gcp_bucket_url_from_bucket_name(
+    bucket_name: str,
+) -> str:
+    return f"gs://{bucket_name}"
+
+
+def gcp_strip_bucket_url(
+    bucket_url: str,
+) -> str:
+    return bucket_url.replace(
         "gs://",
         "",
     ).replace(

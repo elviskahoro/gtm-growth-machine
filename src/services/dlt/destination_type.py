@@ -9,8 +9,8 @@ class DestinationType(str, Enum):
     GCP = "gcp"
 
     @staticmethod
-    def get_bucket_url_for_local(
-        pipeline_name: str,
+    def get_bucket_url_from_bucket_name_for_local(
+        bucket_name: str,
     ) -> str:
         cwd: str = str(Path.cwd())
-        return f"{cwd}/out/{pipeline_name}"
+        return f"{cwd}/out/{bucket_name}"
