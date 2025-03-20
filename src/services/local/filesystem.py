@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, ValidationError
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
+
+from pydantic import BaseModel, ValidationError
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
 
 
 def get_paths(
     input_folder: str,
-    extension: str | None,
+    extension: Iterable[str] | None,
 ) -> Iterator[Path]:
     cwd: str = str(Path.cwd())
     input_folder_path: Path = Path(f"{cwd}/{input_folder}")
@@ -23,26 +24,32 @@ def get_paths(
     return (
         f
         for f in input_folder_path.iterdir()
-        if f.is_file() and (extension is None or f.suffix == extension)
+        if f.is_file() and (extension is None or f.suffix in extension)
     )
 
 
-def get_data_from_input_folder(
+class SourceFileData(NamedTuple):
+    path: Path | None
+    base_model: BaseModel
+
+
+def get_source_file_data_from_input_folder(
     input_folder: str,
     base_model: BaseModel,
-) -> list[BaseModel]:
+    extension: Iterable[str] | None,
+) -> Iterator[SourceFileData]:
     paths: Iterator[Path] = get_paths(
         input_folder=input_folder,
-        extension=".json",
+        extension=extension,
     )
-    data: list[BaseModel] = []
     current_path: Path | None = None
     try:
         path: Path
         for path in paths:
             current_path = path
-            data.append(
-                base_model.model_validate_json(
+            yield SourceFileData(
+                path=path,
+                base_model=base_model.model_validate_json(
                     json_data=path.read_text(),
                 ),
             )
@@ -52,4 +59,24 @@ def get_data_from_input_folder(
         print(current_path)
         raise
 
-    return data
+
+class DestinationFileData(NamedTuple):
+    json: str
+    path: str
+
+
+def get_destination_file_data_from_source_file_data(
+    source_file_data: Iterator[SourceFileData],
+    bucket_url: str,
+) -> Iterator[DestinationFileData]:
+    for individual_file_data in source_file_data:
+        try:
+            yield DestinationFileData(
+                json=individual_file_data.base_model.etl_get_json(),
+                path=f"{bucket_url}/{individual_file_data.base_model.etl_get_file_name()}",
+            )
+
+        except (AttributeError, ValueError):
+            error_msg: str = f"Error processing file: {individual_file_data.path}"
+            print(error_msg)
+            raise

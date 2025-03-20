@@ -1,6 +1,5 @@
-from .mention import Mention, MentionData
+from .mention import Mention
 
 __all__ = [
     "Mention",
-    "MentionData",
 ]

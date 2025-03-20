@@ -1,33 +1,35 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import modal
 from modal import Image
-from src.services.local.filesystem import get_data_from_input_folder
-from src.services.modal.filesystem import (
-    convert_bucket_url_to_pipeline_name,
-    to_filesystem_gcs,
-    to_filesystem_local,
-)
-from src.services.modal.local_entrypoint import (
+from src.services.dlt.destination_type import (
     DestinationType,
+)
+from src.services.dlt.filesystem_gcp import (
+    gcp_clean_bucket_url,
+    to_filesystem,
+)
+from src.services.local.filesystem import (
+    DestinationFileData,
+    SourceFileData,
+    get_destination_file_data_from_source_file_data,
+    get_source_file_data_from_input_folder,
 )
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from pydantic import BaseModel
 
-from src.services.octolens import Mention
+from src.services.octolens.mentions.etl.webhook import Webhook
 
 
-class WebhookModel(Mention): ...
+class WebhookModel(Webhook): ...
 
 
 DLT_DESTINATION_URL_GCP: str = "gs://chalk-ai-devx-octolens-mentions-etl"
-DEVX_PIPELINE_NAME: str = convert_bucket_url_to_pipeline_name(
+DEVX_PIPELINE_NAME: str = gcp_clean_bucket_url(
     DLT_DESTINATION_URL_GCP,
 )
 MODAL_SECRET_COLLECTION_NAME: str = "devx-growth-gcp"  # trunk-ignore(ruff/S105)
@@ -46,40 +48,6 @@ app = modal.App(
     name=DEVX_PIPELINE_NAME,
     image=image,
 )
-
-
-def to_filesystem(
-    etl_data: Iterator[BaseModel],
-    bucket_url: str = DLT_DESTINATION_URL_GCP,
-) -> str:
-    data: zip[tuple[str, str]] = zip(
-        *(
-            (
-                etl_data.model_dump_json(
-                    indent=None,
-                ),
-                f"{bucket_url}/{etl_data.get_file_name()}",
-            )
-            for etl_data in etl_data
-        ),
-    )
-    match bucket_url:
-        case str() as url if url.startswith("gs://"):
-            to_filesystem_gcs(
-                data=data,
-            )
-
-        case _:
-            bucket_url_path: Path = Path(bucket_url)
-            bucket_url_path.mkdir(
-                parents=True,
-                exist_ok=True,
-            )
-            to_filesystem_local(
-                data=data,
-            )
-
-    return "Successfully uploaded"
 
 
 @app.function(
@@ -102,9 +70,22 @@ def web(
     if not webhook.etl_is_valid_webhook():
         return webhook.etl_get_invalid_webhook_error_msg()
 
-    etl_data: BaseModel = webhook.etl_get_data()
+    file_data: Iterator[SourceFileData] = iter(
+        [
+            SourceFileData(
+                path=None,
+                base_model=webhook,
+            ),
+        ],
+    )
+    data: Iterator[DestinationFileData] = (
+        get_destination_file_data_from_source_file_data(
+            source_file_data=file_data,
+            bucket_url=DLT_DESTINATION_URL_GCP,
+        )
+    )
     return to_filesystem(
-        etl_data=[etl_data],  # trunk-ignore(pyright/reportArgumentType)
+        destination_file_data=data,
         bucket_url=DLT_DESTINATION_URL_GCP,
     )
 
@@ -129,15 +110,22 @@ def local(
             error_msg: str = f"Invalid destination type: {destination_type_enum}"
             raise ValueError(error_msg)
 
-    webhook_data: list[WebhookModel] = (  # trunk-ignore(pyright/reportAssignmentType)
-        get_data_from_input_folder(
-            input_folder=input_folder,
-            base_model=WebhookModel,  # trunk-ignore(pyright/reportArgumentType)
+    source_file_data: Iterator[SourceFileData] = get_source_file_data_from_input_folder(
+        input_folder=input_folder,
+        base_model=WebhookModel,  # trunk-ignore(pyright/reportArgumentType)
+        extension=[
+            ".json",
+            ".jsonl",
+        ],
+    )
+    destination_file_data: Iterator[DestinationFileData] = (
+        get_destination_file_data_from_source_file_data(
+            source_file_data=source_file_data,
+            bucket_url=bucket_url,
         )
     )
-    print(f"Exporting {len(webhook_data)} webhooks to {bucket_url}")
     response: str = to_filesystem(
-        etl_data=(webhook.etl_get_data() for webhook in webhook_data),
+        destination_file_data=destination_file_data,
         bucket_url=bucket_url,
     )
     print(response)
