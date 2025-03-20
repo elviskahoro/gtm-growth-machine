@@ -5,7 +5,7 @@ from typing import NamedTuple
 
 import gcsfs
 
-from src.services.local.filesystem import DestinationFileData
+from src.services.local.filesystem import DestinationFileData, to_filesystem_local
 
 
 class GCPCredentials(NamedTuple):
@@ -14,7 +14,9 @@ class GCPCredentials(NamedTuple):
     client_email: str | None
 
 
-def convert_bucket_url_to_pipeline_name(x: str) -> str:
+def convert_bucket_url_to_pipeline_name(
+    x: str,
+) -> str:
     return x.replace(
         "gs://",
         "",
@@ -107,22 +109,6 @@ def to_filesystem_gcs(
         with fs.open(
             path=json_data.path,
             mode="w",
-        ) as f:
-            f.write(
-                json_data.json,
-            )
-
-
-def to_filesystem_local(
-    destination_file_data: Iterator[DestinationFileData],
-) -> None:
-    # cwd = Path.cwd()
-    for json_data in destination_file_data:
-        file_path: Path = Path(json_data.path)
-        # relative_path: Path = file_path.relative_to(cwd)
-        # print(relative_path)
-        with file_path.open(
-            mode="w+",
         ) as f:
             f.write(
                 json_data.json,

@@ -11,7 +11,7 @@ from modal import Image
 from src.services.dlt.destination_type import (
     DestinationType,
 )
-from src.services.dlt.filesystem import (
+from src.services.dlt.filesystem_gcp import (
     convert_bucket_url_to_pipeline_name,
     to_filesystem,
 )
