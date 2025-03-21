@@ -51,7 +51,7 @@ def get_source_file_data_from_input_folder(
                 path=path,
                 base_model=base_model.model_validate_json(
                     json_data=path.read_text(),
-                )
+                ),
             )
 
     except ValidationError as e:
