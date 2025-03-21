@@ -50,7 +50,8 @@ def local(
         )
     )
     cwd: str = str(Path.cwd())
-    output_dir: Path = Path(f"{cwd}/out/from_csv")
+
+    output_dir: Path = Path(f"{cwd}/out/{Webhook.etl_get_bucket_name()}")
     output_dir.mkdir(
         parents=True,
         exist_ok=True,
@@ -66,7 +67,7 @@ def local(
             action="mention_created",
             data=mention_data,
         )
-        output_file_path: Path = output_dir / mention.get_file_name(
+        output_file_path: Path = output_dir / mention.etl_get_file_name(
             extension=".json",
         )
         print(f"{count:06d}: {output_file_path}")
