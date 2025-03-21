@@ -59,12 +59,10 @@ def local(
         exist_ok=True,
     )
 
-    count: int
+    count: int = 0
     mention: Mention
-    for count, mention in enumerate(
-        mentions,
-        start=1,
-    ):
+    for mention in mentions:
+        count += 1
         webhook: Webhook = Webhook(
             action="mention_created",
             data=mention,
@@ -72,7 +70,7 @@ def local(
         output_file_path: Path = output_dir / webhook.etl_get_file_name(
             extension=".jsonl",
         )
-        print(f"{count:06d}: {output_file_path}")
+
         with output_file_path.open(
             mode="w",
         ) as f:
@@ -81,3 +79,5 @@ def local(
                     indent=None,
                 ),
             )
+
+    print(f"{count:06d}: {output_dir}")
