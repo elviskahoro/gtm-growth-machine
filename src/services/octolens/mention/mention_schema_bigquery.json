@@ -1,0 +1,77 @@
+[
+  {
+    "name": "url",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "title",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "body",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "timestamp",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "image_url",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "source",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "source_id",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "author",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "author_avatar_url",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "author_profile_link",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "relevance_score",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "relevance_comment",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "language",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "keyword",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "bookmarked",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  }
+]

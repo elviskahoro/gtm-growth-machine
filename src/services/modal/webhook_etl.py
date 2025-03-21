@@ -25,14 +25,16 @@ if TYPE_CHECKING:
 
 # trunk-ignore-begin(ruff/F401,pyright/reportUnusedImport)
 from src.services.fathom.transcript.etl.webhook import (
-    Webhook as FathomTranscriptWebhook,
+    Webhook as FathomTranscriptWebhookModel,
 )
-from src.services.octolens.mention.etl.webhook import Webhook as OctolensMentionsWebhook
+from src.services.octolens.mention.etl.webhook import (
+    Webhook as OctolensMentionsWebhookModel,
+)
 
 # trunk-ignore-end(ruff/F401,pyright/reportUnusedImport)
 
 
-class WebhookModel(Webhook):  # type: ignore # trunk-ignore(ruff/F821)
+class WebhookModel(RepalceWithWebhookModel):  # type: ignore # trunk-ignore(ruff/F821)
     pass
 
 

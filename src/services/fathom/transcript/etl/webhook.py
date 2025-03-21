@@ -10,14 +10,14 @@ from pydantic import BaseModel
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-from src.services.dlt.filesystem_gcp import (
-    gcp_clean_string,
-    gcp_clean_timestamp_from_datetime,
-)
 from src.services.fathom.meeting.meeting import Meeting
 from src.services.fathom.recording.recording import Recording
 from src.services.fathom.transcript.transcript import Transcript
 from src.services.fathom.user.user import FathomUser
+from src.services.local.filesystem import (
+    file_clean_string,
+    file_clean_timestamp_from_datetime,
+)
 
 IS_INTERNAL_ORGANIZATION: list[str] = [
     "SF, 2",
@@ -195,7 +195,7 @@ class Webhook(BaseModel):
     def etl_get_file_name(
         self: Webhook,
     ) -> str:
-        timestamp: str = gcp_clean_timestamp_from_datetime(
+        timestamp: str = file_clean_timestamp_from_datetime(
             dt=self.meeting.scheduled_start_time,
         )
         recording_id: str
@@ -204,7 +204,9 @@ class Webhook(BaseModel):
         else:
             recording_id = f"{0:08d}"
 
-        title: str = gcp_clean_string(self.meeting.title)
+        title: str = file_clean_string(
+            string=self.meeting.title,
+        )
         return f"{timestamp}-{recording_id}-{title}.jsonl"
 
     def etl_get_json(

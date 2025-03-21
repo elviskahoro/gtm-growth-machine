@@ -19,7 +19,7 @@ from src.services.dlt.filesystem_gcp import (
 from src.services.local.filesystem import DestinationFileData, get_paths
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
     from pathlib import Path
 
 BUCKET_NAME: str = "chalk-ai-devx-octolens-mentions-raw"
@@ -65,10 +65,11 @@ class SourceFileRaw(NamedTuple):
 
 def _get_data_from_input_folder(
     input_folder: str,
+    extension: Iterable[str],
 ) -> Iterator[SourceFileRaw]:
     paths: Iterator[Path] = get_paths(
         input_folder=input_folder,
-        extension=[".json"],
+        extension=extension,
     )
     current_path: Path | None = None
     try:
@@ -159,6 +160,10 @@ def local(
 
     file_data: Iterator[SourceFileRaw] = _get_data_from_input_folder(
         input_folder=input_folder,
+        extension=[
+            ".json",
+            ".jsonl",
+        ],
     )
     data: Iterator[DestinationFileData] = _get_json_data_from_file_data(
         file_data=file_data,

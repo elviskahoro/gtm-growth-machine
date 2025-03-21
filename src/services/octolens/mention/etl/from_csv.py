@@ -10,7 +10,7 @@ from modal import Image
 from src.services.local.filesystem import get_paths
 from src.services.octolens import Mention, Webhook
 
-BUCKET_NAME: str = "chalk-ai-devx-octolens-mentions-raw"
+BUCKET_NAME: str = "chalk-ai-devx-octolens-mentions-from_csv"
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
