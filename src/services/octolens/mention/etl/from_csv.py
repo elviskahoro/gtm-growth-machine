@@ -10,6 +10,8 @@ from modal import Image
 from src.services.local.filesystem import get_paths
 from src.services.octolens import Mention, Webhook
 
+BUCKET_NAME: str = "chalk-ai-devx-octolens-mentions-raw"
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
@@ -43,7 +45,7 @@ def local(
     df: pl.DataFrame = df_full.unique(
         subset=["URL"],
     )
-    mention_data_list: Iterator[Mention] = (
+    mentions: Iterator[Mention] = (
         Mention.model_validate(row)
         for row in df.iter_rows(
             named=True,
@@ -51,29 +53,31 @@ def local(
     )
     cwd: str = str(Path.cwd())
 
-    output_dir: Path = Path(f"{cwd}/out/{Webhook.etl_get_bucket_name()}")
+    output_dir: Path = Path(f"{cwd}/out/{BUCKET_NAME}")
     output_dir.mkdir(
         parents=True,
         exist_ok=True,
     )
 
     count: int
-    mention_data: Mention
-    for count, mention_data in enumerate(
-        mention_data_list,
+    mention: Mention
+    for count, mention in enumerate(
+        mentions,
         start=1,
     ):
-        mention: Webhook = Webhook(
+        webhook: Webhook = Webhook(
             action="mention_created",
-            data=mention_data,
+            data=mention,
         )
-        output_file_path: Path = output_dir / mention.etl_get_file_name(
-            extension=".json",
+        output_file_path: Path = output_dir / webhook.etl_get_file_name(
+            extension=".jsonl",
         )
         print(f"{count:06d}: {output_file_path}")
         with output_file_path.open(
             mode="w",
         ) as f:
             f.write(
-                mention.model_dump_json(),
+                webhook.model_dump_json(
+                    indent=None,
+                ),
             )
