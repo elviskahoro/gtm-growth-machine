@@ -109,9 +109,9 @@ def _get_json_data_from_file_data(
             name=MODAL_SECRET_COLLECTION_NAME,
         ),
     ],
-    region="us-east4",  # This feature is available on the Team and Enterprise plans, read more at https://modal.com/docs/guide/region-selection
+    region="us-east4",
     allow_concurrent_inputs=1000,
-    enable_memory_snapshot=True,
+    enable_memory_snapshot=False,
 )
 @modal.web_endpoint(
     method="POST",

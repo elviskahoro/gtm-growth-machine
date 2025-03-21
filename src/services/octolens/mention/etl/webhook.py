@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from pydantic import BaseModel
 
-if TYPE_CHECKING:
-    from src.services.octolens.mentions.mention import Mention
+from src.services.octolens.mention.mention import Mention  # trunk-ignore(ruff/TC001)
 
 
 class Webhook(BaseModel):
     action: str = "mention_created"
     data: Mention
+
+    @staticmethod
+    def etl_get_bucket_name() -> str:
+        return "chalk-ai-devx-octolens-mentions-etl"
 
     def etl_get_file_name(
         self,

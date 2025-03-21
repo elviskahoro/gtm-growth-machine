@@ -1,3 +1,4 @@
+# trunk-ignore-all(ruff/PGH003)
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -9,6 +10,7 @@ from src.services.dlt.destination_type import (
 )
 from src.services.dlt.filesystem_gcp import (
     gcp_bucket_url_from_bucket_name,
+    gcp_clean_bucket_name,
     to_filesystem,
 )
 from src.services.local.filesystem import (
@@ -21,14 +23,19 @@ from src.services.local.filesystem import (
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+# trunk-ignore-begin(ruff/F401,pyright/reportUnusedImport)
+from src.services.fathom.transcript.etl.webhook import Webhook as FathomTranscriptWebhook # trunk-ignore(ruff/I001)
+from src.services.octolens.mention.etl.webhook import Webhook as OctolensMentionsWebhook
+# trunk-ignore-end(ruff/F401,pyright/reportUnusedImport)
 
-from src.services.octolens.mentions.etl.webhook import Webhook
+
+class WebhookModel(Webhook): # type: ignore # trunk-ignore(ruff/F821)
+    pass
 
 
-class WebhookModel(Webhook): ...
+WebhookModel.model_rebuild()
 
-
-BUCKET_NAME: str = "chalk-ai-devx-octolens-mentions-etl"
+BUCKET_NAME: str = WebhookModel.etl_get_bucket_name()
 BUCKET_URL: str = gcp_bucket_url_from_bucket_name(
     bucket_name=BUCKET_NAME,
 )
@@ -45,7 +52,9 @@ image.add_local_python_source(
     ],
 )
 app = modal.App(
-    name=BUCKET_NAME.replace("-", "_"),
+    name=gcp_clean_bucket_name(
+        bucket_name=BUCKET_NAME,
+    ),
     image=image,
 )
 
@@ -56,9 +65,9 @@ app = modal.App(
             name=MODAL_SECRET_COLLECTION_NAME,
         ),
     ],
-    region="us-east4",  # This feature is available on the Team and Enterprise plans, read more at https://modal.com/docs/guide/region-selection
+    region="us-east4",
     allow_concurrent_inputs=1000,
-    enable_memory_snapshot=True,
+    enable_memory_snapshot=False,
 )
 @modal.web_endpoint(
     method="POST",
@@ -112,7 +121,7 @@ def local(
 
     source_file_data: Iterator[SourceFileData] = get_source_file_data_from_input_folder(
         input_folder=input_folder,
-        base_model=WebhookModel,  # trunk-ignore(pyright/reportArgumentType)
+        base_model=WebhookModel,
         extension=[
             ".json",
             ".jsonl",

@@ -11,8 +11,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 from src.services.dlt.filesystem_gcp import (
-    gcp_clean_timestamp_from_datetime,
     gcp_clean_string,
+    gcp_clean_timestamp_from_datetime,
 )
 from src.services.fathom.meeting.meeting import Meeting
 from src.services.fathom.recording.recording import Recording
@@ -177,6 +177,10 @@ class Webhook(BaseModel):
     meeting: Meeting
     fathom_user: FathomUser
     transcript: Transcript
+
+    @staticmethod
+    def etl_get_bucket_name() -> str:
+        return "chalk-ai-devx-fathom-transcripts-etl"
 
     def etl_is_valid_webhook(
         self: Webhook,

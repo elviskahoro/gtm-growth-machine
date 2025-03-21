@@ -1,4 +1,4 @@
-from .mentions import Mention
+from .mention import Mention
 
 __all__ = [
     "Mention",
