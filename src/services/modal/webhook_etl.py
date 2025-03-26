@@ -1,4 +1,4 @@
-# trunk-ignore-all(ruff/PGH003)
+# trunk-ignore-all(ruff/PGH003,trunk/ignore-does-nothing)
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -126,7 +126,7 @@ def local(
 
     source_file_data: Iterator[SourceFileData] = get_source_file_data_from_input_folder(
         input_folder=input_folder,
-        base_model=WebhookModel,
+        base_model=WebhookModel, # trunk-ignore(pyright/reportArgumentType)
         extension=[
             ".json",
             ".jsonl",
