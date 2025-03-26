@@ -96,7 +96,7 @@ def get_destination_file_data_from_source_file_data(
                 path=f"{bucket_url}/{individual_file_data.base_model.etl_get_file_name()}",
             )
 
-        except (AttributeError, ValueError):
+        except (AttributeError, ValueError, AssertionError):
             error_msg: str = f"Error processing file: {individual_file_data.path}"
             print(error_msg)
             raise
