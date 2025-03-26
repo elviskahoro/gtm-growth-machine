@@ -16,7 +16,7 @@
   },
   {
     "name": "timestamp",
-    "type": "TIMESTAMP",
+    "type": "INTEGER",
     "mode": "REQUIRED"
   },
   {

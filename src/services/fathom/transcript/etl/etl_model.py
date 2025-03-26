@@ -45,12 +45,76 @@ class EtlTranscriptMessage(BaseModel):
     title: str
     date: datetime
 
-    timestamp: str
+    timestamp: int
     speaker: str
     organization: str | None
     message: str
     action_item: str | None
     watch_link: str | None
+
+    @staticmethod
+    def parse_transcript_lines(
+        lines: list[str],
+        recording_id: str,
+        url: str,
+        title: str,
+        date: datetime,
+    ) -> Iterator[EtlTranscriptMessage]:
+        line_index: int = 0
+        message_index: int = 1
+        current_transcript_message: EtlTranscriptMessage | None = None
+        while line_index < len(lines):
+            line: str = lines[line_index].strip()
+            if not line:
+                line_index += 1
+                continue
+
+            new_transcript_message: EtlTranscriptMessage | None = (
+                EtlTranscriptMessage.parse_timestamp_line(
+                    line=line,
+                    recording_id=recording_id,
+                    message_id=message_index,
+                    url=url,
+                    title=title,
+                    date=date,
+                )
+            )
+            if new_transcript_message is not None:
+                message_index += 1
+                if current_transcript_message:
+                    yield current_transcript_message
+
+                current_transcript_message = new_transcript_message
+                line_index += 1
+                continue
+
+            if current_transcript_message is None:
+                error_msg: str = f"No transcript message found for line: {line}"
+                raise ValueError(error_msg)
+
+            current_transcript_message.process_content_line(
+                line=line,
+            )
+            line_index += 1
+
+        if current_transcript_message:
+            yield current_transcript_message
+
+    @staticmethod
+    def convert_timestamp_to_seconds(
+        timestamp: str,
+    ) -> int:
+        time_parts: list[str] = timestamp.split(":")
+        match len(time_parts):
+            case 2:
+                hours, minutes, seconds = "0", *time_parts
+            case 3:
+                hours, minutes, seconds = time_parts
+            case _:
+                error_msg: str = f"Invalid timestamp format: {timestamp}"
+                raise ValueError(error_msg)
+
+        return int(hours) * 3600 + int(minutes) * 60 + int(float(seconds))
 
     @classmethod
     def parse_timestamp_line(
@@ -76,7 +140,9 @@ class EtlTranscriptMessage(BaseModel):
             organization_raw.strip() if organization_raw else None
         )
         return cls(
-            timestamp=timestamp,
+            timestamp=EtlTranscriptMessage.convert_timestamp_to_seconds(
+                timestamp=timestamp,
+            ),
             speaker=speaker,
             organization=organization,
             message="",
@@ -122,50 +188,3 @@ class EtlTranscriptMessage(BaseModel):
             case _:
                 error_msg: str = f"Invalid line: {line}"
                 raise ValueError(error_msg)
-
-    @staticmethod
-    def parse_transcript_lines(
-        lines: list[str],
-        recording_id: str,
-        url: str,
-        title: str,
-        date: datetime,
-    ) -> Iterator[EtlTranscriptMessage]:
-        line_index: int = 0
-        message_index: int = 1
-        current_transcript_message: EtlTranscriptMessage | None = None
-        while line_index < len(lines):
-            line: str = lines[line_index].strip()
-            if not line:
-                line_index += 1
-                continue
-
-            new_transcript_message: EtlTranscriptMessage | None = (
-                EtlTranscriptMessage.parse_timestamp_line(
-                    line=line,
-                    recording_id=recording_id,
-                    message_id=message_index,
-                    url=url,
-                    title=title,
-                    date=date,
-                )
-            )
-            if new_transcript_message is not None:
-                if current_transcript_message:
-                    yield current_transcript_message
-
-                current_transcript_message = new_transcript_message
-                line_index += 1
-                continue
-
-            if current_transcript_message is None:
-                error_msg: str = f"No transcript message found for line: {line}"
-                raise ValueError(error_msg)
-
-            current_transcript_message.process_content_line(
-                line=line,
-            )
-            line_index += 1
-
-        if current_transcript_message:
-            yield current_transcript_message
