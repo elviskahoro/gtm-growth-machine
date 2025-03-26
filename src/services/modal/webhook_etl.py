@@ -34,7 +34,7 @@ from src.services.octolens.mention.etl.webhook import (
 # trunk-ignore-end(ruff/F401,pyright/reportUnusedImport)
 
 
-class WebhookModel(RepalceWithWebhookModel):  # type: ignore # trunk-ignore(ruff/F821)
+class WebhookModel(ReplaceWithWebhookModel):  # type: ignore # trunk-ignore(ruff/F821)
     pass
 
 
