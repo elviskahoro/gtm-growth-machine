@@ -1,4 +1,4 @@
-# trunk-ignore-all(ruff/TC001,ruff/TC003,ruff/A002)
+# trunk-ignore-all(ruff/TC001,ruff/TC003)
 from __future__ import annotations
 
 import re
@@ -48,7 +48,8 @@ class EtlTranscriptMessageWatchLinkData(NamedTuple):
 
 
 class EtlTranscriptMessage(BaseModel):
-    id: int
+    recording_id: str
+    message_id: int
     url: str
     title: str
     date: datetime
@@ -64,7 +65,8 @@ class EtlTranscriptMessage(BaseModel):
     def parse_timestamp_line(
         cls: type[EtlTranscriptMessage],
         line: str,
-        id: int,
+        recording_id: str,
+        message_id: int,
         url: str,
         title: str,
         date: datetime,
@@ -85,7 +87,8 @@ class EtlTranscriptMessage(BaseModel):
             message="",
             action_item=None,
             watch_link=None,
-            id=id,
+            recording_id=recording_id,
+            message_id=message_id,
             url=url,
             title=title,
             date=date,
@@ -128,12 +131,13 @@ class EtlTranscriptMessage(BaseModel):
     @staticmethod
     def parse_transcript_lines(
         lines: list[str],
-        id: int,
+        recording_id: str,
         url: str,
         title: str,
         date: datetime,
     ) -> Iterator[EtlTranscriptMessage]:
         line_index: int = 0
+        message_index: int = 1
         current_transcript_message: EtlTranscriptMessage | None = None
         while line_index < len(lines):
             line: str = lines[line_index].strip()
@@ -144,7 +148,8 @@ class EtlTranscriptMessage(BaseModel):
             new_transcript_message: EtlTranscriptMessage | None = (
                 EtlTranscriptMessage.parse_timestamp_line(
                     line=line,
-                    id=id,
+                    recording_id=recording_id,
+                    message_id=message_index,
                     url=url,
                     title=title,
                     date=date,
@@ -198,12 +203,7 @@ class Webhook(BaseModel):
         timestamp: str = file_clean_timestamp_from_datetime(
             dt=self.meeting.scheduled_start_time,
         )
-        recording_id: str
-        if recording_id_raw := self.recording.get_recording_id_from_url():
-            recording_id = f"{recording_id_raw:08d}"
-        else:
-            recording_id = f"{0:08d}"
-
+        recording_id: str = self.recording.get_recording_id_from_url()
         title: str = file_clean_string(
             string=self.meeting.title,
         )
@@ -213,10 +213,11 @@ class Webhook(BaseModel):
         self: Webhook,
     ) -> str:
         lines: list[str] = self.transcript.plaintext.split("\n")
+        recording_id: str = self.recording.get_recording_id_from_url()
         transcript_messages: Iterator[EtlTranscriptMessage] = (
             EtlTranscriptMessage.parse_transcript_lines(
+                recording_id=recording_id,
                 lines=lines,
-                id=self.id,
                 url=self.recording.url,
                 title=self.meeting.title,
                 date=self.meeting.scheduled_start_time,
