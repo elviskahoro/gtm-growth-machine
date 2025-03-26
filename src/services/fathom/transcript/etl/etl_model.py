@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime  # trunk-ignore(ruff/TC003)
+from re import Match
 from typing import TYPE_CHECKING, NamedTuple
 
 from pydantic import BaseModel
@@ -61,19 +62,23 @@ class EtlTranscriptMessage(BaseModel):
         title: str,
         date: datetime,
     ) -> EtlTranscriptMessage | None:
-        timestamp_match = re.match(
+        transcript_entry_match: Match[str] | None = re.match(
             pattern=r"(\d{1,2}:\d{2}(?::\d{2})?)\s+-\s+(.+?)(?:\s*\((.*?)\))?$",
             string=line,
         )
-        if not timestamp_match:
+        if not transcript_entry_match:
             return None
 
+        timestamp: str = transcript_entry_match.group(1)
+        speaker: str = transcript_entry_match.group(2).strip()
+        organization_raw: str | None = transcript_entry_match.group(3)
+        organization: str | None = (
+            organization_raw.strip() if organization_raw else None
+        )
         return cls(
-            timestamp=timestamp_match.group(1),
-            speaker=timestamp_match.group(2).strip(),
-            organization=(
-                timestamp_match.group(3).strip() if timestamp_match.group(3) else None
-            ),
+            timestamp=timestamp,
+            speaker=speaker,
+            organization=organization,
             message="",
             action_item=None,
             watch_link=None,
