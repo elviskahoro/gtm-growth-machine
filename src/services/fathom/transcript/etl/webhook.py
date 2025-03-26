@@ -133,12 +133,12 @@ class EtlTranscriptMessage(BaseModel):
         title: str,
         date: datetime,
     ) -> Iterator[EtlTranscriptMessage]:
-        i: int = 0
+        line_index: int = 0
         current_transcript_message: EtlTranscriptMessage | None = None
-        while i < len(lines):
-            line: str = lines[i].strip()
+        while line_index < len(lines):
+            line: str = lines[line_index].strip()
             if not line:
-                i += 1
+                line_index += 1
                 continue
 
             new_transcript_message: EtlTranscriptMessage | None = (
@@ -155,7 +155,7 @@ class EtlTranscriptMessage(BaseModel):
                     yield current_transcript_message
 
                 current_transcript_message = new_transcript_message
-                i += 1
+                line_index += 1
                 continue
 
             if current_transcript_message is None:
@@ -165,7 +165,7 @@ class EtlTranscriptMessage(BaseModel):
             current_transcript_message.process_content_line(
                 line=line,
             )
-            i += 1
+            line_index += 1
 
         if current_transcript_message:
             yield current_transcript_message
