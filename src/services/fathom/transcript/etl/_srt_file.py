@@ -47,7 +47,9 @@ class SrtFile(NamedTuple):
                 .month
             )
             months_we_did_not_yet_have_fathom: int = 4
-            year_to_use: int = 2024 if month >= months_we_did_not_yet_have_fathom else current_year
+            year_to_use: int = (
+                2024 if month >= months_we_did_not_yet_have_fathom else current_year
+            )
             date_str_with_year: str = f"{date_str} {year_to_use}"
             date = datetime.strptime(
                 date_str_with_year,
