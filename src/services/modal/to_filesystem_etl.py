@@ -44,7 +44,6 @@ BUCKET_NAME: str = WebhookModel.etl_get_bucket_name()
 BUCKET_URL: str = gcp_bucket_url_from_bucket_name(
     bucket_name=BUCKET_NAME,
 )
-MODAL_SECRET_COLLECTION_NAME: str = "devx-growth-gcp"  # trunk-ignore(ruff/S105)
 
 image: Image = modal.Image.debian_slim().pip_install(
     "fastapi[standard]",
@@ -67,7 +66,7 @@ app = modal.App(
 @app.function(
     secrets=[
         modal.Secret.from_name(
-            name=MODAL_SECRET_COLLECTION_NAME,
+            name=WebhookModel.modal_get_secret_collection_name(),
         ),
     ],
     region="us-east4",

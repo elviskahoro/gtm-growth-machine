@@ -28,6 +28,10 @@ class Webhook(BaseModel):
     transcript: Transcript
 
     @staticmethod
+    def modal_get_secret_collection_name() -> str:
+        return "devx-fathom"
+
+    @staticmethod
     def etl_get_bucket_name() -> str:
         return "chalk-ai-devx-fathom-transcripts-etl"
 
