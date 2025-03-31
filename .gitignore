@@ -64,6 +64,7 @@ eggs/
 env/
 ENV/
 env.bak/
+examples/
 htmlcov/
 instance/
 lib/
