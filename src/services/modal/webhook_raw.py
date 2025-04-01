@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
     from pathlib import Path
 
-BUCKET_NAME: str = "chalk-ai-devx-octolens-mentions-raw"
+BUCKET_NAME: str = "elvis-bucket"
 BUCKET_URL: str = gcp_bucket_url_from_bucket_name(
     bucket_name=BUCKET_NAME,
 )
