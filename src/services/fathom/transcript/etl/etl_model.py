@@ -39,6 +39,7 @@ class EtlTranscriptMessageWatchLinkData(NamedTuple):
 
 
 class EtlTranscriptMessage(BaseModel):
+    id: str
     recording_id: str
     message_id: int
     url: str
@@ -51,54 +52,6 @@ class EtlTranscriptMessage(BaseModel):
     message: str
     action_item: str | None
     watch_link: str | None
-
-    @staticmethod
-    def parse_transcript_lines(
-        lines: list[str],
-        recording_id: str,
-        url: str,
-        title: str,
-        date: datetime,
-    ) -> Iterator[EtlTranscriptMessage]:
-        line_index: int = 0
-        message_index: int = 1
-        current_transcript_message: EtlTranscriptMessage | None = None
-        while line_index < len(lines):
-            line: str = lines[line_index].strip()
-            if not line:
-                line_index += 1
-                continue
-
-            new_transcript_message: EtlTranscriptMessage | None = (
-                EtlTranscriptMessage.parse_timestamp_line(
-                    line=line,
-                    recording_id=recording_id,
-                    message_id=message_index,
-                    url=url,
-                    title=title,
-                    date=date,
-                )
-            )
-            if new_transcript_message is not None:
-                message_index += 1
-                if current_transcript_message:
-                    yield current_transcript_message
-
-                current_transcript_message = new_transcript_message
-                line_index += 1
-                continue
-
-            if current_transcript_message is None:
-                error_msg: str = f"No transcript message found for line: {line}"
-                raise ValueError(error_msg)
-
-            current_transcript_message.process_content_line(
-                line=line,
-            )
-            line_index += 1
-
-        if current_transcript_message:
-            yield current_transcript_message
 
     @staticmethod
     def convert_timestamp_to_seconds(
@@ -140,6 +93,7 @@ class EtlTranscriptMessage(BaseModel):
             organization_raw.strip() if organization_raw else None
         )
         return cls(
+            id=f"{recording_id}-{message_id:05d}",
             timestamp=EtlTranscriptMessage.convert_timestamp_to_seconds(
                 timestamp=timestamp,
             ),
@@ -188,3 +142,51 @@ class EtlTranscriptMessage(BaseModel):
             case _:
                 error_msg: str = f"Invalid line: {line}"
                 raise ValueError(error_msg)
+
+    @staticmethod
+    def parse_transcript_lines(
+        lines: list[str],
+        recording_id: str,
+        url: str,
+        title: str,
+        date: datetime,
+    ) -> Iterator[EtlTranscriptMessage]:
+        line_index: int = 0
+        message_index: int = 1
+        current_transcript_message: EtlTranscriptMessage | None = None
+        while line_index < len(lines):
+            line: str = lines[line_index].strip()
+            if not line:
+                line_index += 1
+                continue
+
+            new_transcript_message: EtlTranscriptMessage | None = (
+                EtlTranscriptMessage.parse_timestamp_line(
+                    line=line,
+                    recording_id=recording_id,
+                    message_id=message_index,
+                    url=url,
+                    title=title,
+                    date=date,
+                )
+            )
+            if new_transcript_message is not None:
+                message_index += 1
+                if current_transcript_message:
+                    yield current_transcript_message
+
+                current_transcript_message = new_transcript_message
+                line_index += 1
+                continue
+
+            if current_transcript_message is None:
+                error_msg: str = f"No transcript message found for line: {line}"
+                raise ValueError(error_msg)
+
+            current_transcript_message.process_content_line(
+                line=line,
+            )
+            line_index += 1
+
+        if current_transcript_message:
+            yield current_transcript_message
