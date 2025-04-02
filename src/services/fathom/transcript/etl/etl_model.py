@@ -276,7 +276,8 @@ class EtlTranscriptMessage(BaseModel):
                 pa.field(
                     "embedding",
                     pa.list_(
-                        pa.float32(), EtlTranscriptMessage.lance_get_vector_dimension(),
+                        pa.float32(),
+                        EtlTranscriptMessage.lance_get_vector_dimension(),
                     ),
                     nullable=True,
                 ),

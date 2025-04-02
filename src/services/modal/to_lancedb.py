@@ -84,6 +84,7 @@ def embed_with_gemini_and_upload_to_lance(
 
     return "Successfully embeded with Gemini and uploaded to LanceDB."
 
+
 @app.function(
     secrets=[
         modal.Secret.from_name(
