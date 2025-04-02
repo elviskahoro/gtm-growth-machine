@@ -1,14 +1,24 @@
 # trunk-ignore-all(ruff/PGH003,trunk/ignore-does-nothing)
 from __future__ import annotations
 
+import time
+from typing import TYPE_CHECKING
+
 import modal
 from modal import Image
+from src.services.lancedb.setup import init_client
+
+if TYPE_CHECKING:
+
+    from lancedb.db import DBConnection
+    from lancedb.table import Table
+    from pydantic import BaseModel
+
 
 # trunk-ignore-begin(ruff/F401,pyright/reportUnusedImport)
 from src.services.fathom.transcript.etl.webhook import (
     Webhook as FathomTranscriptWebhookModel,
 )
-from src.services.lancedb.index import make_index_in_lance
 from src.services.octolens.mention.etl.webhook import (
     Webhook as OctolensMentionsWebhookModel,
 )
@@ -16,7 +26,7 @@ from src.services.octolens.mention.etl.webhook import (
 # trunk-ignore-end(ruff/F401,pyright/reportUnusedImport)
 
 
-class WebhookModel(WebhookModelToReplace):  # type: ignore # trunk-ignore(ruff/F821)
+class WebhookModel(FathomTranscriptWebhookModel):  # type: ignore # trunk-ignore(ruff/F821)
     pass
 
 
@@ -42,7 +52,28 @@ app = modal.App(
 
 @app.local_entrypoint()
 def local() -> None:
-    make_index_in_lance(
-        base_model_type=WebhookModel.lance_get_base_model_type(),
+    base_model_type: type[BaseModel] = WebhookModel.lance_get_base_model_type()
+    db: DBConnection = init_client(
+        project_name=base_model_type.lance_get_project_name(),
     )
+    tbl: Table = db.open_table(
+        name=base_model_type.lance_get_table_name(),
+    )
+    # bitmap
+    bitmap = [
+        "url",
+        "date",
+        "speaker",
+        "organization",
+    ]
+    for column in bitmap:
+        tbl.create_scalar_index(
+            column=column,
+            index_type="BITMAP",
+        )
+        time.sleep(2)
+
     print("Successfully made index")
+
+
+    del bitmap
