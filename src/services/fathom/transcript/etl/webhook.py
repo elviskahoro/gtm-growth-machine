@@ -57,24 +57,33 @@ class Webhook(BaseModel):
         )
         return f"{timestamp}-{recording_id}-{title}.jsonl"
 
+    def etl_get_base_models(
+        self: Webhook,
+    ) -> Iterator[EtlTranscriptMessage]:
+        lines: list[str] = self.transcript.plaintext.split("\n")
+        recording_id: str = self.recording.get_recording_id_from_url()
+        yield from EtlTranscriptMessage.parse_transcript_lines(
+            recording_id=recording_id,
+            lines=lines,
+            url=self.recording.url,
+            title=self.meeting.title,
+            date=self.meeting.scheduled_start_time,
+        )
+
     def etl_get_json(
         self: Webhook,
     ) -> str:
-        lines: list[str] = self.transcript.plaintext.split("\n")
-        recording_id: str = self.recording.get_recording_id_from_url()
-        transcript_messages: Iterator[EtlTranscriptMessage] = (
-            EtlTranscriptMessage.parse_transcript_lines(
-                recording_id=recording_id,
-                lines=lines,
-                url=self.recording.url,
-                title=self.meeting.title,
-                date=self.meeting.scheduled_start_time,
-            )
-        )
-        # Convert each message to a JSON string and join them with newlines
         return "\n".join(
             message.model_dump_json(
                 indent=None,
             )
-            for message in transcript_messages
+            for message in self.etl_get_base_models()
         )
+
+    @staticmethod
+    def lance_get_project_name() -> str:
+        return EtlTranscriptMessage.lance_get_project_name()
+
+    @staticmethod
+    def lance_get_base_model_type() -> type[EtlTranscriptMessage]:
+        return EtlTranscriptMessage
