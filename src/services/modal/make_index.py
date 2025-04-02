@@ -71,6 +71,7 @@ def local() -> None:
             column=column,
             index_type="BITMAP",
         )
+        print(f"Creating index for column: {column}")
         time.sleep(2)
 
     print("Successfully made index")
