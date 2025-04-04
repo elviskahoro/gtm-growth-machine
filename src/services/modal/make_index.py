@@ -76,5 +76,4 @@ def local() -> None:
 
     print("Successfully made index")
 
-
     del bitmap
