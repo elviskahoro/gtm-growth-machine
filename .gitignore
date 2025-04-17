@@ -91,3 +91,4 @@ wheels/
 *.zip
 **/sample.json
 **/*-sample-*.json
+**/workspace/**
