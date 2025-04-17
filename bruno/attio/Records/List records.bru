@@ -1,0 +1,23 @@
+meta {
+  name: List records
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v2/objects/:object/records/query
+  body: json
+  auth: inherit
+}
+
+params:path {
+  object: people
+}
+
+body:json {
+  {
+    "sorts": [],
+    "limit": 5,
+    "offset": 0
+  }
+}

@@ -1,0 +1,23 @@
+meta {
+  name: List record attribute values
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/v2/objects/:object/records/:record_id/attributes/:attribute/values
+  body: none
+  auth: none
+}
+
+params:query {
+  ~show_historic: 
+  ~limit: 
+  ~offset: 
+}
+
+params:path {
+  object: 
+  record_id: 
+  attribute: 
+}

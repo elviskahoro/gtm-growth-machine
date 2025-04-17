@@ -1,0 +1,16 @@
+meta {
+  name: Delete a record
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{baseUrl}}/v2/objects/:object/records/:record_id
+  body: none
+  auth: none
+}
+
+params:path {
+  object: 
+  record_id: 
+}

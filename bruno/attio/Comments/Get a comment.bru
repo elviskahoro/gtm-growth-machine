@@ -1,0 +1,15 @@
+meta {
+  name: Get a comment
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/v2/comments/:comment_id
+  body: none
+  auth: none
+}
+
+params:path {
+  comment_id: 
+}

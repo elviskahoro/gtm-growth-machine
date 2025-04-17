@@ -1,0 +1,15 @@
+meta {
+  name: Delete a webhook
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/v2/webhooks/:webhook_id
+  body: none
+  auth: none
+}
+
+params:path {
+  webhook_id: 
+}

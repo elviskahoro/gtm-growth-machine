@@ -1,0 +1,24 @@
+meta {
+  name: Update a list entry (append multiselect values)
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/v2/lists/:list/entries/:entry_id
+  body: json
+  auth: none
+}
+
+params:path {
+  list: 
+  entry_id: 
+}
+
+body:json {
+  {
+    "data": {
+      "entry_values": {}
+    }
+  }
+}

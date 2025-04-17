@@ -1,0 +1,15 @@
+meta {
+  name: Get a workspace member
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/v2/workspace_members/:workspace_member_id
+  body: none
+  auth: none
+}
+
+params:path {
+  workspace_member_id: 
+}

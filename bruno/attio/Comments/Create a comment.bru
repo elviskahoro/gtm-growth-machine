@@ -1,0 +1,17 @@
+meta {
+  name: Create a comment
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v2/comments
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": ""
+  }
+}

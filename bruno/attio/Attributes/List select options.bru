@@ -1,0 +1,21 @@
+meta {
+  name: List select options
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/v2/:target/:identifier/attributes/:attribute/options
+  body: none
+  auth: none
+}
+
+params:query {
+  ~show_archived: 
+}
+
+params:path {
+  target: 
+  identifier: 
+  attribute: 
+}

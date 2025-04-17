@@ -1,0 +1,25 @@
+meta {
+  name: Create a select option
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/v2/:target/:identifier/attributes/:attribute/options
+  body: json
+  auth: none
+}
+
+params:path {
+  target: 
+  identifier: 
+  attribute: 
+}
+
+body:json {
+  {
+    "data": {
+      "title": ""
+    }
+  }
+}

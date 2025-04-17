@@ -1,0 +1,27 @@
+meta {
+  name: Assert a record
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/v2/objects/:object/records
+  body: json
+  auth: none
+}
+
+params:query {
+  matching_attribute: 
+}
+
+params:path {
+  object: 
+}
+
+body:json {
+  {
+    "data": {
+      "values": {}
+    }
+  }
+}

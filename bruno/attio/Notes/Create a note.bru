@@ -1,0 +1,24 @@
+meta {
+  name: Create a note
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v2/notes
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "parent_object": "",
+      "parent_record_id": "",
+      "title": "",
+      "format": "",
+      "content": "",
+      "created_at": ""
+    }
+  }
+}

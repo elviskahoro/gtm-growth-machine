@@ -1,0 +1,21 @@
+meta {
+  name: List record entries
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/v2/objects/:object/records/:record_id/entries
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~limit: 5
+  ~offset: 
+}
+
+params:path {
+  object: 257a144a-852c-436d-8fa1-8cac198b9dab
+  record_id: 
+}

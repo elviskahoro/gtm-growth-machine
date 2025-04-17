@@ -1,0 +1,25 @@
+meta {
+  name: Create a webhook
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v2/webhooks
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "target_url": "",
+      "subscriptions": [
+        {
+          "event_type": "",
+          "filter": ""
+        }
+      ]
+    }
+  }
+}

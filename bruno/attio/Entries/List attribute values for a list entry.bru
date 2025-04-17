@@ -1,0 +1,23 @@
+meta {
+  name: List attribute values for a list entry
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/v2/lists/:list/entries/:entry_id/attributes/:attribute/values
+  body: none
+  auth: none
+}
+
+params:query {
+  ~show_historic: 
+  ~limit: 
+  ~offset: 
+}
+
+params:path {
+  list: 
+  entry_id: 
+  attribute: 
+}

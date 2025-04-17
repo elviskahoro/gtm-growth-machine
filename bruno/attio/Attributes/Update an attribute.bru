@@ -1,0 +1,40 @@
+meta {
+  name: Update an attribute
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/v2/:target/:identifier/attributes/:attribute
+  body: json
+  auth: none
+}
+
+params:path {
+  target: 
+  identifier: 
+  attribute: 
+}
+
+body:json {
+  {
+    "data": {
+      "title": "",
+      "description": "",
+      "api_slug": "",
+      "is_required": "",
+      "is_unique": "",
+      "default_value": "",
+      "config": {
+        "currency": {
+          "default_currency_code": "",
+          "display_type": ""
+        },
+        "record_reference": {
+          "allowed_objects": []
+        }
+      },
+      "is_archived": ""
+    }
+  }
+}

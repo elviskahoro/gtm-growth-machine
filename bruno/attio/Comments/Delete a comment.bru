@@ -1,0 +1,15 @@
+meta {
+  name: Delete a comment
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/v2/comments/:comment_id
+  body: none
+  auth: none
+}
+
+params:path {
+  comment_id: 
+}

@@ -1,0 +1,21 @@
+meta {
+  name: List tasks
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v2/tasks
+  body: none
+  auth: none
+}
+
+params:query {
+  ~limit: 
+  ~offset: 
+  ~sort: 
+  ~linked_object: 
+  ~linked_record_id: 
+  ~assignee: 
+  ~is_completed: 
+}

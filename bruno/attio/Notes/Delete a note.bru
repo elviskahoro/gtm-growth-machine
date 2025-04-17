@@ -1,0 +1,15 @@
+meta {
+  name: Delete a note
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/v2/notes/:note_id
+  body: none
+  auth: none
+}
+
+params:path {
+  note_id: 
+}

@@ -1,0 +1,28 @@
+meta {
+  name: Create a list
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v2/lists
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "name": "",
+      "api_slug": "",
+      "parent_object": "",
+      "workspace_access": "",
+      "workspace_member_access": [
+        {
+          "workspace_member_id": "",
+          "level": ""
+        }
+      ]
+    }
+  }
+}

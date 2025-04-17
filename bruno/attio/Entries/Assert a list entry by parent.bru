@@ -1,0 +1,25 @@
+meta {
+  name: Assert a list entry by parent
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/v2/lists/:list/entries
+  body: json
+  auth: none
+}
+
+params:path {
+  list: 
+}
+
+body:json {
+  {
+    "data": {
+      "parent_record_id": "",
+      "parent_object": "",
+      "entry_values": {}
+    }
+  }
+}

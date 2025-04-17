@@ -1,0 +1,15 @@
+meta {
+  name: Get a list
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/v2/lists/:list
+  body: none
+  auth: none
+}
+
+params:path {
+  list: 
+}

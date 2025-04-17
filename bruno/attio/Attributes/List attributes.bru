@@ -1,0 +1,22 @@
+meta {
+  name: List attributes
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v2/:target/:identifier/attributes
+  body: none
+  auth: none
+}
+
+params:query {
+  ~limit: 
+  ~offset: 
+  ~show_archived: 
+}
+
+params:path {
+  target: 
+  identifier: 
+}

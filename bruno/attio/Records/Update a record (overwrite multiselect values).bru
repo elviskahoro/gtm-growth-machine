@@ -1,0 +1,24 @@
+meta {
+  name: Update a record (overwrite multiselect values)
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/v2/objects/:object/records/:record_id
+  body: json
+  auth: none
+}
+
+params:path {
+  object: 
+  record_id: 
+}
+
+body:json {
+  {
+    "data": {
+      "values": {}
+    }
+  }
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Create an object
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v2/objects
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "api_slug": "",
+      "singular_noun": "",
+      "plural_noun": ""
+    }
+  }
+}

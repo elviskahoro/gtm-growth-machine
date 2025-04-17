@@ -1,0 +1,31 @@
+meta {
+  name: Update a list
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/v2/lists/:list
+  body: json
+  auth: none
+}
+
+params:path {
+  list: 
+}
+
+body:json {
+  {
+    "data": {
+      "name": "",
+      "api_slug": "",
+      "workspace_access": "",
+      "workspace_member_access": [
+        {
+          "workspace_member_id": "",
+          "level": ""
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,16 @@
+meta {
+  name: Get a record
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/v2/objects/:object/records/:record_id
+  body: none
+  auth: none
+}
+
+params:path {
+  object: 
+  record_id: 
+}

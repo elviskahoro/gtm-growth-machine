@@ -1,0 +1,23 @@
+meta {
+  name: Create a record
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v2/objects/:object/records
+  body: json
+  auth: none
+}
+
+params:path {
+  object: 
+}
+
+body:json {
+  {
+    "data": {
+      "values": {}
+    }
+  }
+}

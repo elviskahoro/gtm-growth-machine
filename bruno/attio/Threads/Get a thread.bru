@@ -1,0 +1,15 @@
+meta {
+  name: Get a thread
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/v2/threads/:thread_id
+  body: none
+  auth: none
+}
+
+params:path {
+  thread_id: 
+}

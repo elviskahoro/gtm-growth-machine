@@ -1,0 +1,15 @@
+meta {
+  name: Get a note
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/v2/notes/:note_id
+  body: none
+  auth: none
+}
+
+params:path {
+  note_id: 
+}

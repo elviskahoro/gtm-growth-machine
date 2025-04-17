@@ -1,0 +1,24 @@
+meta {
+  name: Create a task
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v2/tasks
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "content": "",
+      "format": "",
+      "deadline_at": "",
+      "is_completed": "",
+      "linked_records": [],
+      "assignees": []
+    }
+  }
+}

@@ -1,0 +1,17 @@
+meta {
+  name: Get an attribute
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/v2/:target/:identifier/attributes/:attribute
+  body: none
+  auth: none
+}
+
+params:path {
+  target: 
+  identifier: 
+  attribute: 
+}

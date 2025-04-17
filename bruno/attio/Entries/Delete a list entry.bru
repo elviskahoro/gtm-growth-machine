@@ -1,0 +1,16 @@
+meta {
+  name: Delete a list entry
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{baseUrl}}/v2/lists/:list/entries/:entry_id
+  body: none
+  auth: none
+}
+
+params:path {
+  list: 
+  entry_id: 
+}

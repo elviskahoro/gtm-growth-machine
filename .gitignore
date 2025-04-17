@@ -92,3 +92,4 @@ wheels/
 **/sample.json
 **/*-sample-*.json
 **/workspace/**
+bruno/*

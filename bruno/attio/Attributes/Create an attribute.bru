@@ -1,0 +1,40 @@
+meta {
+  name: Create an attribute
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v2/:target/:identifier/attributes
+  body: json
+  auth: none
+}
+
+params:path {
+  target: 
+  identifier: 
+}
+
+body:json {
+  {
+    "data": {
+      "title": "",
+      "description": "",
+      "api_slug": "",
+      "type": "",
+      "is_required": "",
+      "is_unique": "",
+      "is_multiselect": "",
+      "default_value": "",
+      "config": {
+        "currency": {
+          "default_currency_code": "",
+          "display_type": ""
+        },
+        "record_reference": {
+          "allowed_objects": []
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+meta {
+  name: List statuses
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/v2/:target/:identifier/attributes/:attribute/statuses
+  body: none
+  auth: none
+}
+
+params:query {
+  ~show_archived: 
+}
+
+params:path {
+  target: 
+  identifier: 
+  attribute: 
+}

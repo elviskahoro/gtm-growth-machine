@@ -1,0 +1,27 @@
+meta {
+  name: Update a select option
+  type: http
+  seq: 7
+}
+
+patch {
+  url: {{baseUrl}}/v2/:target/:identifier/attributes/:attribute/options/:option
+  body: json
+  auth: none
+}
+
+params:path {
+  target: 
+  identifier: 
+  attribute: 
+  option: 
+}
+
+body:json {
+  {
+    "data": {
+      "title": "",
+      "is_archived": ""
+    }
+  }
+}

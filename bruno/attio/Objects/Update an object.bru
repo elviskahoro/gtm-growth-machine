@@ -1,0 +1,25 @@
+meta {
+  name: Update an object
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/v2/objects/:object
+  body: json
+  auth: none
+}
+
+params:path {
+  object: 
+}
+
+body:json {
+  {
+    "data": {
+      "api_slug": "",
+      "singular_noun": "",
+      "plural_noun": ""
+    }
+  }
+}

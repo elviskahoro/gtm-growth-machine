@@ -1,0 +1,16 @@
+meta {
+  name: List webhooks
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v2/webhooks
+  body: none
+  auth: none
+}
+
+params:query {
+  ~limit: 
+  ~offset: 
+}

@@ -1,0 +1,24 @@
+meta {
+  name: Update a record (append multiselect values)
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/v2/objects/:object/records/:record_id
+  body: json
+  auth: none
+}
+
+params:path {
+  object: 
+  record_id: 
+}
+
+body:json {
+  {
+    "data": {
+      "values": {}
+    }
+  }
+}

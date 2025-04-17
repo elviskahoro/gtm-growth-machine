@@ -1,0 +1,27 @@
+meta {
+  name: Create a status
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/v2/:target/:identifier/attributes/:attribute/statuses
+  body: json
+  auth: none
+}
+
+params:path {
+  target: 
+  identifier: 
+  attribute: 
+}
+
+body:json {
+  {
+    "data": {
+      "title": "",
+      "celebration_enabled": "",
+      "target_time_in_status": ""
+    }
+  }
+}
