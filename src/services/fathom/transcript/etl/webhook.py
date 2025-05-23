@@ -17,7 +17,7 @@ from src.services.local.filesystem import (
     file_clean_timestamp_from_datetime,
 )
 
-from .etl_model import EtlTranscriptMessage
+from src.services.fathom.transcript.etl.etl_model import EtlTranscriptMessage
 
 
 class Webhook(BaseModel):

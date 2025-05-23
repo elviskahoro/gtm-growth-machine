@@ -11,10 +11,30 @@ from pydantic import BaseModel
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-IS_INTERNAL_ORGANIZATION: list[str] = [
-    "SF, 2",
-    "chalk.ai",
-    "NY, 5",
+SPEAKERS_CHALK: list[str] = [
+    "Andrew Moreland",
+    "Elvis Kahoro",
+    "Room 3",
+    "Benjamin Shipley",
+    "Kelvin Lu",
+    "Caroline Parker",
+    "Samuel Mignot",
+    "Marc Freed-Finnegan",
+    "Room 5",
+    "Room 2",
+    "Room 5 (SF, 2)",
+    "Elliot",
+    "Sarah Kulpa",
+    "Kitchen",
+    "Room 4",
+    "Room 2 (SF, 2)",
+    "melanie",
+    "Dani Lang",
+    "Jared Gaynes",
+    "Melanie Chen",
+    "Sai Atmakuri",
+    "Elliot Marx",
+    "Alexandra Kane",
 ]
 
 
@@ -54,14 +74,6 @@ class EtlTranscriptMessage(BaseModel):
     action_item: str | None
     watch_link: str | None
 
-    embedding: list[float] | None = None
-
-    def add_embedding(
-        self,
-        embedding: list[float],
-    ) -> None:
-        self.embedding = embedding
-
     @staticmethod
     def convert_timestamp_to_seconds(
         timestamp: str,
@@ -89,7 +101,7 @@ class EtlTranscriptMessage(BaseModel):
         date: datetime,
     ) -> EtlTranscriptMessage | None:
         transcript_entry_match: Match[str] | None = re.match(
-            pattern=r"(\d{1,2}:\d{2}(?::\d{2})?)\s+-\s+(.+?)(?:\s*\((.*?)\))?$",
+            pattern=r"(\d{1,2}:\d{2}(?::\d{2})?)\s+-\s+(.+?)(?:\s+\(([^)]+)\))?$",
             string=line,
         )
         if not transcript_entry_match:
@@ -101,6 +113,9 @@ class EtlTranscriptMessage(BaseModel):
         organization: str | None = (
             organization_raw.strip() if organization_raw else None
         )
+        if speaker in SPEAKERS_CHALK:
+            organization = "chalk.ai"
+
         return cls(
             id=f"{recording_id}-{message_id:05d}",
             timestamp=EtlTranscriptMessage.convert_timestamp_to_seconds(
