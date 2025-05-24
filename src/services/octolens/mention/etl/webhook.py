@@ -10,8 +10,10 @@ class Webhook(BaseModel):
     data: Mention
 
     @staticmethod
-    def modal_get_secret_collection_name() -> str:
-        return "devx-octolens"
+    def modal_get_secret_collection_names() -> list[str]:
+        return [
+            "devx-octolens",
+        ]
 
     @staticmethod
     def etl_get_bucket_name() -> str:

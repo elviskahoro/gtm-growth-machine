@@ -75,6 +75,8 @@ class EtlTranscriptMessage(BaseModel):
         url: str,
         title: str,
         date: datetime,
+        speakers_internal: list[str] | None,
+        organization_internal: str | None,
     ) -> EtlTranscriptMessage | None:
         transcript_entry_match: Match[str] | None = re.match(
             pattern=r"(\d{1,2}:\d{2}(?::\d{2})?)\s+-\s+(.+?)(?:\s+\(([^)]+)\))?$",
@@ -89,8 +91,9 @@ class EtlTranscriptMessage(BaseModel):
         organization: str | None = (
             organization_raw.strip() if organization_raw else None
         )
-        if speaker in SPEAKERS:
-            organization = "chalk.ai"
+        if speakers_internal:
+            if speaker in speakers_internal:
+                organization = organization_internal
 
         return cls(
             id=f"{recording_id}-{message_id:05d}",
@@ -150,6 +153,8 @@ class EtlTranscriptMessage(BaseModel):
         url: str,
         title: str,
         date: datetime,
+        speakers_internal: list[str] | None,
+        organization_internal: str | None,
     ) -> Iterator[EtlTranscriptMessage]:
         line_index: int = 0
         message_index: int = 1
@@ -168,6 +173,8 @@ class EtlTranscriptMessage(BaseModel):
                     url=url,
                     title=title,
                     date=date,
+                    speakers_internal=speakers_internal,
+                    organization_internal=organization_internal,
                 )
             )
             if new_transcript_message is not None:

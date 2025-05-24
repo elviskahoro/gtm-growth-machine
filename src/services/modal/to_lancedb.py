@@ -88,8 +88,9 @@ def embed_with_gemini_and_upload_to_lance(
 @app.function(
     secrets=[
         modal.Secret.from_name(
-            name=WebhookModel.modal_get_secret_collection_name(),
-        ),
+            name=name,
+        )
+        for name in WebhookModel.modal_get_secret_collection_names()
     ],
     region="us-east1",
     allow_concurrent_inputs=1000,
