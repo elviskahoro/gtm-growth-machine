@@ -5,8 +5,28 @@ from typing import TYPE_CHECKING, NamedTuple
 
 from pydantic import BaseModel, ValidationError
 
+from .filesystem_regex import sanitize_string
+
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import (
+        Iterable,
+        Iterator,
+    )
+    from datetime import datetime
+
+
+def file_clean_timestamp_from_datetime(
+    dt: datetime,
+) -> str:
+    return dt.strftime("%Y_%m_%d_%H_%M_%S")
+
+
+def file_clean_string(
+    string: str,
+) -> str:
+    lowercase: str = string.lower()
+    no_space_on_borders: str = lowercase.strip()
+    return sanitize_string(string=no_space_on_borders)
 
 
 def get_paths(
@@ -76,7 +96,7 @@ def get_destination_file_data_from_source_file_data(
                 path=f"{bucket_url}/{individual_file_data.base_model.etl_get_file_name()}",
             )
 
-        except (AttributeError, ValueError):
+        except (AttributeError, ValueError, AssertionError):
             error_msg: str = f"Error processing file: {individual_file_data.path}"
             print(error_msg)
             raise

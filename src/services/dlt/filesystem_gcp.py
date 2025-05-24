@@ -1,7 +1,5 @@
 import os
-import re
 from collections.abc import Iterator
-from datetime import datetime
 from pathlib import Path
 from typing import NamedTuple
 
@@ -41,23 +39,6 @@ def gcp_strip_bucket_url(
     ).replace(
         "-",
         "_",
-    )
-
-
-def gcp_clean_timestamp_from_datetime(
-    dt: datetime,
-) -> str:
-    return dt.strftime("%Y_%m_%d_%H_%M_%S")
-
-
-def gcp_clean_string(
-    string: str,
-) -> str:
-    lowercase: str = string.lower()
-    return re.sub(
-        pattern="[^0-9a-zA-Z]+",
-        repl="_",
-        string=lowercase,
     )
 
 

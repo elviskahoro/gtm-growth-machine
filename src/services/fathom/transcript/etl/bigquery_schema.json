@@ -1,0 +1,62 @@
+[
+  {
+    "name": "id",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "recording_id",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "message_id",
+    "type": "INTEGER",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "url",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "title",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "date",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "timestamp",
+    "type": "INTEGER",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "speaker",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "organization",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "message",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "action_item",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "watch_link",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  }
+]

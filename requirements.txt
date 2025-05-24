@@ -3,6 +3,7 @@ dlt[gs]
 modal
 orjson>=3.9.15
 polars
+pyarrow
 python-dotenv
 pydantic>=2.4.0
 reflex

@@ -31,11 +31,30 @@ class SrtFile(NamedTuple):
 
         # Extract title and date from the first line
         if lines and " - " in lines[0]:
+            date_str: str
             title, date_str = lines[0].rsplit(" - ", 1)
-            # Get current year in UTC
-            current_year: int = datetime.now(timezone.utc).year
-            date_str_with_year: str = f"{date_str} {current_year}"
-            date = datetime.strptime(date_str_with_year, "%B %d %Y").replace(
+            current_year: int = datetime.now(
+                tz=timezone.utc,
+            ).year
+            month: int = (
+                datetime.strptime(
+                    date_str.split()[0],
+                    "%B",
+                )
+                .replace(
+                    tzinfo=timezone.utc,
+                )
+                .month
+            )
+            months_we_did_not_yet_have_fathom: int = 4
+            year_to_use: int = (
+                2024 if month >= months_we_did_not_yet_have_fathom else current_year
+            )
+            date_str_with_year: str = f"{date_str} {year_to_use}"
+            date = datetime.strptime(
+                date_str_with_year,
+                "%B %d %Y",
+            ).replace(
                 tzinfo=timezone.utc,
             )
 

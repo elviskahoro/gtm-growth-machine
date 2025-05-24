@@ -1,13 +1,15 @@
 # trunk-ignore-all(ruff/ANN401)
 from __future__ import annotations
 
-import re
 from datetime import datetime
 from typing import Any
 
 from pydantic import AliasChoices, BaseModel, Field, field_validator
 
-from src.services.local.regex import FILE_SYSTEM_TRANSLATION
+from src.services.local.filesystem import (
+    file_clean_string,
+    file_clean_timestamp_from_datetime,
+)
 
 
 class Mention(BaseModel):
@@ -137,13 +139,8 @@ class Mention(BaseModel):
         self,
         extension: str = ".jsonl",
     ) -> str:
-        source: str = self.source.replace(" ", "·")
-        keyword: str = self.keyword.replace(" ", "·")
-        # Clean author string using regex with a translation dictionary
-        author: str = re.sub(
-            r"[ /\\()]",
-            lambda m: FILE_SYSTEM_TRANSLATION[m.group(0)],
-            self.author,
-        )
-        timestamp: str = self.timestamp.strftime("%Y%m%d_%H%M%S")
-        return f"{source}-{keyword}-{author}-{timestamp}{extension}"
+        source: str = file_clean_string(self.source)
+        keyword: str = file_clean_string(self.keyword)
+        author: str = file_clean_string(self.author)
+        timestamp: str = file_clean_timestamp_from_datetime(self.timestamp)
+        return f"{source}-{keyword}-{timestamp}-{author}{extension}"

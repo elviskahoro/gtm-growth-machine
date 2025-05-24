@@ -1,4 +1,4 @@
-# trunk-ignore-all(ruff/PGH003)
+# trunk-ignore-all(ruff/PGH003,trunk/ignore-does-nothing)
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -24,12 +24,17 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 # trunk-ignore-begin(ruff/F401,pyright/reportUnusedImport)
-from src.services.fathom.transcript.etl.webhook import Webhook as FathomTranscriptWebhook # trunk-ignore(ruff/I001)
-from src.services.octolens.mention.etl.webhook import Webhook as OctolensMentionsWebhook
+from src.services.fathom.transcript.etl.webhook import (
+    Webhook as FathomTranscriptWebhookModel,
+)
+from src.services.octolens.mention.etl.webhook import (
+    Webhook as OctolensMentionsWebhookModel,
+)
+
 # trunk-ignore-end(ruff/F401,pyright/reportUnusedImport)
 
 
-class WebhookModel(Webhook): # type: ignore # trunk-ignore(ruff/F821)
+class WebhookModel(WebhookModelToReplace):  # type: ignore # trunk-ignore(ruff/F821)
     pass
 
 
@@ -39,7 +44,6 @@ BUCKET_NAME: str = WebhookModel.etl_get_bucket_name()
 BUCKET_URL: str = gcp_bucket_url_from_bucket_name(
     bucket_name=BUCKET_NAME,
 )
-MODAL_SECRET_COLLECTION_NAME: str = "devx-growth-gcp"  # trunk-ignore(ruff/S105)
 
 image: Image = modal.Image.debian_slim().pip_install(
     "fastapi[standard]",
@@ -62,7 +66,7 @@ app = modal.App(
 @app.function(
     secrets=[
         modal.Secret.from_name(
-            name=MODAL_SECRET_COLLECTION_NAME,
+            name=WebhookModel.modal_get_secret_collection_name(),
         ),
     ],
     region="us-east4",
@@ -121,7 +125,7 @@ def local(
 
     source_file_data: Iterator[SourceFileData] = get_source_file_data_from_input_folder(
         input_folder=input_folder,
-        base_model=WebhookModel,
+        base_model=WebhookModel,  # trunk-ignore(pyright/reportArgumentType)
         extension=[
             ".json",
             ".jsonl",
