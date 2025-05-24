@@ -43,6 +43,10 @@ def gcp_strip_bucket_url(
 
 
 def _get_env_vars() -> GCPCredentials:
+    gcp_client_email = os.environ.get(
+        "GCP_CLIENT_EMAIL",
+        None,
+    )
     gcp_project_id = os.environ.get(
         "GCP_PROJECT_ID",
         None,
@@ -57,10 +61,6 @@ def _get_env_vars() -> GCPCredentials:
             "\n",
         )
 
-    gcp_client_email = os.environ.get(
-        "GCP_CLIENT_EMAIL",
-        None,
-    )
     return GCPCredentials(
         project_id=gcp_project_id,
         private_key=gcp_private_key,
