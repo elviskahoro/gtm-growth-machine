@@ -11,31 +11,7 @@ from pydantic import BaseModel
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-SPEAKERS_CHALK: list[str] = [
-    "Andrew Moreland",
-    "Elvis Kahoro",
-    "Room 3",
-    "Benjamin Shipley",
-    "Kelvin Lu",
-    "Caroline Parker",
-    "Samuel Mignot",
-    "Marc Freed-Finnegan",
-    "Room 5",
-    "Room 2",
-    "Room 5 (SF, 2)",
-    "Elliot",
-    "Sarah Kulpa",
-    "Kitchen",
-    "Room 4",
-    "Room 2 (SF, 2)",
-    "melanie",
-    "Dani Lang",
-    "Jared Gaynes",
-    "Melanie Chen",
-    "Sai Atmakuri",
-    "Elliot Marx",
-    "Alexandra Kane",
-]
+SPEAKERS: list[str] = []
 
 
 class EtlTranscriptMessageWatchLinkData(NamedTuple):
@@ -113,7 +89,7 @@ class EtlTranscriptMessage(BaseModel):
         organization: str | None = (
             organization_raw.strip() if organization_raw else None
         )
-        if speaker in SPEAKERS_CHALK:
+        if speaker in SPEAKERS:
             organization = "chalk.ai"
 
         return cls(
