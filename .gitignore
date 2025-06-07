@@ -77,6 +77,7 @@ pcconfig2.py
 pip-delete-this-directory.txt
 pip-log.txt
 profile_default/
+pyvenv.cfg
 pynecone.db
 reflex.db
 sdist/
@@ -92,4 +93,5 @@ wheels/
 **/sample.json
 **/*-sample-*.json
 **/workspace/**
+bin/
 bruno/*
