@@ -1,5 +1,6 @@
 dlt
 dlt[gs]
+gcsfs
 modal
 orjson>=3.9.15
 polars

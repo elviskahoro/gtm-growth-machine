@@ -9,7 +9,6 @@ from src.services.dlt.destination_type import (
     DestinationType,
 )
 from src.services.dlt.filesystem_gcp import (
-    gcp_bucket_url_from_bucket_name,
     gcp_clean_bucket_name,
     to_filesystem,
 )
@@ -41,11 +40,8 @@ class WebhookModel(WebhookModelToReplace):  # type: ignore # trunk-ignore(ruff/F
 WebhookModel.model_rebuild()
 
 BUCKET_NAME: str = WebhookModel.etl_get_bucket_name()
-BUCKET_URL: str = gcp_bucket_url_from_bucket_name(
-    bucket_name=BUCKET_NAME,
-)
 
-image: Image = modal.Image.debian_slim().pip_install(
+image: Image = modal.Image.debian_slim().uv_pip_install(
     "fastapi[standard]",
     "gcsfs",  # https://github.com/fsspec/gcsfs
     "uuid7",
@@ -71,12 +67,14 @@ app = modal.App(
         for name in WebhookModel.modal_get_secret_collection_names()
     ],
     region="us-east4",
-    allow_concurrent_inputs=1000,
     enable_memory_snapshot=False,
 )
 @modal.web_endpoint(
     method="POST",
     docs=True,
+)
+@modal.concurrent(
+    max_inputs=1000,
 )
 def web(
     webhook: WebhookModel,
@@ -92,15 +90,18 @@ def web(
             ),
         ],
     )
+    bucket_url: str = DestinationType.GCP.get_bucket_url_from_bucket_name(
+        bucket_name=BUCKET_NAME,
+    )
     data: Iterator[DestinationFileData] = (
         get_destination_file_data_from_source_file_data(
             source_file_data=file_data,
-            bucket_url=BUCKET_URL,
+            bucket_url=bucket_url,
         )
     )
     return to_filesystem(
         destination_file_data=data,
-        bucket_url=BUCKET_URL,
+        bucket_url=bucket_url,
     )
 
 
@@ -110,19 +111,9 @@ def local(
     destination_type: str,
 ) -> None:
     destination_type_enum: DestinationType = DestinationType(destination_type)
-    bucket_url: str
-    match destination_type_enum:
-        case DestinationType.LOCAL:
-            bucket_url = DestinationType.get_bucket_url_from_bucket_name_for_local(
-                bucket_name=BUCKET_NAME,
-            )
-
-        case DestinationType.GCP:
-            bucket_url = BUCKET_URL
-
-        case _:
-            error_msg: str = f"Invalid destination type: {destination_type_enum}"
-            raise ValueError(error_msg)
+    bucket_url: str = destination_type_enum.get_bucket_url_from_bucket_name(
+        bucket_name=BUCKET_NAME,
+    )
 
     source_file_data: Iterator[SourceFileData] = get_source_file_data_from_input_folder(
         input_folder=input_folder,

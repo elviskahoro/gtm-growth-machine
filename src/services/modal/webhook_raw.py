@@ -12,7 +12,6 @@ from src.services.dlt.destination_type import (
     DestinationType,
 )
 from src.services.dlt.filesystem_gcp import (
-    gcp_bucket_url_from_bucket_name,
     gcp_clean_bucket_name,
     to_filesystem,
 )
@@ -23,13 +22,10 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 BUCKET_NAME: str = "elvis-bucket"
-BUCKET_URL: str = gcp_bucket_url_from_bucket_name(
-    bucket_name=BUCKET_NAME,
-)
 MODAL_SECRET_COLLECTION_NAME: str = "devx-growth-gcp"  # trunk-ignore(ruff/S105)
 
 
-image: Image = modal.Image.debian_slim().pip_install(
+image: Image = modal.Image.debian_slim().uv_pip_install(
     "fastapi[standard]",
     "gcsfs",  # https://github.com/fsspec/gcsfs
     "orjson",
@@ -111,10 +107,12 @@ def _get_json_data_from_file_data(
         ),
     ],
     region="us-east4",
-    allow_concurrent_inputs=1000,
     enable_memory_snapshot=False,
 )
-@modal.web_endpoint(
+@modal.concurrent(
+    max_inputs=1000,
+)
+@modal.fastapi_endpoint(
     method="POST",
     docs=True,
 )
@@ -124,17 +122,20 @@ def web(
     json: str = orjson.dumps(json_data).decode(
         encoding="utf-8",
     )
+    bucket_url: str = DestinationType.GCP.get_bucket_url_from_bucket_name(
+        bucket_name=BUCKET_NAME,
+    )
     data: Iterator[DestinationFileData] = iter(
         [
             DestinationFileData(
                 json=json,
-                path=f"{BUCKET_URL}/{uuid7()!s}.jsonl",
+                path=f"{bucket_url}/{uuid7()!s}.jsonl",
             ),
         ],
     )
     return to_filesystem(
         destination_file_data=data,
-        bucket_url=BUCKET_URL,
+        bucket_url=bucket_url,
     )
 
 
@@ -142,21 +143,12 @@ def web(
 def local(
     input_folder: str,
     destination_type: str,
+    bucket_name: str = BUCKET_NAME,
 ) -> None:
-    bucket_url: str
     destination_type_enum: DestinationType = DestinationType(destination_type)
-    match destination_type_enum:
-        case DestinationType.LOCAL:
-            bucket_url = DestinationType.get_bucket_url_from_bucket_name_for_local(
-                bucket_name=BUCKET_NAME,
-            )
-
-        case DestinationType.GCP:
-            bucket_url = BUCKET_URL
-
-        case _:
-            error_msg: str = f"Invalid destination type: {destination_type_enum}"
-            raise ValueError(error_msg)
+    bucket_url: str = destination_type_enum.get_bucket_url_from_bucket_name(
+        bucket_name=bucket_name,
+    )
 
     file_data: Iterator[SourceFileRaw] = _get_data_from_input_folder(
         input_folder=input_folder,
