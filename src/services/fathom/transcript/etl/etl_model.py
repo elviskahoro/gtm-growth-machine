@@ -91,9 +91,8 @@ class EtlTranscriptMessage(BaseModel):
         organization: str | None = (
             organization_raw.strip() if organization_raw else None
         )
-        if speakers_internal:
-            if speaker in speakers_internal:
-                organization = organization_internal
+        if speakers_internal and speaker in speakers_internal:
+            organization = organization_internal
 
         return cls(
             id=f"{recording_id}-{message_id:05d}",

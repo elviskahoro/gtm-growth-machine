@@ -71,7 +71,7 @@ class Webhook(BaseModel):
         if speakers_raw:
             try:
                 speakers_data: dict[str, list[str]] | list[str] = json.loads(
-                    speakers_raw
+                    speakers_raw,
                 )
                 if isinstance(speakers_data, dict) and "speakers" in speakers_data:
                     speakers = speakers_data["speakers"]
