@@ -46,7 +46,7 @@ image: Image = modal.Image.debian_slim().uv_pip_install(
     "gcsfs",  # https://github.com/fsspec/gcsfs
     "uuid7",
 )
-image.add_local_python_source(
+image = image.add_local_python_source(
     *[
         "src",
     ],
