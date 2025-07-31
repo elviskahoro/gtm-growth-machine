@@ -58,46 +58,47 @@ class SourceFileRaw(NamedTuple):
     file: Path
     content: str
 
-
-def _get_data_from_input_folder(
-    input_folder: str,
-    extension: Iterable[str],
-) -> Iterator[SourceFileRaw]:
-    paths: Iterator[Path] = get_paths(
-        input_folder=input_folder,
-        extension=extension,
-    )
-    current_path: Path | None = None
-    try:
-        path: Path
-        for path in paths:
-            current_path = path
-            yield SourceFileRaw(
-                file=path,
-                content=_stream_read_json_as_string(path),
-            )
-
-    except ValidationError as e:
-        print(e)
-        print(current_path)
-        raise
-
-
-def _get_json_data_from_file_data(
-    file_data: Iterator[SourceFileRaw],
-    bucket_url: str,
-) -> Iterator[DestinationFileData]:
-    for individual_file_data in file_data:
+    @staticmethod
+    def get_data_from_input_folder(
+        input_folder: str,
+        extension: Iterable[str],
+    ) -> Iterator[SourceFileRaw]:
+        paths: Iterator[Path] = get_paths(
+            input_folder=input_folder,
+            extension=extension,
+        )
+        current_path: Path | None = None
         try:
-            yield DestinationFileData(
-                json=individual_file_data.content,
-                path=f"{bucket_url}/{uuid7()!s}.jsonl",
-            )
+            path: Path
+            for path in paths:
+                current_path = path
+                yield SourceFileRaw(
+                    file=path,
+                    content=_stream_read_json_as_string(path),
+                )
 
-        except (AttributeError, ValueError):
-            error_msg: str = f"Error processing file: {individual_file_data.path}"
-            print(error_msg)
+        except ValidationError as e:
+            print(e)
+            print(current_path)
             raise
+
+
+    @staticmethod
+    def get_json_data_from_file_data(
+        file_data: Iterator[SourceFileRaw],
+        bucket_url: str,
+    ) -> Iterator[DestinationFileData]:
+        for individual_file_data in file_data:
+            try:
+                yield DestinationFileData(
+                    json=individual_file_data.content,
+                    path=f"{bucket_url}/{uuid7()!s}.jsonl",
+                )
+
+            except (AttributeError, ValueError):
+                error_msg: str = f"Error processing file: {individual_file_data.path}"
+                print(error_msg)
+                raise
 
 
 @app.function(
@@ -150,14 +151,14 @@ def local(
         bucket_name=bucket_name,
     )
 
-    file_data: Iterator[SourceFileRaw] = _get_data_from_input_folder(
+    file_data: Iterator[SourceFileRaw] = SourceFileRaw.get_data_from_input_folder(
         input_folder=input_folder,
         extension=[
             ".json",
             ".jsonl",
         ],
     )
-    data: Iterator[DestinationFileData] = _get_json_data_from_file_data(
+    data: Iterator[DestinationFileData] = SourceFileRaw.get_json_data_from_file_data(
         file_data=file_data,
         bucket_url=bucket_url,
     )
