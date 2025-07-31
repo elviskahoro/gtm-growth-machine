@@ -44,19 +44,19 @@ app = modal.App(
 )
 
 
-def _stream_read_json_as_string(
-    path: Path,
-) -> str:
-    with path.open(
-        mode="r",
-        encoding="utf-8",
-    ) as f_in:
-        return "".join(line.strip() for line in f_in)
-
-
 class SourceFileRaw(NamedTuple):
     file: Path
     content: str
+
+    @staticmethod
+    def stream_read_json_as_string(
+        path: Path,
+    ) -> str:
+        with path.open(
+            mode="r",
+            encoding="utf-8",
+        ) as f_in:
+            return "".join(line.strip() for line in f_in)
 
     @staticmethod
     def get_data_from_input_folder(
@@ -74,14 +74,13 @@ class SourceFileRaw(NamedTuple):
                 current_path = path
                 yield SourceFileRaw(
                     file=path,
-                    content=_stream_read_json_as_string(path),
+                    content=SourceFileRaw.stream_read_json_as_string(path),
                 )
 
         except ValidationError as e:
             print(e)
             print(current_path)
             raise
-
 
     @staticmethod
     def get_json_data_from_file_data(
