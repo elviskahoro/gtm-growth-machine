@@ -45,6 +45,7 @@ image: Image = modal.Image.debian_slim().uv_pip_install(
     "fastapi[standard]",
     "gcsfs",  # https://github.com/fsspec/gcsfs
     "uuid7",
+    "pyarrow",
 )
 image = image.add_local_python_source(
     *[
