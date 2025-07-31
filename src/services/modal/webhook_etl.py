@@ -69,7 +69,7 @@ app = modal.App(
     region="us-east4",
     enable_memory_snapshot=False,
 )
-@modal.web_endpoint(
+@modal.fastapi_endpoint(
     method="POST",
     docs=True,
 )
