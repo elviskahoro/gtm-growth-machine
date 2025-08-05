@@ -75,6 +75,7 @@ htmlcov/
 instance/
 lib/
 lib64/
+logs/
 local_settings.py
 MANIFEST
 nosetests.xml
@@ -101,3 +102,4 @@ wheels/
 **/workspace/**
 bin/
 bruno/*
+dbt_internal_packages/

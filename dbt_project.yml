@@ -1,0 +1,6 @@
+name: 'dbt'
+version: '1.0.0'
+profile: 'devx'
+
+dbt-cloud:
+    project-id: 70471823493793
