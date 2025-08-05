@@ -102,4 +102,5 @@ wheels/
 **/workspace/**
 bin/
 bruno/*
+DATABOT.md
 dbt_internal_packages/
