@@ -1,3 +1,4 @@
+dbt-bigquery
 dlt
 dlt[gs]
 gcsfs
