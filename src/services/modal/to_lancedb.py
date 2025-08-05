@@ -86,7 +86,6 @@ def embed_with_gemini_and_upload_to_lance(
         )
         for name in WebhookModel.modal_get_secret_collection_names()
     ],
-    region="us-east1",
     allow_concurrent_inputs=1000,
     enable_memory_snapshot=False,
 )
