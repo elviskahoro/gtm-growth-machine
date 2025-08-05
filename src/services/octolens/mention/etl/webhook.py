@@ -12,7 +12,7 @@ class Webhook(BaseModel):
     @staticmethod
     def modal_get_secret_collection_names() -> list[str]:
         return [
-            "devx-octolens",
+            "devx-growth-gcp",
         ]
 
     @staticmethod
