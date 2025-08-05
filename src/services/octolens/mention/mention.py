@@ -6,10 +6,7 @@ from typing import Any
 
 from pydantic import AliasChoices, BaseModel, Field, field_validator
 
-from src.services.local.filesystem import (
-    file_clean_string,
-    file_clean_timestamp_from_datetime,
-)
+from src.services.local.filesystem import FileCleaner
 
 
 class Mention(BaseModel):
@@ -139,8 +136,8 @@ class Mention(BaseModel):
         self,
         extension: str = ".jsonl",
     ) -> str:
-        source: str = file_clean_string(self.source)
-        keyword: str = file_clean_string(self.keyword)
-        author: str = file_clean_string(self.author)
-        timestamp: str = file_clean_timestamp_from_datetime(self.timestamp)
+        source: str = FileCleaner.file_clean_string(self.source)
+        keyword: str = FileCleaner.file_clean_string(self.keyword)
+        author: str = FileCleaner.file_clean_string(self.author)
+        timestamp: str = FileCleaner.file_clean_timestamp_from_datetime(self.timestamp)
         return f"{source}-{keyword}-{timestamp}-{author}{extension}"

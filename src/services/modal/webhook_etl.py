@@ -5,19 +5,9 @@ from typing import TYPE_CHECKING
 
 import modal
 from modal import Image
-from src.services.dlt.destination_type import (
-    DestinationType,
-)
-from src.services.dlt.filesystem_gcp import (
-    gcp_clean_bucket_name,
-    to_filesystem,
-)
-from src.services.local.filesystem import (
-    DestinationFileData,
-    SourceFileData,
-    get_destination_file_data_from_source_file_data,
-    get_source_file_data_from_input_folder,
-)
+from src.services.dlt.destination_type import DestinationType
+from src.services.dlt.filesystem_gcp import gcp_clean_bucket_name, to_filesystem
+from src.services.local.filesystem import DestinationFileData, SourceFileData
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -93,11 +83,9 @@ def web(
     bucket_url: str = DestinationType.GCP.get_bucket_url_from_bucket_name(
         bucket_name=BUCKET_NAME,
     )
-    data: Iterator[DestinationFileData] = (
-        get_destination_file_data_from_source_file_data(
-            source_file_data=file_data,
-            bucket_url=bucket_url,
-        )
+    data: Iterator[DestinationFileData] = DestinationFileData.from_source_file_data(
+        source_file_data=file_data,
+        bucket_url=bucket_url,
     )
     return to_filesystem(
         destination_file_data=data,
@@ -115,7 +103,7 @@ def local(
         bucket_name=BUCKET_NAME,
     )
 
-    source_file_data: Iterator[SourceFileData] = get_source_file_data_from_input_folder(
+    source_file_data: Iterator[SourceFileData] = SourceFileData.from_input_folder(
         input_folder=input_folder,
         base_model=WebhookModel,  # trunk-ignore(pyright/reportArgumentType)
         extension=[
@@ -124,7 +112,7 @@ def local(
         ],
     )
     destination_file_data: Iterator[DestinationFileData] = (
-        get_destination_file_data_from_source_file_data(
+        DestinationFileData.from_source_file_data(
             source_file_data=source_file_data,
             bucket_url=bucket_url,
         )

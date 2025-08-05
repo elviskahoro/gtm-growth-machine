@@ -4,34 +4,28 @@ from __future__ import annotations
 from itertools import chain
 from typing import TYPE_CHECKING
 
-import pandas as pd  # trunk-ignore(ruff/F401,pyright/reportUnusedImport)
-
 import modal
 from modal import Image
 from src.services.gemini.embed import embed_with_gemini
 from src.services.lancedb.upload import upload_to_lance
-from src.services.local.filesystem import (
-    SourceFileData,
-    get_source_file_data_from_input_folder,
-)
+from src.services.local.filesystem import SourceFileData
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from pydantic import BaseModel
 
-# trunk-ignore-begin(ruff/F401,pyright/reportUnusedImport)
+# trunk-ignore-begin(ruff/F401,ruff/I001,pyright/reportUnusedImport)
 from src.services.fathom.transcript.etl.webhook import (
     Webhook as FathomTranscriptWebhookModel,
 )
 from src.services.octolens.mention.etl.webhook import (
     Webhook as OctolensMentionsWebhookModel,
 )
+# trunk-ignore-end(ruff/F401,ruff/I001,pyright/reportUnusedImport)
 
-# trunk-ignore-end(ruff/F401,pyright/reportUnusedImport)
 
-
-class WebhookModel(FathomTranscriptWebhookModel):  # type: ignore # trunk-ignore(ruff/F821)
+class WebhookModel(WebhookModel):  # type: ignore # trunk-ignore(ruff/F821)
     pass
 
 
@@ -123,7 +117,7 @@ def web(
 def local(
     input_folder: str,
 ) -> None:
-    source_file_data: Iterator[SourceFileData] = get_source_file_data_from_input_folder(
+    source_file_data: Iterator[SourceFileData] = SourceFileData.from_input_folder(
         input_folder=input_folder,
         base_model=WebhookModel,  # trunk-ignore(pyright/reportArgumentType)
         extension=[
