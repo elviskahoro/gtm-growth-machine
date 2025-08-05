@@ -26,6 +26,7 @@
 .venv/
 .web
 .webassets-cache
+
 /*.cover
 /*.egg
 /*.log
@@ -36,15 +37,19 @@
 /*.sage.py
 /*.so
 /*.spec
+
 *$py.class
+
 **/*.db
 **/*.pyc
 **/*.swp
 **/.DS_Store
 **/.web
 /site
+
 __pycache__/
 __pypackages__/
+
 assets/external/
 bruno/devx/
 build/
@@ -54,6 +59,7 @@ chroma_data
 coverage.xml
 cython_debug/
 data/
+dbt_cloud.yml
 db.sqlite3
 db.sqlite3-journal
 develop-eggs/
