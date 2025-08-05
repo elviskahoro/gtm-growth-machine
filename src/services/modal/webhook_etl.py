@@ -22,15 +22,14 @@ from src.services.local.filesystem import (
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-# trunk-ignore-begin(ruff/F401,pyright/reportUnusedImport)
+# trunk-ignore-begin(ruff/F401,ruff/I001,pyright/reportUnusedImport)
 from src.services.fathom.transcript.etl.webhook import (
     Webhook as FathomTranscriptWebhookModel,
 )
 from src.services.octolens.mention.etl.webhook import (
     Webhook as OctolensMentionsWebhookModel,
 )
-
-# trunk-ignore-end(ruff/F401,pyright/reportUnusedImport)
+# trunk-ignore-end(ruff/F401,ruff/I001,pyright/reportUnusedImport)
 
 
 class WebhookModel(WebhookModel):  # type: ignore # trunk-ignore(ruff/F821)
@@ -134,4 +133,5 @@ def local(
         destination_file_data=destination_file_data,
         bucket_url=bucket_url,
     )
+    print(response)
     print(response)
