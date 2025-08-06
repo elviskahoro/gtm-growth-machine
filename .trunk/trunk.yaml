@@ -22,6 +22,7 @@ plugins:
 lint:
   enabled:
     - actionlint@1.7.7
+    - black@24.10.0
     - checkov@3.2.457
     - git-diff-check
     - markdownlint@0.45.0
@@ -41,7 +42,6 @@ lint:
 
   disabled:
     - bandit
-    - black
     - eslint
     - flake8
     - isort
