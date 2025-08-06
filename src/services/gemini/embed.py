@@ -51,7 +51,7 @@ def _embed(
 
 def embed_with_gemini(
     base_models_to_embed: Iterator[BaseModel],
-    batch_size: int,
+    embed_batch_size: int,
 ) -> Generator[list[BaseModel], None, None]:
     _init_client()
     model: TextEmbeddingModel = TextEmbeddingModel.from_pretrained(
@@ -60,7 +60,7 @@ def embed_with_gemini(
     batch: list[BaseModel] = []
     for item in base_models_to_embed:
         batch.append(item)
-        if len(batch) >= batch_size:
+        if len(batch) >= embed_batch_size:
             _embed(
                 embedding_model=model,
                 base_models=batch,

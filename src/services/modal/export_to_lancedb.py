@@ -33,7 +33,6 @@ class WebhookModel(WebhookModel):  # type: ignore # trunk-ignore(ruff/F821)
 
 WebhookModel.model_rebuild()
 
-LANCEDB_PROJECT_NAME: str = WebhookModel.lance_get_project_name()
 GEMINI_EMBED_BATCH_SIZE: int = 100
 
 image: Image = modal.Image.debian_slim().pip_install(
@@ -49,19 +48,20 @@ image.add_local_python_source(
     ],
 )
 app = modal.App(
-    name=LANCEDB_PROJECT_NAME,
+    name=WebhookModel.lance_get_project_name(),
     image=image,
 )
 
 
 def embed_with_gemini_and_upload_to_lance(
     source_file_data: Iterator[SourceFileData],
+    embed_batch_size: int = GEMINI_EMBED_BATCH_SIZE,
 ) -> str:
     chain_base_models_to_embed: chain[list[BaseModel]] = chain(
         list(source_file_data.base_model.etl_get_base_models())
         for source_file_data in source_file_data
     )
-    print(f"Batch size {GEMINI_EMBED_BATCH_SIZE:04d}")
+    print(f"Batch size {embed_batch_size:04d}")
 
     count: int = 0
     base_models_to_embed: list[BaseModel]
@@ -69,7 +69,7 @@ def embed_with_gemini_and_upload_to_lance(
         print(f"{len(base_models_to_embed):07d} Embeded with Gemini")
         for base_models_to_upload in embed_with_gemini(
             base_models_to_embed=iter(base_models_to_embed),
-            batch_size=GEMINI_EMBED_BATCH_SIZE,
+            embed_batch_size=embed_batch_size,
         ):
             upload_to_lance(
                 base_models_to_upload=base_models_to_upload,
