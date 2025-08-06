@@ -2,6 +2,7 @@ dbt-bigquery
 dlt
 dlt[gs]
 gcsfs
+lancedb
 modal
 orjson>=3.9.15
 polars

@@ -1,5 +1,5 @@
-from .webhook import webhook
+from .webhook import Webhook
 
 __all__ = [
-    "webhook",
+    "Webhook",
 ]
