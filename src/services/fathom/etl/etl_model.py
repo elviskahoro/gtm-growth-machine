@@ -49,6 +49,94 @@ class EtlTranscriptMessage(BaseModel):
     watch_link: str | None
 
     @staticmethod
+    def gemini_get_column_to_embed() -> str:
+        return "message"
+
+    @staticmethod
+    def lance_get_project_name() -> str:
+        return "fathom-8ywo6z"
+
+    @staticmethod
+    def lance_get_table_name() -> str:
+        return "transcripts"
+
+    @staticmethod
+    def lance_get_index_type() -> str:
+        return "IVF_HNSW_SQ"
+
+    @staticmethod
+    def lance_get_index_cache_size() -> int:
+        return 512
+
+    @staticmethod
+    def lance_get_index_metric() -> str:
+        return "cosine"
+
+    @staticmethod
+    def lance_get_vector_column_name() -> str:
+        return "embedding"
+
+    @staticmethod
+    def lance_get_vector_dimension() -> int:
+        return 768
+
+    @staticmethod
+    def lance_get_primary_key() -> str:
+        primary_key: str = "id"
+        fields: set[str] = set(EtlTranscriptMessage.model_fields.keys())
+        if primary_key in fields:
+            return primary_key
+
+        error_msg: str = (
+            f"Primary key {primary_key} not found in model fields. Available fields: {fields}"
+        )
+        raise ValueError(
+            error_msg,
+        )
+
+    @staticmethod
+    def lance_get_schema() -> pa.Schema:
+        return pa.schema(
+            [
+                pa.field("id", pa.string()),
+                pa.field("recording_id", pa.string()),
+                pa.field("message_id", pa.int32()),
+                pa.field("url", pa.string()),
+                pa.field("title", pa.string()),
+                pa.field(
+                    "date",
+                    pa.timestamp("us"),
+                ),  # microsecond timestamp for datetime
+                pa.field("timestamp", pa.int32()),
+                pa.field("speaker", pa.string()),
+                pa.field(
+                    "organization",
+                    pa.string(),
+                    nullable=True,
+                ),
+                pa.field("message", pa.string()),
+                pa.field(
+                    "action_item",
+                    pa.string(),
+                    nullable=True,
+                ),
+                pa.field(
+                    "watch_link",
+                    pa.string(),
+                    nullable=True,
+                ),
+                pa.field(
+                    "embedding",
+                    pa.list_(
+                        pa.float32(),
+                        EtlTranscriptMessage.lance_get_vector_dimension(),
+                    ),
+                    nullable=True,
+                ),
+            ],
+        )
+
+    @staticmethod
     def convert_timestamp_to_seconds(
         timestamp: str,
     ) -> int:
@@ -200,91 +288,3 @@ class EtlTranscriptMessage(BaseModel):
 
         if current_transcript_message:
             yield current_transcript_message
-
-    @staticmethod
-    def lance_get_project_name() -> str:
-        return "fathom-8ywo6z"
-
-    @staticmethod
-    def lance_get_table_name() -> str:
-        return "transcripts"
-
-    @staticmethod
-    def lance_get_index_type() -> str:
-        return "IVF_HNSW_SQ"
-
-    @staticmethod
-    def lance_get_index_cache_size() -> int:
-        return 512
-
-    @staticmethod
-    def lance_get_index_metric() -> str:
-        return "cosine"
-
-    @staticmethod
-    def lance_get_vector_column_name() -> str:
-        return "embedding"
-
-    @staticmethod
-    def lance_get_vector_dimension() -> int:
-        return 768
-
-    @staticmethod
-    def lance_get_primary_key() -> str:
-        primary_key: str = "id"
-        fields: set[str] = set(EtlTranscriptMessage.model_fields.keys())
-        if primary_key in fields:
-            return primary_key
-
-        error_msg: str = (
-            f"Primary key {primary_key} not found in model fields. Available fields: {fields}"
-        )
-        raise ValueError(
-            error_msg,
-        )
-
-    @staticmethod
-    def lance_get_schema() -> pa.Schema:
-        return pa.schema(
-            [
-                pa.field("id", pa.string()),
-                pa.field("recording_id", pa.string()),
-                pa.field("message_id", pa.int32()),
-                pa.field("url", pa.string()),
-                pa.field("title", pa.string()),
-                pa.field(
-                    "date",
-                    pa.timestamp("us"),
-                ),  # microsecond timestamp for datetime
-                pa.field("timestamp", pa.int32()),
-                pa.field("speaker", pa.string()),
-                pa.field(
-                    "organization",
-                    pa.string(),
-                    nullable=True,
-                ),
-                pa.field("message", pa.string()),
-                pa.field(
-                    "action_item",
-                    pa.string(),
-                    nullable=True,
-                ),
-                pa.field(
-                    "watch_link",
-                    pa.string(),
-                    nullable=True,
-                ),
-                pa.field(
-                    "embedding",
-                    pa.list_(
-                        pa.float32(),
-                        EtlTranscriptMessage.lance_get_vector_dimension(),
-                    ),
-                    nullable=True,
-                ),
-            ],
-        )
-
-    @staticmethod
-    def gemini_get_column_to_embed() -> str:
-        return "message"
