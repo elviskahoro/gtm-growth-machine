@@ -9,9 +9,9 @@ from pydantic import BaseModel
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+from src.services.fathom.etl.etl_model import EtlTranscriptMessage
 from src.services.fathom.meeting.meeting import Meeting
 from src.services.fathom.recording.recording import Recording
-from src.services.fathom.transcript.etl.etl_model import EtlTranscriptMessage
 from src.services.fathom.transcript.transcript import Transcript
 from src.services.fathom.user.user import FathomUser
 from src.services.local.filesystem import FileCleaner

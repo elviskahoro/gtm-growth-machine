@@ -18,14 +18,14 @@ from src.services.dlt.filesystem_gcp import (
     to_filesystem_gcs,
     to_filesystem_local,
 )
-from src.services.fathom.meeting.meeting import Meeting
-from src.services.fathom.recording.recording import Recording
-from src.services.fathom.transcript.etl._srt_file import SrtFile
-from src.services.fathom.transcript.etl.webhook import (
+from src.services.fathom.etl._srt_file import SrtFile
+from src.services.fathom.etl.webhook import (
     Webhook,
 )
-from src.services.fathom.transcript.transcript import Transcript
-from src.services.fathom.user.user import FathomUser
+from src.services.fathom.meeting import Meeting
+from src.services.fathom.recording import Recording
+from src.services.fathom.transcript import Transcript
+from src.services.fathom.user import FathomUser
 from src.services.local.filesystem import DestinationFileData, get_paths
 
 if TYPE_CHECKING:

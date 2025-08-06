@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 # trunk-ignore-begin(ruff/F401,ruff/I001,pyright/reportUnusedImport)
 # fmt: off
-from src.services.fathom.transcript.etl.webhook import (
+from src.services.fathom.etl import (
     Webhook as FathomTranscriptWebhookModel,
 )
 from src.services.octolens.mention.etl.webhook import (
