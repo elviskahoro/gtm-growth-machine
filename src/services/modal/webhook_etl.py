@@ -13,12 +13,14 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 # trunk-ignore-begin(ruff/F401,ruff/I001,pyright/reportUnusedImport)
+# fmt: off
 from src.services.fathom.transcript.etl.webhook import (
     Webhook as FathomTranscriptWebhookModel,
 )
 from src.services.octolens.mention.etl.webhook import (
     Webhook as OctolensMentionsWebhookModel,
 )
+# fmt: on
 # trunk-ignore-end(ruff/F401,ruff/I001,pyright/reportUnusedImport)
 
 
