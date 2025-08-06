@@ -11,8 +11,6 @@ from pydantic import BaseModel
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-SPEAKERS: list[str] = []
-
 
 class EtlTranscriptMessageWatchLinkData(NamedTuple):
     watch_link: str | None
