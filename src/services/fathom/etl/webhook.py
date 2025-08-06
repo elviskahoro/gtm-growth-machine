@@ -34,6 +34,14 @@ class Webhook(BaseModel):
     def etl_get_bucket_name() -> str:
         return "chalk-ai-devx-fathom-transcripts-etl"
 
+    @staticmethod
+    def lance_get_project_name() -> str:
+        return EtlTranscriptMessage.lance_get_project_name()
+
+    @staticmethod
+    def lance_get_base_model_type() -> type[EtlTranscriptMessage]:
+        return EtlTranscriptMessage
+
     def etl_is_valid_webhook(
         self: Webhook,
     ) -> bool:
@@ -43,6 +51,16 @@ class Webhook(BaseModel):
         self: Webhook,
     ) -> str:
         return "Invalid webhook"
+
+    def etl_get_json(
+        self: Webhook,
+    ) -> str:
+        return "\n".join(
+            message.model_dump_json(
+                indent=None,
+            )
+            for message in self.etl_get_base_models()
+        )
 
     def etl_get_file_name(
         self: Webhook,
@@ -90,21 +108,3 @@ class Webhook(BaseModel):
             speakers_internal=speakers,
             organization_internal=organization_internal,
         )
-
-    def etl_get_json(
-        self: Webhook,
-    ) -> str:
-        return "\n".join(
-            message.model_dump_json(
-                indent=None,
-            )
-            for message in self.etl_get_base_models()
-        )
-
-    @staticmethod
-    def lance_get_project_name() -> str:
-        return EtlTranscriptMessage.lance_get_project_name()
-
-    @staticmethod
-    def lance_get_base_model_type() -> type[EtlTranscriptMessage]:
-        return EtlTranscriptMessage
