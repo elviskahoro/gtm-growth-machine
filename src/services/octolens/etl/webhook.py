@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from src.services.octolens.mention.mention import Mention  # trunk-ignore(ruff/TC001)
+from src.services.octolens.mention import Mention  # trunk-ignore(ruff/TC001)
 
 
 class Webhook(BaseModel):
