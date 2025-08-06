@@ -92,6 +92,12 @@ class EtlTranscriptMessage(BaseModel):
             organization_raw.strip() if organization_raw else None
         )
         if speakers_internal and speaker in speakers_internal:
+            if organization_internal is None:
+                error_msg: str = (
+                    f"Speaker {speaker} is in speakers_internal but organization_internal is None"
+                )
+                raise ValueError(error_msg)
+
             organization = organization_internal
 
         return cls(

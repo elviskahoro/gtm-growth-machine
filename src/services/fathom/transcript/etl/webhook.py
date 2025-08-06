@@ -1,10 +1,9 @@
 # trunk-ignore-all(ruff/TC001)
 from __future__ import annotations
 
-import json
-import os
 from typing import TYPE_CHECKING
 
+import modal
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
@@ -28,8 +27,7 @@ class Webhook(BaseModel):
     @staticmethod
     def modal_get_secret_collection_names() -> list[str]:
         return [
-            "devx-fathom",
-            "devx-octolens",
+            "devx-growth-gcp",
         ]
 
     @staticmethod
@@ -63,18 +61,25 @@ class Webhook(BaseModel):
     ) -> Iterator[EtlTranscriptMessage]:
         lines: list[str] = self.transcript.plaintext.split("\n")
         recording_id: str = self.recording.get_recording_id_from_url()
-        speakers_raw: str | None = os.environ.get("SPEAKERS_INTERNAL")
-        speakers: list[str] | None = None
-        if speakers_raw:
-            try:
-                speakers_data: dict[str, list[str]] | list[str] = json.loads(
-                    speakers_raw,
-                )
-                if isinstance(speakers_data, dict) and "speakers" in speakers_data:
-                    speakers = speakers_data["speakers"]
+        storage: modal._Dict = modal.Dict.from_name(
+            self.etl_get_bucket_name(),
+            create_if_missing=False,
+        )
+        speakers: list[str] | None = storage.get(
+            "CHALK_SPEAKERS_INTERNAL",
+            None,
+        )
+        if speakers is None:
+            error: str = "Speakers not found in storage"
+            raise ValueError(error)
 
-            except json.JSONDecodeError as e:
-                print(f"Error parsing SPEAKERS_INTERNAL: {e}")
+        organization_internal: str | None = storage.get(
+            "ORGANIZATION_INTERNAL",
+            None,
+        )
+        if organization_internal is None:
+            error: str = "Organization internal not found in storage"
+            raise ValueError(error)
 
         yield from EtlTranscriptMessage.parse_transcript_lines(
             recording_id=recording_id,
@@ -83,7 +88,7 @@ class Webhook(BaseModel):
             title=self.meeting.title,
             date=self.meeting.scheduled_start_time,
             speakers_internal=speakers,
-            organization_internal=os.environ.get("ORGANIZATION_INTERNAL"),
+            organization_internal=organization_internal,
         )
 
     def etl_get_json(
