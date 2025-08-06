@@ -7,7 +7,7 @@ import modal
 import polars as pl
 from modal import Image
 
-from src.services.local.filesystem import get_paths
+from src.services.local.filesystem import FileUtility
 from src.services.octolens import Mention, Webhook
 
 BUCKET_NAME: str = "chalk-ai-devx-octolens-mentions-from_csv"
@@ -33,7 +33,7 @@ app = modal.App(
 def local(
     input_folder: str,
 ) -> None:
-    sub_paths: Iterator[Path] = get_paths(
+    sub_paths: Iterator[Path] = FileUtility.get_paths(
         input_folder=input_folder,
         extension=[".csv"],
     )

@@ -15,7 +15,7 @@ from src.services.dlt.filesystem_gcp import (
     gcp_clean_bucket_name,
     to_filesystem,
 )
-from src.services.local.filesystem import DestinationFileData, get_paths
+from src.services.local.filesystem import DestinationFileData, FileUtility
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -63,7 +63,7 @@ class SourceFileRaw(NamedTuple):
         input_folder: str,
         extension: Iterable[str],
     ) -> Iterator[SourceFileRaw]:
-        paths: Iterator[Path] = get_paths(
+        paths: Iterator[Path] = FileUtility.get_paths(
             input_folder=input_folder,
             extension=extension,
         )

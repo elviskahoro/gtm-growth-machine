@@ -12,7 +12,26 @@ if TYPE_CHECKING:
     from datetime import datetime
 
 
-class FileCleaner:
+class FileUtility:
+
+    @staticmethod
+    def get_paths(
+        input_folder: str,
+        extension: Iterable[str] | None,
+    ) -> Iterator[Path]:
+        cwd: str = str(Path.cwd())
+        input_folder_path: Path = Path(f"{cwd}/{input_folder}")
+        if not input_folder_path.exists() or not input_folder_path.is_dir():
+            error_msg: str = f"Input folder '{input_folder_path}' does not exist"
+            raise AssertionError(
+                error_msg,
+            )
+
+        return (
+            f
+            for f in input_folder_path.iterdir()
+            if f.is_file() and (extension is None or f.suffix in extension)
+        )
 
     @staticmethod
     def file_clean_timestamp_from_datetime(
@@ -29,25 +48,6 @@ class FileCleaner:
         return sanitize_string(string=no_space_on_borders)
 
 
-def get_paths(
-    input_folder: str,
-    extension: Iterable[str] | None,
-) -> Iterator[Path]:
-    cwd: str = str(Path.cwd())
-    input_folder_path: Path = Path(f"{cwd}/{input_folder}")
-    if not input_folder_path.exists() or not input_folder_path.is_dir():
-        error_msg: str = f"Input folder '{input_folder_path}' does not exist"
-        raise AssertionError(
-            error_msg,
-        )
-
-    return (
-        f
-        for f in input_folder_path.iterdir()
-        if f.is_file() and (extension is None or f.suffix in extension)
-    )
-
-
 class SourceFileData(NamedTuple):
     path: Path | None
     base_model: BaseModel
@@ -58,7 +58,7 @@ class SourceFileData(NamedTuple):
         base_model: BaseModel,
         extension: Iterable[str] | None,
     ) -> Iterator[SourceFileData]:
-        paths: Iterator[Path] = get_paths(
+        paths: Iterator[Path] = FileUtility.get_paths(
             input_folder=input_folder,
             extension=extension,
         )

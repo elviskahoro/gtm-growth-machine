@@ -26,7 +26,7 @@ from src.services.fathom.meeting import Meeting
 from src.services.fathom.recording import Recording
 from src.services.fathom.transcript import Transcript
 from src.services.fathom.user import FathomUser
-from src.services.local.filesystem import DestinationFileData, get_paths
+from src.services.local.filesystem import DestinationFileData, FileUtility
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -92,7 +92,7 @@ def _read_file_preserve_lines(
 def _get_data_from_input_folder(
     input_folder: str,
 ) -> Iterator[SrtFile]:
-    paths: Iterator[Path] = get_paths(
+    paths: Iterator[Path] = FileUtility.get_paths(
         input_folder=input_folder,
         extension=[".srt"],
     )

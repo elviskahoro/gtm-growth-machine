@@ -14,7 +14,7 @@ from src.services.fathom.meeting.meeting import Meeting
 from src.services.fathom.recording.recording import Recording
 from src.services.fathom.transcript.transcript import Transcript
 from src.services.fathom.user.user import FathomUser
-from src.services.local.filesystem import FileCleaner
+from src.services.local.filesystem import FileUtility
 
 
 class Webhook(BaseModel):
@@ -47,11 +47,11 @@ class Webhook(BaseModel):
     def etl_get_file_name(
         self: Webhook,
     ) -> str:
-        timestamp: str = FileCleaner.file_clean_timestamp_from_datetime(
+        timestamp: str = FileUtility.file_clean_timestamp_from_datetime(
             dt=self.meeting.scheduled_start_time,
         )
         recording_id: str = self.recording.get_recording_id_from_url()
-        title: str = FileCleaner.file_clean_string(
+        title: str = FileUtility.file_clean_string(
             string=self.meeting.title,
         )
         return f"{timestamp}-{recording_id}-{title}.jsonl"
