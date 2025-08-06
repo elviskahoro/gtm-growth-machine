@@ -35,14 +35,13 @@ WebhookModel.model_rebuild()
 
 GEMINI_EMBED_BATCH_SIZE: int = 100
 
-image: Image = modal.Image.debian_slim().pip_install(
+image: Image = modal.Image.debian_slim().uv_pip_install(
     "fastapi[standard]",
     "google-cloud-aiplatform",
     "lancedb",
-    "pandas",
     "pyarrow",
 )
-image.add_local_python_source(
+image = image.add_local_python_source(
     *[
         "src",
     ],
@@ -88,12 +87,14 @@ def embed_with_gemini_and_upload_to_lance(
         )
         for name in WebhookModel.modal_get_secret_collection_names()
     ],
-    allow_concurrent_inputs=1000,
     enable_memory_snapshot=False,
 )
-@modal.web_endpoint(
+@modal.fastapi_endpoint(
     method="POST",
     docs=True,
+)
+@modal.concurrent(
+    max_inputs=1000,
 )
 def web(
     webhook: WebhookModel,
