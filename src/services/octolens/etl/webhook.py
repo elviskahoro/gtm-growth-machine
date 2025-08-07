@@ -55,7 +55,9 @@ class Webhook(BaseModel):
 
     def etl_get_json(
         self,
+        storage: dict | None,
     ) -> str:
+        del storage
         return self.data.model_dump_json(
             indent=None,
         )

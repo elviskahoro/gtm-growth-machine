@@ -3,13 +3,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import modal
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-from src.services.fathom.etl.etl_model import EtlTranscriptMessage, Storage
+    import modal
+
+from src.services.fathom.etl.etl_model import EtlTranscriptMessage, Speaker, Storage
 from src.services.fathom.meeting.meeting import Meeting
 from src.services.fathom.recording.recording import Recording
 from src.services.fathom.transcript.transcript import Transcript
@@ -62,12 +63,21 @@ class Webhook(BaseModel):
 
     def etl_get_json(
         self: Webhook,
+        storage: BaseModel | None,
     ) -> str:
+        if storage is None:
+            error: str = (
+                "Storage should not be None. Please provide the metadata for processing Fathom webhooks"
+            )
+            raise AttributeError(error)
+
         return "\n".join(
             message.model_dump_json(
                 indent=None,
             )
-            for message in self.etl_get_base_models()
+            for message in self.etl_get_base_models(
+                storage=storage,
+            )
         )
 
     def etl_get_file_name(
@@ -84,35 +94,23 @@ class Webhook(BaseModel):
 
     def etl_get_base_models(
         self: Webhook,
+        storage: BaseModel,
     ) -> Iterator[EtlTranscriptMessage]:
-        lines: list[str] = self.transcript.plaintext.split("\n")
-        recording_id: str = self.recording.get_recording_id_from_url()
-        storage: modal._Dict = modal.Dict.from_name(
-            self.etl_get_bucket_name(),
-            create_if_missing=False,
-        )
-        speakers: list[str] | None = storage.get(
-            "CHALK_SPEAKERS_INTERNAL",
-            None,
-        )
+        speakers: list[Speaker] = storage.speakers_internal
         if speakers is None:
             error: str = "Speakers not found in storage"
             raise ValueError(error)
 
-        organization_internal: str | None = storage.get(
-            "ORGANIZATION_INTERNAL",
-            None,
+        speaker_map: dict[str, str] = Speaker.build_speaker_lookup_map(
+            speakers=speakers,
         )
-        if organization_internal is None:
-            error: str = "Organization internal not found in storage"
-            raise ValueError(error)
-
+        lines: list[str] = self.transcript.plaintext.split("\n")
+        recording_id: str = self.recording.get_recording_id_from_url()
         yield from EtlTranscriptMessage.parse_transcript_lines(
             recording_id=recording_id,
             lines=lines,
             url=self.recording.url,
             title=self.meeting.title,
             date=self.meeting.scheduled_start_time,
-            speakers_internal=speakers,
-            organization_internal=organization_internal,
+            speaker_map=speaker_map,
         )

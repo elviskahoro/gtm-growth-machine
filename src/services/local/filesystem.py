@@ -88,11 +88,12 @@ class DestinationFileData(NamedTuple):
     def from_source_file_data(
         source_file_data: Iterator[SourceFileData],
         bucket_url: str,
+        storage: BaseModel | None,
     ) -> Iterator[DestinationFileData]:
         for individual_file_data in source_file_data:
             try:
                 yield DestinationFileData(
-                    json=individual_file_data.base_model.etl_get_json(),
+                    json=individual_file_data.base_model.etl_get_json(storage=storage),
                     path=f"{bucket_url}/{individual_file_data.base_model.etl_get_file_name()}",
                 )
 

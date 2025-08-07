@@ -202,8 +202,7 @@ class EtlTranscriptMessage(BaseModel):
         url: str,
         title: str,
         date: datetime,
-        speakers_internal: list[str] | None,
-        organization_internal: str | None,
+        speaker_map: dict[str, str],
     ) -> EtlTranscriptMessage | None:
         transcript_entry_match: Match[str] | None = re.match(
             pattern=r"(\d{1,2}:\d{2}(?::\d{2})?)\s+-\s+(.+?)(?:\s+\(([^)]+)\))?$",
@@ -213,19 +212,21 @@ class EtlTranscriptMessage(BaseModel):
             return None
 
         timestamp: str = transcript_entry_match.group(1)
-        speaker: str = transcript_entry_match.group(2).strip()
+        speaker_raw: str = transcript_entry_match.group(2).strip()
         organization_raw: str | None = transcript_entry_match.group(3)
-        organization: str | None = (
-            organization_raw.strip() if organization_raw else None
+        speaker: str = Speaker.get_email_by_name_with_lookup(
+            lookup_map=speaker_map,
+            search_name=speaker_raw,
         )
-        if speakers_internal and speaker in speakers_internal:
-            if organization_internal is None:
-                error_msg: str = (
-                    f"Speaker {speaker} is in speakers_internal but organization_internal is None"
-                )
-                raise ValueError(error_msg)
+        organization: str | None = None
+        try:
+            # Validate email using Pydantic v2 validate_email function
+            validate_email(speaker)
+            organization = speaker.split("@", 1)[1]
 
-            organization = organization_internal
+        except (ValidationError, ValueError, IndexError):
+            if organization_raw:
+                organization_raw.strip()
 
         return cls(
             id=f"{recording_id}-{message_id:05d}",
@@ -285,8 +286,7 @@ class EtlTranscriptMessage(BaseModel):
         url: str,
         title: str,
         date: datetime,
-        speakers_internal: list[str] | None,
-        organization_internal: str | None,
+        speaker_map: dict[str, str],
     ) -> Iterator[EtlTranscriptMessage]:
         line_index: int = 0
         message_index: int = 1
@@ -305,8 +305,7 @@ class EtlTranscriptMessage(BaseModel):
                     url=url,
                     title=title,
                     date=date,
-                    speakers_internal=speakers_internal,
-                    organization_internal=organization_internal,
+                    speaker_map=speaker_map,
                 )
             )
             if new_transcript_message is not None:

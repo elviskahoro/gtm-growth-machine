@@ -57,7 +57,11 @@ def embed_with_gemini_and_upload_to_lance(
     embed_batch_size: int = GEMINI_EMBED_BATCH_SIZE,
 ) -> str:
     chain_base_models_to_embed: chain[list[BaseModel]] = chain(
-        list(source_file_data.base_model.etl_get_base_models())
+        list(
+            source_file_data.base_model.etl_get_base_models(
+                storage=None,  # TODO(elvis): fix this to use modal storage
+            ),
+        )
         for source_file_data in source_file_data
     )
     print(f"Batch size {embed_batch_size:04d}")
