@@ -1,0 +1,97 @@
+[
+  {
+    "name": "fathom_user_email",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "fathom_user_name",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "fathom_user_team",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "id",
+    "type": "INTEGER",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "meeting_external_domains",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "meeting_external_domains_domain_name",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "meeting_has_external_invitees",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "meeting_invitees",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "meeting_invitees_email",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "meeting_invitees_is_external",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "meeting_invitees_name",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "meeting_join_url",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "meeting_scheduled_duration_in_minutes",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "meeting_scheduled_end_time",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "meeting_scheduled_start_time",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "meeting_title",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "recording_duration_in_minutes",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "recording_url",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "transcript_plaintext",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  }
+]

@@ -21,6 +21,9 @@ if TYPE_CHECKING:
 from src.services.fathom.etl.message import (
     Webhook as FathomMessageWebhook,
 )
+from src.services.fathom.etl.call import (
+    Webhook as FathomCallWebhook,
+)
 from src.services.octolens.etl import (
     Webhook as OctolensWebhook,
 )
@@ -38,9 +41,11 @@ BUCKET_NAME: str = WebhookModel.etl_get_bucket_name()
 
 image: Image = modal.Image.debian_slim().uv_pip_install(
     "fastapi[standard]",
+    "flatsplode",
     "gcsfs",  # https://github.com/fsspec/gcsfs
-    "uuid7",
+    "orjson",
     "pyarrow",
+    "uuid7",
 )
 image = image.add_local_python_source(
     *[

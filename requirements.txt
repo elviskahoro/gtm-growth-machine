@@ -1,6 +1,7 @@
 dbt-bigquery
 dlt
 dlt[gs]
+flatten-json
 gcsfs
 lancedb
 modal
