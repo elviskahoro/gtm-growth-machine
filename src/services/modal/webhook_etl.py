@@ -19,16 +19,16 @@ if TYPE_CHECKING:
 # trunk-ignore-begin(ruff/F401,ruff/I001,pyright/reportUnusedImport)
 # fmt: off
 from src.services.fathom.etl.message import (
-    Webhook as FathomMessageWebhookModel,
+    Webhook as FathomMessageWebhook,
 )
 from src.services.octolens.etl import (
-    Webhook as OctolensWebhookModel,
+    Webhook as OctolensWebhook,
 )
 # fmt: on
 # trunk-ignore-end(ruff/F401,ruff/I001,pyright/reportUnusedImport)
 
 
-class WebhookModel(WebhookModel):  # type: ignore # trunk-ignore(ruff/F821)
+class WebhookModel(Webhook):  # type: ignore # trunk-ignore(ruff/F821)
     pass
 
 
