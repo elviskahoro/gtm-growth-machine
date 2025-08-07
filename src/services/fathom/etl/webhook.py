@@ -9,7 +9,7 @@ from pydantic import BaseModel
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-from src.services.fathom.etl.etl_model import EtlTranscriptMessage
+from src.services.fathom.etl.etl_model import EtlTranscriptMessage, Storage
 from src.services.fathom.meeting.meeting import Meeting
 from src.services.fathom.recording.recording import Recording
 from src.services.fathom.transcript.transcript import Transcript
@@ -33,6 +33,14 @@ class Webhook(BaseModel):
     @staticmethod
     def etl_get_bucket_name() -> str:
         return "chalk-ai-devx-fathom-transcripts-etl"
+
+    @staticmethod
+    def storage_get_app_name() -> modal._Dict:
+        return f"{Webhook.etl_get_bucket_name()}-storage"
+
+    @staticmethod
+    def storage_get_base_model_type() -> type[Storage]:
+        return Storage
 
     @staticmethod
     def lance_get_project_name() -> str:
