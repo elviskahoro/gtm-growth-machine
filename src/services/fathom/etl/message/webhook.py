@@ -51,6 +51,18 @@ class Webhook(BaseModel):
         return EtlTranscriptMessage.lance_get_project_name()
 
     @staticmethod
+    def lance_get_table_name() -> str:
+        return EtlTranscriptMessage.lance_get_table_name()
+
+    @staticmethod
+    def lance_get_primary_key() -> str:
+        return EtlTranscriptMessage.lance_get_primary_key()
+
+    @staticmethod
+    def lance_get_primary_key_index_type() -> str:
+        return EtlTranscriptMessage.lance_get_primary_key_index_type()
+
+    @staticmethod
     def lance_get_base_model_type() -> type[EtlTranscriptMessage]:
         return EtlTranscriptMessage
 

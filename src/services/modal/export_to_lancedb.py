@@ -1,19 +1,25 @@
 # trunk-ignore-all(ruff/PGH003,trunk/ignore-does-nothing)
 from __future__ import annotations
 
+import time
 from itertools import chain
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import modal
 from modal import Image
-from src.services.gemini.embed import embed_with_gemini
-from src.services.lancedb.upload import upload_to_lance
+from src.services.gemini.embed import (
+    embed_with_gemini,
+    init_client as gemini_init_client,
+)
+from src.services.lance.setup import init_client as lance_init_client
+from src.services.lance.upload import upload_to_lance
 from src.services.local.filesystem import SourceFileData
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from lancedb.db import DBConnection
     from pydantic import BaseModel
 
 # trunk-ignore-begin(ruff/F401,ruff/I001,pyright/reportUnusedImport)
@@ -28,7 +34,7 @@ from src.services.octolens.etl import (
 # trunk-ignore-end(ruff/F401,ruff/I001,pyright/reportUnusedImport)
 
 
-class WebhookModel(Webhook):  # type: ignore # trunk-ignore(ruff/F821)
+class WebhookModel(FathomMessageWebhook):  # type: ignore # trunk-ignore(ruff/F821)
     pass
 
 
@@ -36,7 +42,9 @@ WebhookModel.model_rebuild()
 
 BUCKET_NAME: str = WebhookModel.etl_get_bucket_name()
 
-GEMINI_EMBED_BATCH_SIZE: int = 100
+GEMINI_EMBED_BATCH_SIZE: int = 250  # Maximum allowed by Vertex AI text-embedding-005
+UPLOAD_DELAY_SECONDS: float = 0.1  # Delay between uploads to prevent rate limiting
+MAX_RETRY_ATTEMPTS: int = 5  # Maximum retry attempts for rate limited uploads
 
 image: Image = modal.Image.debian_slim().uv_pip_install(
     "fastapi[standard]",
@@ -93,7 +101,15 @@ def embed_with_gemini_and_upload_to_lance(
     source_file_data: Iterator[SourceFileData],
     embed_batch_size: int,
     storage: BaseModel | None,
+    db: DBConnection,
+    upload_delay: float = UPLOAD_DELAY_SECONDS,
 ) -> str:
+    base_model_type: type[BaseModel] = WebhookModel.lance_get_base_model_type()
+    table_name: str = WebhookModel.lance_get_table_name()
+    primary_key: str = WebhookModel.lance_get_primary_key()
+    primary_key_index_type: str = WebhookModel.lance_get_primary_key_index_type()
+
+    gemini_init_client()
     chain_base_models_to_embed: chain[list[BaseModel]] = chain(
         list(
             source_file_data.base_model.etl_get_base_models(
@@ -114,10 +130,18 @@ def embed_with_gemini_and_upload_to_lance(
         ):
             upload_to_lance(
                 data_to_upload=data_to_upload,
-                base_model_type=WebhookModel.lance_get_base_model_type(),
+                base_model_type=base_model_type,
+                db=db,
+                table_name=table_name,
+                primary_key=primary_key,
+                primary_key_index_type=primary_key_index_type,
             )
             count += 1
             print(f"{count:07d} Uploaded to LanceDB")
+
+            # Add a configurable delay between uploads to prevent rate limiting
+            if upload_delay > 0:
+                time.sleep(upload_delay)
 
     return "Successfully embeded with Gemini and uploaded to LanceDB."
 
@@ -136,7 +160,7 @@ def embed_with_gemini_and_upload_to_lance(
     docs=True,
 )
 @modal.concurrent(
-    max_inputs=1000,
+    max_inputs=5,  # Balanced concurrency for web endpoints
 )
 def web(
     webhook: WebhookModel,
@@ -159,6 +183,10 @@ def web(
         source_file_data=source_file_data,
         storage=storage_file_data.base_model if storage_file_data else None,
         embed_batch_size=GEMINI_EMBED_BATCH_SIZE,
+        db=lance_init_client(
+            project_name=WebhookModel.lance_get_project_name(),
+        ),
+        upload_delay=UPLOAD_DELAY_SECONDS,
     )
 
 
@@ -166,6 +194,7 @@ def web(
 def local(
     input_folder: str,
     embed_batch_size: int = GEMINI_EMBED_BATCH_SIZE,
+    upload_delay: float = UPLOAD_DELAY_SECONDS,
 ) -> None:
     source_file_data: Iterator[SourceFileData] = SourceFileData.from_input_folder(
         input_folder=input_folder,
@@ -182,5 +211,9 @@ def local(
         source_file_data=source_file_data,
         storage=storage_file_data.base_model if storage_file_data else None,
         embed_batch_size=embed_batch_size,
+        db=lance_init_client(
+            project_name=WebhookModel.lance_get_project_name(),
+        ),
+        upload_delay=upload_delay,
     )
     print(response)

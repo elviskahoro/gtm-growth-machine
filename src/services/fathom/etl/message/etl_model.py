@@ -102,15 +102,15 @@ class EtlTranscriptMessage(BaseModel):
         return "fathom-messages"
 
     @staticmethod
-    def lance_get_index_type() -> str:
+    def lance_get_vector_index_type() -> str:
         return "IVF_HNSW_SQ"
 
     @staticmethod
-    def lance_get_index_cache_size() -> int:
+    def lance_get_vector_index_cache_size() -> int:
         return 512
 
     @staticmethod
-    def lance_get_index_metric() -> str:
+    def lance_get_vector_index_metric() -> str:
         return "cosine"
 
     @staticmethod
@@ -120,6 +120,10 @@ class EtlTranscriptMessage(BaseModel):
     @staticmethod
     def lance_get_vector_dimension() -> int:
         return 768
+
+    @staticmethod
+    def lance_get_primary_key_index_type() -> str:
+        return "BTREE"
 
     @staticmethod
     def lance_get_primary_key() -> str:

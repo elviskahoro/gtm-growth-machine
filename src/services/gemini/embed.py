@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from pydantic import BaseModel
 
 
-def _init_client(
+def init_client(
     location: str = "us-east1",
 ) -> None:
     aiplatform.init(
@@ -68,7 +68,13 @@ def embed_with_gemini(
     base_models_to_embed: Iterator[BaseModel],
     embed_batch_size: int,
 ) -> Generator[list[dict], None, None]:
-    _init_client()
+    max_api_batch_size = 250  # text-embedding-005 limit
+    if embed_batch_size > max_api_batch_size:
+        print(
+            f"Warning: Batch size {embed_batch_size} exceeds API limit. Using {max_api_batch_size} instead.",
+        )
+        embed_batch_size = max_api_batch_size - 1
+
     model: TextEmbeddingModel = TextEmbeddingModel.from_pretrained(
         model_name="text-embedding-005",
     )
