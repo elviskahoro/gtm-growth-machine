@@ -94,7 +94,7 @@ def _get_storage_source_file_data(
         )
         for name in WebhookModel.modal_get_secret_collection_names()
     ],
-    region="us-east4",
+    region="us-east-1",
     enable_memory_snapshot=False,
 )
 @modal.fastapi_endpoint(
