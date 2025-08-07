@@ -123,4 +123,3 @@ def local(
         bucket_url=bucket_url,
     )
     print(response)
-    print(response)
