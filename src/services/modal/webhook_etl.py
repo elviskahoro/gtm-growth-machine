@@ -56,7 +56,7 @@ app = modal.App(
 
 VOLUME: modal.Volume = modal.Volume.from_name(
     BUCKET_NAME,
-    create_if_missing=False,
+    create_if_missing=True,
 )
 
 
