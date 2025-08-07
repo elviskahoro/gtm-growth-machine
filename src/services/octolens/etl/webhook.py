@@ -4,8 +4,6 @@ from pydantic import BaseModel
 
 from src.services.octolens.mention import Mention  # trunk-ignore(ruff/TC001)
 
-# TODO(elvis): Add type hints to self
-
 
 class Webhook(BaseModel):
     action: str = "mention_created"
@@ -31,7 +29,7 @@ class Webhook(BaseModel):
         return None
 
     def etl_get_file_name(
-        self,
+        self: Webhook,
         extension: str = ".jsonl",
     ) -> str:
         return self.data.get_file_name(
@@ -39,7 +37,7 @@ class Webhook(BaseModel):
         )
 
     def etl_is_valid_webhook(
-        self,
+        self: Webhook,
     ) -> bool:
         match self.action:
             case "mention_created":
@@ -49,12 +47,12 @@ class Webhook(BaseModel):
                 return False
 
     def etl_get_invalid_webhook_error_msg(
-        self,
+        self: Webhook,
     ) -> str:
         return "Invalid webhook: " + self.action
 
     def etl_get_json(
-        self,
+        self: Webhook,
         storage: dict | None,
     ) -> str:
         del storage
