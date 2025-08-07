@@ -13,6 +13,8 @@ from src.services.local.filesystem import DestinationFileData, SourceFileData
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from pydantic import BaseModel
+
 
 # trunk-ignore-begin(ruff/F401,ruff/I001,pyright/reportUnusedImport)
 # fmt: off
@@ -75,15 +77,19 @@ def _get_data_from_storage_remote() -> str:
 def _get_storage_source_file_data(
     local_storage_path: str | None,
 ) -> SourceFileData | None:
+    base_model_type: type[BaseModel] | None = WebhookModel.storage_get_base_model_type()
+    if base_model_type is None:
+        return None
+
     if local_storage_path is not None:
         return SourceFileData.from_local_storage_path(
             local_storage_path=local_storage_path,
-            base_model_type=WebhookModel.storage_get_base_model_type(),
+            base_model_type=base_model_type,
         )
 
     return SourceFileData.from_json_data(
         json_data=_get_data_from_storage_remote.remote(),  # trunk-ignore(pyright/reportFunctionMemberAccess)
-        base_model_type=WebhookModel.storage_get_base_model_type(),
+        base_model_type=base_model_type,
     )
 
 
