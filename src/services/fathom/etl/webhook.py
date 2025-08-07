@@ -33,7 +33,7 @@ class Webhook(BaseModel):
 
     @staticmethod
     def etl_get_bucket_name() -> str:
-        return "chalk-ai-devx-fathom-transcripts-etl"
+        return "chalk-ai-devx-fathom-messages-etl-01"
 
     @staticmethod
     def storage_get_app_name() -> modal._Dict:
