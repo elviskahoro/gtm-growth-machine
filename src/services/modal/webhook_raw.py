@@ -90,7 +90,7 @@ class SourceFileRaw(NamedTuple):
         for individual_file_data in file_data:
             try:
                 yield DestinationFileData(
-                    json=individual_file_data.content,
+                    string=individual_file_data.content,
                     path=f"{bucket_url}/{uuid7()!s}.jsonl",
                 )
 
@@ -117,9 +117,9 @@ class SourceFileRaw(NamedTuple):
     docs=True,
 )
 def web(
-    json_data: dict,
+    json: dict,
 ) -> str:
-    json: str = orjson.dumps(json_data).decode(
+    json_data: str = orjson.dumps(json).decode(
         encoding="utf-8",
     )
     bucket_url: str = DestinationType.GCP.get_bucket_url_from_bucket_name(
@@ -128,7 +128,7 @@ def web(
     data: Iterator[DestinationFileData] = iter(
         [
             DestinationFileData(
-                json=json,
+                string=json_data,
                 path=f"{bucket_url}/{uuid7()!s}.jsonl",
             ),
         ],

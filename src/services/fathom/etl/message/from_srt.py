@@ -123,7 +123,7 @@ def _to_filesystem(
 ) -> str:
     destination_file_data: Iterator[DestinationFileData] = (
         DestinationFileData(
-            json=json,
+            string=json,
             path=bucket_url + "/" + str(uuid7()) + ".jsonl",
         )
         for json in jsons

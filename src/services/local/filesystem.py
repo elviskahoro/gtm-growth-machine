@@ -126,7 +126,7 @@ class SourceFileData(NamedTuple):
 
 
 class DestinationFileData(NamedTuple):
-    json: str
+    string: str
     path: str
 
     @staticmethod
@@ -138,7 +138,9 @@ class DestinationFileData(NamedTuple):
         for individual_file_data in source_file_data:
             try:
                 yield DestinationFileData(
-                    json=individual_file_data.base_model.etl_get_json(storage=storage),
+                    string=individual_file_data.base_model.etl_get_json(
+                        storage=storage,
+                    ),
                     path=f"{bucket_url}/{individual_file_data.base_model.etl_get_file_name()}",
                 )
 

@@ -121,11 +121,11 @@ def to_filesystem_gcs(
             "token_uri": "https://oauth2.googleapis.com/token",
         },
     )
-    for json_data in destination_file_data:
+    for file_data in destination_file_data:
         with fs.open(
-            path=json_data.path,
+            path=file_data.path,
             mode="w",
         ) as f:
             f.write(
-                json_data.json,
+                file_data.string,
             )
