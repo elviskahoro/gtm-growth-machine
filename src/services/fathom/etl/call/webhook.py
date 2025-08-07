@@ -63,7 +63,6 @@ class Webhook(BaseModel):
         del storage
         model_data: dict = self.model_dump(
             mode="json",
-            by_alias=True,
         )
         recording_id: str = self.recording.get_recording_id_from_url()
         flattened_data: list[dict] = list(
