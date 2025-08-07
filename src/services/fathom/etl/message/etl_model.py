@@ -99,7 +99,7 @@ class EtlTranscriptMessage(BaseModel):
 
     @staticmethod
     def lance_get_table_name() -> str:
-        return "transcripts"
+        return "fathom-messages"
 
     @staticmethod
     def lance_get_index_type() -> str:
