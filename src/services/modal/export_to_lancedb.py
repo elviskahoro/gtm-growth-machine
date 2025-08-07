@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from itertools import chain
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import modal
@@ -27,11 +28,13 @@ from src.services.octolens.etl import (
 # trunk-ignore-end(ruff/F401,ruff/I001,pyright/reportUnusedImport)
 
 
-class WebhookModel(WebhookModel):  # type: ignore # trunk-ignore(ruff/F821)
+class WebhookModel(FathomWebhookModel):  # type: ignore # trunk-ignore(ruff/F821)
     pass
 
 
 WebhookModel.model_rebuild()
+
+BUCKET_NAME: str = WebhookModel.etl_get_bucket_name()
 
 GEMINI_EMBED_BATCH_SIZE: int = 100
 
@@ -51,15 +54,50 @@ app = modal.App(
     image=image,
 )
 
+VOLUME: modal.Volume = modal.Volume.from_name(
+    BUCKET_NAME,
+    create_if_missing=False,
+)
+
+
+@app.function(
+    volumes={
+        f"/{BUCKET_NAME}": VOLUME,
+    },
+)
+def _get_data_from_storage_remote() -> str:
+    path: Path = Path(f"/{BUCKET_NAME}/storage.json")
+    if not path.exists():
+        error: str = "File not found in the volume"
+        raise FileNotFoundError(error)
+
+    return path.read_text()
+
+
+def _get_storage_source_file_data(
+    local_storage_path: str | None,
+) -> SourceFileData | None:
+    if local_storage_path is not None:
+        return SourceFileData.from_local_storage_path(
+            local_storage_path=local_storage_path,
+            base_model_type=WebhookModel.storage_get_base_model_type(),
+        )
+
+    return SourceFileData.from_json_data(
+        json_data=_get_data_from_storage_remote.remote(),  # trunk-ignore(pyright/reportFunctionMemberAccess)
+        base_model_type=WebhookModel.storage_get_base_model_type(),
+    )
+
 
 def embed_with_gemini_and_upload_to_lance(
     source_file_data: Iterator[SourceFileData],
-    embed_batch_size: int = GEMINI_EMBED_BATCH_SIZE,
+    embed_batch_size: int,
+    storage: BaseModel | None,
 ) -> str:
     chain_base_models_to_embed: chain[list[BaseModel]] = chain(
         list(
             source_file_data.base_model.etl_get_base_models(
-                storage=None,  # TODO(elvis): fix this to use modal storage
+                storage=storage,
             ),
         )
         for source_file_data in source_file_data
@@ -114,14 +152,20 @@ def web(
             ),
         ],
     )
+    storage_file_data: SourceFileData | None = _get_storage_source_file_data(
+        local_storage_path=None,
+    )
     return embed_with_gemini_and_upload_to_lance(
         source_file_data=source_file_data,
+        storage=storage_file_data.base_model if storage_file_data else None,
+        embed_batch_size=GEMINI_EMBED_BATCH_SIZE,
     )
 
 
 @app.local_entrypoint()
 def local(
     input_folder: str,
+    embed_batch_size: int = GEMINI_EMBED_BATCH_SIZE,
 ) -> None:
     source_file_data: Iterator[SourceFileData] = SourceFileData.from_input_folder(
         input_folder=input_folder,
@@ -131,7 +175,12 @@ def local(
             ".jsonl",
         ],
     )
+    storage_file_data: SourceFileData | None = _get_storage_source_file_data(
+        local_storage_path=None,
+    )
     response: str = embed_with_gemini_and_upload_to_lance(
         source_file_data=source_file_data,
+        storage=storage_file_data.base_model if storage_file_data else None,
+        embed_batch_size=embed_batch_size,
     )
     print(response)
