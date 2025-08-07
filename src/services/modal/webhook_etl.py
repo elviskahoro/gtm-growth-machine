@@ -26,7 +26,7 @@ from src.services.octolens.etl import (
 # trunk-ignore-end(ruff/F401,ruff/I001,pyright/reportUnusedImport)
 
 
-class WebhookModel(FathomWebhookModel):  # type: ignore # trunk-ignore(ruff/F821)
+class WebhookModel(WebhookModel):  # type: ignore # trunk-ignore(ruff/F821)
     pass
 
 
