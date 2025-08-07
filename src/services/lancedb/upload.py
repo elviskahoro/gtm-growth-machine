@@ -38,7 +38,7 @@ class LanceTableExistenceErrorType(Enum):
 
 
 def upload_to_lance(
-    base_models_to_upload: list[BaseModel],
+    data_to_upload: list[dict],
     base_model_type: type[BaseModel],
 ) -> None:
     project_name: str = base_model_type.lance_get_project_name()
@@ -77,14 +77,10 @@ def upload_to_lance(
                     error_msg,
                 ) from exception
 
-    data: list[dict] = [
-        base_model_to_upload.model_dump()
-        for base_model_to_upload in base_models_to_upload
-    ]
     if should_create_table:
         tbl = db.create_table(
             name=table_name,
-            data=data,
+            data=data_to_upload,
             schema=base_model_type.lance_get_schema(),
         )
         print(f"Successfully created table: {table_name}")
@@ -93,5 +89,5 @@ def upload_to_lance(
         tbl.merge_insert(
             on=primary_key,
         ).when_matched_update_all().when_not_matched_insert_all().execute(
-            new_data=data,
+            new_data=data_to_upload,
         )

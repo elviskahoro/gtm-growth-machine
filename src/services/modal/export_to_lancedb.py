@@ -18,17 +18,17 @@ if TYPE_CHECKING:
 
 # trunk-ignore-begin(ruff/F401,ruff/I001,pyright/reportUnusedImport)
 # fmt: off
-from src.services.fathom.etl import (
-    Webhook as FathomWebhookModel,
+from src.services.fathom.etl.message import (
+    Webhook as FathomMessageWebhook,
 )
 from src.services.octolens.etl import (
-    Webhook as OctolensWebhookModel,
+    Webhook as OctolensWebhook,
 )
 # fmt: on
 # trunk-ignore-end(ruff/F401,ruff/I001,pyright/reportUnusedImport)
 
 
-class WebhookModel(WebhookModel):  # type: ignore # trunk-ignore(ruff/F821)
+class WebhookModel(FathomMessageWebhook):  # type: ignore # trunk-ignore(ruff/F821)
     pass
 
 
@@ -108,12 +108,12 @@ def embed_with_gemini_and_upload_to_lance(
     base_models_to_embed: list[BaseModel]
     for base_models_to_embed in chain_base_models_to_embed:
         print(f"{len(base_models_to_embed):07d} Embeded with Gemini")
-        for base_models_to_upload in embed_with_gemini(
+        for data_to_upload in embed_with_gemini(
             base_models_to_embed=iter(base_models_to_embed),
             embed_batch_size=embed_batch_size,
         ):
             upload_to_lance(
-                base_models_to_upload=base_models_to_upload,
+                data_to_upload=data_to_upload,
                 base_model_type=WebhookModel.lance_get_base_model_type(),
             )
             count += 1
