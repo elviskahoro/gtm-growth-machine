@@ -52,6 +52,51 @@ class SourceFileData(NamedTuple):
     path: Path | None
     base_model: BaseModel
 
+    @classmethod
+    def from_json_data(
+        cls: type[SourceFileData],
+        json_data: str,
+        base_model_type: type[BaseModel] | None,
+    ) -> SourceFileData | None:
+        return SourceFileData(
+            path=None,
+            base_model=(
+                base_model_type.model_validate_json(
+                    json_data=json_data,
+                )
+                if base_model_type
+                else None
+            ),
+        )
+
+    @classmethod
+    def from_local_storage_path(
+        cls: type[SourceFileData],
+        local_storage_path: str,
+        base_model_type: type[BaseModel] | None,
+    ) -> SourceFileData:
+        cwd: str = str(Path.cwd())
+        path: Path = Path(f"{cwd}/{local_storage_path}")
+        if not path.exists():
+            error: str = f"File not found at {path}"
+            raise FileNotFoundError(error)
+
+        json_data: str = path.read_text()
+        if not json_data:
+            error: str = "File is empty"
+            raise ValueError(error)
+
+        return SourceFileData(
+            path=path,
+            base_model=(
+                base_model_type.model_validate_json(
+                    json_data=json_data,
+                )
+                if base_model_type
+                else None
+            ),
+        )
+
     @staticmethod
     def from_input_folder(
         input_folder: str,

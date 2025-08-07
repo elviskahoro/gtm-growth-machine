@@ -13,7 +13,6 @@ from src.services.local.filesystem import DestinationFileData, SourceFileData
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from pydantic import BaseModel
 
 # trunk-ignore-begin(ruff/F401,ruff/I001,pyright/reportUnusedImport)
 # fmt: off
@@ -53,32 +52,15 @@ app = modal.App(
     image=image,
 )
 
-volume: modal.Volume = modal.Volume.from_name(
+VOLUME: modal.Volume = modal.Volume.from_name(
     BUCKET_NAME,
     create_if_missing=False,
 )
 
 
-def _get_data_storage_local(
-    input_path_storage: str,
-) -> str:
-    cwd: str = str(Path.cwd())
-    path: Path = Path(f"{cwd}/{input_path_storage}")
-    if not path.exists():
-        error: str = f"File not found at {path}"
-        raise FileNotFoundError(error)
-
-    json_data: str = path.read_text()
-    if not json_data:
-        error: str = "File is empty"
-        raise ValueError(error)
-
-    return json_data
-
-
 @app.function(
     volumes={
-        f"/{BUCKET_NAME}": volume,
+        f"/{BUCKET_NAME}": VOLUME,
     },
 )
 def _get_data_from_storage_remote() -> str:
@@ -90,27 +72,18 @@ def _get_data_from_storage_remote() -> str:
     return path.read_text()
 
 
-def get_storage(input_path_storage: str | None) -> BaseModel | None:
-    storage_base_model_type: type[BaseModel] | None = (
-        WebhookModel.storage_get_base_model_type()
-    )
-    if (  # trunk-ignore(pyright/reportUnnecessaryComparison)
-        storage_base_model_type is None
-    ):
-        return None
-
-    def get_json_data() -> str:
-        if input_path_storage is not None:
-            return _get_data_storage_local(
-                input_path_storage=input_path_storage,
-            )
-
-        return (
-            _get_data_from_storage_remote.remote()  # trunk-ignore(pyright/reportFunctionMemberAccess)
+def _get_storage_source_file_data(
+    local_storage_path: str | None,
+) -> SourceFileData | None:
+    if local_storage_path is not None:
+        return SourceFileData.from_local_storage_path(
+            local_storage_path=local_storage_path,
+            base_model_type=WebhookModel.storage_get_base_model_type(),
         )
 
-    return storage_base_model_type.model_validate_json(
-        json_data=get_json_data(),
+    return SourceFileData.from_json_data(
+        json_data=_get_data_from_storage_remote.remote(),  # trunk-ignore(pyright/reportFunctionMemberAccess)
+        base_model_type=WebhookModel.storage_get_base_model_type(),
     )
 
 
@@ -148,11 +121,13 @@ def web(
     bucket_url: str = DestinationType.GCP.get_bucket_url_from_bucket_name(
         bucket_name=BUCKET_NAME,
     )
-    storage: BaseModel | None = get_storage(input_path_storage=None)
+    storage_file_data: SourceFileData | None = _get_storage_source_file_data(
+        local_storage_path=None,
+    )
     data: Iterator[DestinationFileData] = DestinationFileData.from_source_file_data(
         source_file_data=file_data,
         bucket_url=bucket_url,
-        storage=storage,
+        storage=storage_file_data.base_model if storage_file_data else None,
     )
     return to_filesystem(
         destination_file_data=data,
@@ -178,12 +153,14 @@ def local(
             ".jsonl",
         ],
     )
-    storage: BaseModel | None = get_storage(input_path_storage=input_path_storage)
+    storage_file_data: SourceFileData | None = _get_storage_source_file_data(
+        local_storage_path=input_path_storage,
+    )
     destination_file_data: Iterator[DestinationFileData] = (
         DestinationFileData.from_source_file_data(
             source_file_data=source_file_data,
             bucket_url=bucket_url,
-            storage=storage,
+            storage=storage_file_data.base_model if storage_file_data else None,
         )
     )
     response: str = to_filesystem(
