@@ -28,14 +28,6 @@ class Webhook(BaseModel):
     def storage_get_base_model_type() -> None:
         return None
 
-    def etl_get_file_name(
-        self: Webhook,
-        extension: str = ".jsonl",
-    ) -> str:
-        return self.data.get_file_name(
-            extension=extension,
-        )
-
     def etl_is_valid_webhook(
         self: Webhook,
     ) -> bool:
@@ -58,6 +50,14 @@ class Webhook(BaseModel):
         del storage
         return self.data.model_dump_json(
             indent=None,
+        )
+
+    def etl_get_file_name(
+        self: Webhook,
+        extension: str = ".jsonl",
+    ) -> str:
+        return self.data.get_file_name(
+            extension=extension,
         )
 
     def etl_get_base_models(
