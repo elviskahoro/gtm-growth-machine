@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 from src.services.fathom.etl import (
     Webhook as FathomTranscriptWebhookModel,
 )
-from src.services.octolens.webhook import (
+from src.services.octolens.etl import (
     Webhook as OctolensMentionsWebhookModel,
 )
 # fmt: on
