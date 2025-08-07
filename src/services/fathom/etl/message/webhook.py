@@ -9,7 +9,11 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
-from src.services.fathom.etl.etl_model import EtlTranscriptMessage, Speaker, Storage
+from src.services.fathom.etl.message.etl_model import (
+    EtlTranscriptMessage,
+    Speaker,
+    Storage,
+)
 from src.services.fathom.meeting.meeting import Meeting
 from src.services.fathom.recording.recording import Recording
 from src.services.fathom.transcript.transcript import Transcript
