@@ -43,7 +43,7 @@ class Webhook(BaseModel):
         return f"{Webhook.etl_get_bucket_name()}-storage"
 
     @staticmethod
-    def storage_get_base_model_type() -> type[Storage]:
+    def storage_get_base_model_type() -> type[Storage] | None:
         return Storage
 
     @staticmethod
