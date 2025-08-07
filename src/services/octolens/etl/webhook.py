@@ -4,6 +4,8 @@ from pydantic import BaseModel
 
 from src.services.octolens.mention import Mention  # trunk-ignore(ruff/TC001)
 
+# TODO(elvis): Add type hints to self
+
 
 class Webhook(BaseModel):
     action: str = "mention_created"
@@ -18,6 +20,15 @@ class Webhook(BaseModel):
     @staticmethod
     def etl_get_bucket_name() -> str:
         return "chalk-ai-devx-octolens-mentions-etl"
+
+    @staticmethod
+    def storage_get_app_name() -> None:
+        error: str = "Storage app name is not defined for Webhook."
+        raise NotImplementedError(error)
+
+    @staticmethod
+    def storage_get_base_model_type() -> None:
+        return None
 
     def etl_get_file_name(
         self,
@@ -48,3 +59,11 @@ class Webhook(BaseModel):
         return self.data.model_dump_json(
             indent=None,
         )
+
+    def etl_get_base_models(
+        self: Webhook,
+        storage: None,
+    ) -> None:
+        del storage
+        error: str = "Webhook does not support getting base models."
+        raise NotImplementedError(error)
