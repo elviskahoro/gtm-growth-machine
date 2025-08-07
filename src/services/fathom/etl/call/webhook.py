@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import orjson
 from flatsplode import flatsplode
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from src.services.fathom.etl.message.etl_model import EtlTranscriptMessage
 from src.services.fathom.meeting.meeting import Meeting
@@ -14,7 +14,9 @@ from src.services.local.filesystem import FileUtility
 
 
 class Webhook(BaseModel):
-    id: int
+    id: int = Field(
+        serialization_alias="recording_id",
+    )
     recording: Recording
     meeting: Meeting
     fathom_user: FathomUser
@@ -61,13 +63,30 @@ class Webhook(BaseModel):
         storage: None,
     ) -> str:
         del storage
-        model_data: dict = self.model_dump(mode="json")
+        model_data: dict = self.model_dump(
+            mode="json",
+            by_alias=True,
+        )
+        recording_id: str | None = model_data.get("recording_id")
+        if recording_id is None:
+            error: str = "Recording ID is missing in the model data."
+            raise ValueError(error)
+
         flattened_data: list[dict] = list(
             flatsplode(
                 item=model_data,
                 join="_",
             ),
         )
+        for count, item in enumerate(
+            flattened_data,
+            start=1,
+        ):
+            if "recording_id" not in item:
+                item["recording_id"] = recording_id
+
+            item["id"] = f"{recording_id}-{count:05}"
+
         jsonl_bytes: bytes = b"\n".join(orjson.dumps(item) for item in flattened_data)
         return jsonl_bytes.decode("utf-8")
 
