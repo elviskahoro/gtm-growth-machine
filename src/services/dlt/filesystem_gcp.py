@@ -93,7 +93,7 @@ def to_filesystem(
             error_msg: str = f"Invalid bucket url: {bucket_url}"
             raise ValueError(error_msg)
 
-    return "Successfully uploaded"
+    return "Successfully exported to filesystem."
 
 
 def to_filesystem_gcs(
