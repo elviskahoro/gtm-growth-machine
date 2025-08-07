@@ -6,10 +6,51 @@ from re import Match
 from typing import TYPE_CHECKING, NamedTuple
 
 import pyarrow as pa
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field, ValidationError, validate_email
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+
+
+class Speaker(BaseModel):
+    name: str = Field(
+        ...,
+        description="Name of the speaker",
+    )
+    email: EmailStr = Field(
+        ...,
+        description="Email address of the entity",
+    )
+    aliases: list[str] = Field(
+        default_factory=list,
+        description="List of alternative names or aliases",
+    )
+
+    @staticmethod
+    def build_speaker_lookup_map(
+        speakers: list[Speaker],
+    ) -> dict[str, str]:
+        lookup_map: dict[str, str] = {}
+        for speaker in speakers:
+            lookup_map[speaker.name.lower()] = speaker.email
+            for alias in speaker.aliases:
+                lookup_map[alias.lower()] = speaker.email
+
+        return lookup_map
+
+    @staticmethod
+    def get_email_by_name_with_lookup(
+        lookup_map: dict[str, str],
+        search_name: str,
+    ) -> str:
+        return lookup_map.get(search_name.lower(), search_name)
+
+
+class Storage(BaseModel):
+    speakers_internal: list[Speaker] = Field(
+        default_factory=list,
+        description="List of speakers with their emails and aliases",
+    )
 
 
 class EtlTranscriptMessageWatchLinkData(NamedTuple):
