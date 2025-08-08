@@ -150,6 +150,77 @@ def _execute_merge_insert_with_retry(
             return  # Success, exit the retry loop
 
 
+def _get_or_create_table(
+    db: DBConnection,
+    table_name: str,
+    data_to_upload: list[dict],
+    base_model_type: type[BaseModel],
+) -> tuple[Table, bool]:
+    """Get existing table or create new one. Returns (table, was_created)."""
+    try:
+        tbl = db.open_table(name=table_name)
+    except ValueError as exception:
+        lance_exception = LanceTableExistenceError.parse_existence_error(
+            exception=exception,
+        )
+        match lance_exception.error_type:
+            case LanceTableExistenceErrorType.NOT_FOUND:
+                tbl = db.create_table(
+                    name=table_name,
+                    data=data_to_upload,
+                    schema=base_model_type.lance_get_schema(),
+                )
+                print(f"Successfully created table: {table_name}")
+                return tbl, True
+
+            case LanceTableExistenceErrorType.EXISTS:
+                error_msg = "Table exists should not be reachable, as we should have been able to successfully open the table"
+                raise ValueError(error_msg) from exception
+
+            case _:
+                error_msg = "Could not parse exception. This code path should not be reachable, error should have been already caught"
+                raise ValueError(error_msg) from exception
+    else:
+        return tbl, False
+
+
+def _handle_merge_insert_error(
+    tbl: Table,
+    primary_key: str,
+    primary_key_index_type: str,
+    data_to_upload: list[dict],
+    exception: Exception,
+) -> None:
+    """Handle merge insert errors by creating indexes if needed."""
+    try:
+        error = LanceTableExistenceError.parse_existence_error(exception)
+        match error.error_type:
+            case LanceTableExistenceErrorType.RATE_LIMITED:
+                # Re-raise to let the retry logic in _execute_merge_insert_with_retry handle it
+                raise exception
+            case LanceTableExistenceErrorType.MAX_UNINDEXED_ROWS_EXCEEDED:
+                # Create index and retry
+                print(f"Creating scalar index on column '{primary_key}' with type '{primary_key_index_type}' (this may take a while for large datasets...)")
+                tbl.create_scalar_index(
+                    column=primary_key,
+                    index_type=primary_key_index_type,  # type: ignore[arg-type]
+                    replace=True,
+                    wait_timeout=timedelta(minutes=10),
+                )
+                print("Index creation completed successfully")
+                # Retry the operation after creating the index
+                _execute_merge_insert_with_retry(
+                    tbl=tbl,
+                    primary_key=primary_key,
+                    data_to_upload=data_to_upload,
+                )
+            case _:
+                raise exception
+    except ValueError:
+        # If we can't parse the exception, re-raise the original
+        raise exception from None
+
+
 def upload_to_lance(
     data_to_upload: list[dict],
     base_model_type: type[BaseModel],
@@ -158,82 +229,26 @@ def upload_to_lance(
     primary_key_index_type: str,
     table_name: str,
 ) -> None:
-    tbl: Table | None = None
-    should_create_table: bool = False
-    lance_exception: LanceTableExistenceError | None = None
-    try:
-        tbl = db.open_table(
-            name=table_name,
-        )
+    """Upload data to Lance table, creating table or indexes as needed."""
+    tbl, was_created = _get_or_create_table(
+        db=db,
+        table_name=table_name,
+        data_to_upload=data_to_upload,
+        base_model_type=base_model_type,
+    )
 
-    except ValueError as exception:
-        lance_exception = LanceTableExistenceError.parse_existence_error(
-            exception=exception,
-        )
-        match lance_exception.error_type:
-            case LanceTableExistenceErrorType.NOT_FOUND:
-                should_create_table = True
-
-            case LanceTableExistenceErrorType.EXISTS:
-                error_msg = "Table exists should not be reachable, as we should have been able to successfully open the table"
-                raise ValueError(
-                    error_msg,
-                ) from exception
-
-            case _:
-                error_msg = "Could not parse exception. This code path should not be reachable, error should have been already caught"
-                raise ValueError(
-                    error_msg,
-                ) from exception
-
-    if should_create_table:
-        tbl = db.create_table(
-            name=table_name,
-            data=data_to_upload,
-            schema=base_model_type.lance_get_schema(),
-        )
-        print(f"Successfully created table: {table_name}")
-
-    if tbl is not None and not should_create_table:
+    if not was_created:
         try:
             _execute_merge_insert_with_retry(
                 tbl=tbl,
                 primary_key=primary_key,
                 data_to_upload=data_to_upload,
             )
-
         except (ValueError, RuntimeError, ConnectionError, TimeoutError) as exception:
-            # Parse the error to check its type - catches all exception types
-            # including LanceDB's HttpError, RetryError, and requests.HTTPError
-            try:
-                error = LanceTableExistenceError.parse_existence_error(exception)
-
-                # Handle specific LanceDB errors using the enum
-                match error.error_type:
-                    case LanceTableExistenceErrorType.RATE_LIMITED:
-                        # Re-raise to let the retry logic in _execute_merge_insert_with_retry handle it
-                        raise
-
-                    case LanceTableExistenceErrorType.MAX_UNINDEXED_ROWS_EXCEEDED:
-                        # Increase timeout for index creation (much longer for large datasets)
-                        print(f"Creating scalar index on column '{primary_key}' with type '{primary_key_index_type}' (this may take a while for large datasets...)")
-                        tbl.create_scalar_index(
-                            column=primary_key,
-                            index_type=primary_key_index_type,
-                            replace=True,
-                            wait_timeout=timedelta(minutes=10),  # Much longer timeout
-                        )
-                        print("Index creation completed successfully")
-                        # Retry the operation after creating the index
-                        _execute_merge_insert_with_retry(
-                            tbl=tbl,
-                            primary_key=primary_key,
-                            data_to_upload=data_to_upload,
-                        )
-
-                    case _:
-                        raise
-            except ValueError:
-                # If we can't parse the exception, re-raise the original
-                # This ensures we don't accidentally swallow real errors
-                raise exception from None
+            _handle_merge_insert_error(
+                tbl=tbl,
+                primary_key=primary_key,
+                primary_key_index_type=primary_key_index_type,
+                data_to_upload=data_to_upload,
+                exception=exception,
+            )
