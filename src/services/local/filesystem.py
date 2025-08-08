@@ -58,14 +58,14 @@ class SourceFileData(NamedTuple):
         json_data: str,
         base_model_type: type[BaseModel] | None,
     ) -> SourceFileData | None:
+        if base_model_type is None:
+            error_msg = "base_model_type cannot be None"
+            raise ValueError(error_msg)
+
         return SourceFileData(
             path=None,
-            base_model=(
-                base_model_type.model_validate_json(
-                    json_data=json_data,
-                )
-                if base_model_type
-                else None
+            base_model=base_model_type.model_validate_json(
+                json_data=json_data,
             ),
         )
 
@@ -86,14 +86,14 @@ class SourceFileData(NamedTuple):
             error: str = "File is empty"
             raise ValueError(error)
 
+        if base_model_type is None:
+            error_msg = "base_model_type cannot be None"
+            raise ValueError(error_msg)
+
         return SourceFileData(
             path=path,
-            base_model=(
-                base_model_type.model_validate_json(
-                    json_data=json_data,
-                )
-                if base_model_type
-                else None
+            base_model=base_model_type.model_validate_json(
+                json_data=json_data,
             ),
         )
 
