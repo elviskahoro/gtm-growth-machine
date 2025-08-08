@@ -122,6 +122,7 @@ def _execute_merge_insert_with_retry(
 
                 # If it's not a rate limiting error, re-raise
                 raise
+
             except ValueError:
                 # If we can't parse the error (unexpected error type),
                 # check if it's a known rate limiting pattern in the message
