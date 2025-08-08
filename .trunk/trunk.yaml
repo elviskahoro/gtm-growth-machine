@@ -17,13 +17,11 @@ plugins:
       ref: v0.2025.01.23.16.10
       uri: https://github.com/elviskahoro/oss-linter-trunk
 
-
 # This is the section where you manage your linters. (https://docs.trunk.io/check/configuration)
 lint:
   enabled:
     - actionlint@1.7.7
-    - black@24.10.0
-    - checkov@3.2.457
+    - checkov@3.2.458
     - git-diff-check
     - markdownlint@0.45.0
     - osv-scanner@2.0.3
@@ -33,7 +31,7 @@ lint:
     - semgrep@1.131.0
     - shellcheck@0.10.0
     - shfmt@3.6.0
-    - squawk@2.21.1
+    - sqlfmt@0.27.0
     - svgo@4.0.0
     - taplo@0.9.3
     - trivy@0.64.1
@@ -42,6 +40,7 @@ lint:
 
   disabled:
     - bandit
+    - black
     - eslint
     - flake8
     - isort
@@ -50,6 +49,9 @@ lint:
     - prettier
     - pylint
     - remark-lint
+    - sql-formatter
+    - sqlfluff
+    - squawk
     - stylelint
     - trunk-toolbox
 
@@ -64,6 +66,7 @@ lint:
       paths:
         - integration/benchmarks/**
         - "*.ipynb"
+        - "**/*.ipynb"
 
   exported_configs:
     - plugin_id: oss-linter-trunk
