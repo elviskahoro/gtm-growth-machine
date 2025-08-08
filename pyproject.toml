@@ -1,0 +1,24 @@
+[tool.pytest.ini_options]
+# Only collect tests from the current directory and subdirectories, excluding site-packages
+testpaths = ["."]
+norecursedirs = [
+  "lib",
+  ".venv",
+  "venv",
+  "env",
+  ".git",
+  ".tox",
+  "build",
+  "dist",
+  "*.egg",
+  "*.egg-info",
+  ".trunk",
+  "src/services/modal",
+]
+# Collect tests from ALL Python files (including regular source files)
+python_files = ["*.py"]
+python_classes = ["Test*"]
+# Include both test_ and integration_test_ function patterns
+python_functions = ["test_*", "integration_test_*"]
+# Parallel testing defaults with ignored files
+addopts = ["-v", "--tb=short"]

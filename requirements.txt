@@ -2,6 +2,7 @@ dbt-bigquery
 dlt
 dlt[gs]
 flatten-json
+flatsplode
 gcsfs
 lancedb
 modal
@@ -13,3 +14,4 @@ python-dotenv
 pydantic>=2.4.0
 reflex
 s3fs
+uuid7
