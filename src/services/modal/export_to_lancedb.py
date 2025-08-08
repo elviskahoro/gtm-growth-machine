@@ -44,7 +44,8 @@ BUCKET_NAME: str = WebhookModel.etl_get_bucket_name()
 
 GEMINI_EMBED_BATCH_SIZE: int = 250  # Maximum allowed by Vertex AI text-embedding-005
 UPLOAD_DELAY_SECONDS: float = 0.1  # Delay between uploads to prevent rate limiting
-MAX_RETRY_ATTEMPTS: int = 5  # Maximum retry attempts for rate limited uploads
+MAX_RETRY_ATTEMPTS: int = 3  # Maximum retry attempts for rate limited uploads
+
 
 image: Image = modal.Image.debian_slim().uv_pip_install(
     "fastapi[standard]",
@@ -97,6 +98,57 @@ def _get_storage_source_file_data(
     )
 
 
+def _get_existing_primary_keys(
+    db: DBConnection,
+    table_name: str,
+    primary_key: str,
+) -> set[str] | None:
+    """Get existing primary keys from LanceDB table.
+
+    Returns:
+        Set of existing primary keys, or None if table doesn't exist.
+    """
+    try:
+        tbl = db.open_table(name=table_name)
+        # Query all rows and get just the primary key column
+        result: list[dict[str, str]] = (
+            tbl.search().limit(None).select([primary_key]).to_list()
+        )
+        return {row[primary_key] for row in result}
+    except ValueError as e:
+        # Table doesn't exist yet
+        if "was not found" in str(e):
+            return None
+        raise
+
+
+def _filter_new_base_models(
+    base_models_to_embed: list[BaseModel],
+    existing_keys: set[str],
+    primary_key: str,
+) -> list[BaseModel]:
+    """Filter out base models that already exist in the database.
+
+    Args:
+        base_models_to_embed: List of base models to check
+        existing_keys: Set of primary keys that already exist in DB
+        primary_key: Name of the primary key field
+
+    Returns:
+        List of base models that don't exist in the database yet
+    """
+    new_models: list[BaseModel] = []
+    for model in base_models_to_embed:
+        # Get the primary key value from the model
+        model_dict: dict[str, str] = model.model_dump()
+        model_primary_key: str | None = model_dict.get(primary_key)
+
+        if model_primary_key is not None and model_primary_key not in existing_keys:
+            new_models.append(model)
+
+    return new_models
+
+
 def embed_with_gemini_and_upload_to_lance(
     source_file_data: Iterator[SourceFileData],
     embed_batch_size: int,
@@ -110,6 +162,14 @@ def embed_with_gemini_and_upload_to_lance(
     primary_key_index_type: str = WebhookModel.lance_get_primary_key_index_type()
 
     gemini_init_client()
+
+    # Get existing primary keys to avoid re-uploading
+    existing_keys: set[str] | None = _get_existing_primary_keys(
+        db=db,
+        table_name=table_name,
+        primary_key=primary_key,
+    )
+
     chain_base_models_to_embed: chain[list[BaseModel]] = chain(
         list(
             source_file_data.base_model.etl_get_base_models(
@@ -120,12 +180,39 @@ def embed_with_gemini_and_upload_to_lance(
     )
     print(f"Batch size {embed_batch_size:04d}")
 
+    if existing_keys:
+        print(f"Found {len(existing_keys):07d} existing records in LanceDB")
+    else:
+        print("No existing records found - will create new table")
+
     count: int = 0
-    base_models_to_embed: list[BaseModel]
-    for base_models_to_embed in chain_base_models_to_embed:
-        print(f"{len(base_models_to_embed):07d} Embeded with Gemini")
+    skipped: int = 0
+
+    batch_models: list[BaseModel]
+    for batch_models in chain_base_models_to_embed:
+        # Filter out models that already exist if we have existing keys
+        filtered_models: list[BaseModel] = batch_models
+        if existing_keys:
+            original_count: int = len(batch_models)
+            filtered_models = _filter_new_base_models(
+                base_models_to_embed=batch_models,
+                existing_keys=existing_keys,
+                primary_key=primary_key,
+            )
+
+            skipped_in_batch: int = original_count - len(filtered_models)
+            skipped += skipped_in_batch
+
+            if skipped_in_batch > 0:
+                print(f"{skipped_in_batch:07d} records already exist - skipping")
+
+        if not filtered_models:
+            print("No new records to process in this batch")
+            continue
+
+        print(f"{len(filtered_models):07d} new records to embed with Gemini")
         for data_to_upload in embed_with_gemini(
-            base_models_to_embed=iter(base_models_to_embed),
+            base_models_to_embed=iter(filtered_models),
             embed_batch_size=embed_batch_size,
         ):
             upload_to_lance(
@@ -143,7 +230,13 @@ def embed_with_gemini_and_upload_to_lance(
             if upload_delay > 0:
                 time.sleep(upload_delay)
 
-    return "Successfully embeded with Gemini and uploaded to LanceDB."
+    final_message: str = (
+        f"Successfully processed {count:07d} batches and uploaded to LanceDB."
+    )
+    if skipped > 0:
+        final_message += f" Skipped {skipped:07d} existing records."
+
+    return final_message
 
 
 @app.function(
@@ -160,7 +253,7 @@ def embed_with_gemini_and_upload_to_lance(
     docs=True,
 )
 @modal.concurrent(
-    max_inputs=5,  # Balanced concurrency for web endpoints
+    max_inputs=1,
 )
 def web(
     webhook: WebhookModel,

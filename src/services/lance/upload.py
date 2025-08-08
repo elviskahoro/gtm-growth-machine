@@ -5,8 +5,6 @@ import time
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 
-from requests import HTTPError
-
 if TYPE_CHECKING:
 
     from lancedb.db import DBConnection
@@ -26,14 +24,14 @@ class LanceTableExistenceError:
     def __init__(
         self,
         error_type: LanceTableExistenceErrorType,
-        exception: ValueError | HTTPError,
+        exception: Exception,
     ) -> None:
         """Initialize a LanceTableExistenceError instance.
 
         Args:
             error_type: The type of error that occurred (EXISTS, NOT_FOUND,
                        MAX_UNINDEXED_ROWS_EXCEEDED, or RATE_LIMITED)
-            exception: The original exception that was raised (ValueError or HTTPError)
+            exception: The original exception that was raised
         """
         self.error_type = error_type
         self.exception = exception
@@ -41,7 +39,7 @@ class LanceTableExistenceError:
     @classmethod
     def parse_existence_error(
         cls,
-        exception: ValueError | HTTPError,
+        exception: Exception,
     ) -> "LanceTableExistenceError":
         exception_message: str = str(exception)
         print(exception_message)
@@ -66,7 +64,9 @@ class LanceTableExistenceError:
                     exception,
                 )
 
-            case msg if "429" in msg or "Too many concurrent writes" in msg:
+            case (
+                msg
+            ) if "429" in msg or "Too many concurrent writes" in msg or "retry limit" in msg.lower():
                 return cls(
                     LanceTableExistenceErrorType.RATE_LIMITED,
                     exception,
@@ -93,21 +93,48 @@ def _execute_merge_insert_with_retry(
                 new_data=data_to_upload,
             )
 
-        except HTTPError as e:
-            error = LanceTableExistenceError.parse_existence_error(e)
-            if error.error_type == LanceTableExistenceErrorType.RATE_LIMITED:
-                if attempt < max_retries:
-                    delay = base_delay * (2**attempt)  # Exponential backoff
-                    print(
-                        f"Rate limited (attempt {attempt + 1}/{max_retries + 1}), retrying in {delay:.1f}s...",
-                    )
-                    time.sleep(delay)
-                    continue
+        except (ValueError, RuntimeError, ConnectionError, TimeoutError) as e:
+            # Parse the error to determine if it's rate limited
+            # This catches both requests.HTTPError and LanceDB's HttpError/RetryError
+            try:
+                error = LanceTableExistenceError.parse_existence_error(e)
+                if error.error_type == LanceTableExistenceErrorType.RATE_LIMITED:
+                    if attempt < max_retries:
+                        delay = base_delay * (2**attempt)  # Exponential backoff
+                        print(
+                            f"Rate limited (attempt {attempt + 1}/{max_retries + 1}), retrying in {delay:.1f}s...",
+                        )
+                        time.sleep(delay)
+                        continue
 
-                print(f"Rate limit exceeded after {max_retries + 1} attempts")
+                    print(f"Rate limit exceeded after {max_retries + 1} attempts")
+                    raise
+
+                # If it's not a rate limiting error, re-raise
                 raise
+            except ValueError:
+                # If we can't parse the error (unexpected error type),
+                # check if it's a known rate limiting pattern in the message
+                error_msg = str(e).lower()
+                if (
+                    "429" in error_msg
+                    or "too many" in error_msg
+                    or "rate limit" in error_msg
+                    or "retry" in error_msg
+                ):
+                    if attempt < max_retries:
+                        delay = base_delay * (2**attempt)
+                        print(
+                            f"Rate limited (attempt {attempt + 1}/{max_retries + 1}), retrying in {delay:.1f}s...",
+                        )
+                        time.sleep(delay)
+                        continue
 
-            raise
+                    print(f"Rate limit exceeded after {max_retries + 1} attempts")
+                    raise
+
+                # Not a rate limiting error, re-raise
+                raise
 
         else:
             return  # Success, exit the retry loop
@@ -165,29 +192,35 @@ def upload_to_lance(
                 data_to_upload=data_to_upload,
             )
 
-        except HTTPError as exception:
-            # Parse the error to check its type
-            error = LanceTableExistenceError.parse_existence_error(exception)
+        except (ValueError, RuntimeError, ConnectionError, TimeoutError) as exception:
+            # Parse the error to check its type - catches all exception types
+            # including LanceDB's HttpError, RetryError, and requests.HTTPError
+            try:
+                error = LanceTableExistenceError.parse_existence_error(exception)
 
-            # Handle specific LanceDB errors using the enum
-            match error.error_type:
-                case LanceTableExistenceErrorType.RATE_LIMITED:
-                    # Re-raise to let the retry logic in _execute_merge_insert_with_retry handle it
-                    raise
+                # Handle specific LanceDB errors using the enum
+                match error.error_type:
+                    case LanceTableExistenceErrorType.RATE_LIMITED:
+                        # Re-raise to let the retry logic in _execute_merge_insert_with_retry handle it
+                        raise
 
-                case LanceTableExistenceErrorType.MAX_UNINDEXED_ROWS_EXCEEDED:
-                    tbl.create_scalar_index(
-                        column=primary_key,
-                        index_type=primary_key_index_type,
-                        replace=True,
-                        wait_timeout=5,
-                    )
-                    # Retry the operation after creating the index
-                    _execute_merge_insert_with_retry(
-                        tbl=tbl,
-                        primary_key=primary_key,
-                        data_to_upload=data_to_upload,
-                    )
+                    case LanceTableExistenceErrorType.MAX_UNINDEXED_ROWS_EXCEEDED:
+                        tbl.create_scalar_index(
+                            column=primary_key,
+                            index_type=primary_key_index_type,
+                            replace=True,
+                            wait_timeout=5,
+                        )
+                        # Retry the operation after creating the index
+                        _execute_merge_insert_with_retry(
+                            tbl=tbl,
+                            primary_key=primary_key,
+                            data_to_upload=data_to_upload,
+                        )
 
-                case _:
-                    raise
+                    case _:
+                        raise
+            except ValueError:
+                # If we can't parse the exception, re-raise the original
+                # This ensures we don't accidentally swallow real errors
+                raise exception from None
