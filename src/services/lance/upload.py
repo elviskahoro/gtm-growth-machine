@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import time
+from datetime import timedelta
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 
@@ -17,6 +18,7 @@ class LanceTableExistenceErrorType(Enum):
     NOT_FOUND = auto()
     MAX_UNINDEXED_ROWS_EXCEEDED = auto()
     RATE_LIMITED = auto()
+    TIMEOUT = auto()
 
 
 class LanceTableExistenceError:
@@ -69,6 +71,14 @@ class LanceTableExistenceError:
             ) if "429" in msg or "Too many concurrent writes" in msg or "retry limit" in msg.lower():
                 return cls(
                     LanceTableExistenceErrorType.RATE_LIMITED,
+                    exception,
+                )
+
+            case (
+                msg
+            ) if "timeout" in msg.lower() or "timed out" in msg.lower():
+                return cls(
+                    LanceTableExistenceErrorType.TIMEOUT,
                     exception,
                 )
 
@@ -205,12 +215,15 @@ def upload_to_lance(
                         raise
 
                     case LanceTableExistenceErrorType.MAX_UNINDEXED_ROWS_EXCEEDED:
+                        # Increase timeout for index creation (much longer for large datasets)
+                        print(f"Creating scalar index on column '{primary_key}' with type '{primary_key_index_type}' (this may take a while for large datasets...)")
                         tbl.create_scalar_index(
                             column=primary_key,
                             index_type=primary_key_index_type,
                             replace=True,
-                            wait_timeout=5,
+                            wait_timeout=timedelta(minutes=10),  # Much longer timeout
                         )
+                        print("Index creation completed successfully")
                         # Retry the operation after creating the index
                         _execute_merge_insert_with_retry(
                             tbl=tbl,
