@@ -2,6 +2,7 @@ import json
 import unittest.mock
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 from unittest.mock import mock_open, patch
 
 import pytest
@@ -540,24 +541,28 @@ class TestToFilesystemLocal:
     def test_to_filesystem_local_exception_handling(self) -> None:
         """Test exception handling during file operations."""
         # Test various exceptions that might occur
-        test_cases = [
+        test_cases: list[dict[str, Any]] = [
             {
                 "exception": PermissionError("Permission denied"),
+                "exception_type": PermissionError,
                 "path": "/restricted/file.txt",
                 "content": "Cannot write here",
             },
             {
                 "exception": OSError("Disk full"),
+                "exception_type": OSError,
                 "path": "/full/disk/file.txt",
                 "content": "No space left",
             },
             {
                 "exception": OSError("I/O error"),
+                "exception_type": OSError,
                 "path": "/io/error/file.txt",
                 "content": "IO problem",
             },
             {
                 "exception": FileNotFoundError("Directory does not exist"),
+                "exception_type": FileNotFoundError,
                 "path": "/nonexistent/dir/file.txt",
                 "content": "Missing directory",
             },
@@ -571,12 +576,13 @@ class TestToFilesystemLocal:
 
             # Mock Path.open() to raise the specific exception
             exception_instance = test_case["exception"]
-            exception_type = type(exception_instance)
+            exception_type: type[Exception] = test_case["exception_type"]
             with patch(
-                "pathlib.Path.open", side_effect=exception_instance,
+                "pathlib.Path.open",
+                side_effect=exception_instance,
             ), pytest.raises(
                 exception_type,
-            ):  # pyright: ignore[reportArgumentType]
+            ):
                 to_filesystem_local(iter([file_data]))
 
     def test_to_filesystem_local_file_handle_cleanup(self) -> None:
