@@ -573,9 +573,9 @@ class TestToFilesystemLocal:
             exception_instance = test_case["exception"]
             exception_type = type(exception_instance)
             with patch(
-                "pathlib.Path.open", side_effect=exception_instance
+                "pathlib.Path.open", side_effect=exception_instance,
             ), pytest.raises(
-                exception_type
+                exception_type,
             ):  # pyright: ignore[reportArgumentType]
                 to_filesystem_local(iter([file_data]))
 
