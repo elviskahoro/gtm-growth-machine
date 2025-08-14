@@ -77,7 +77,8 @@ def _create_destination_file_data_multiple() -> Iterator[DestinationFileData]:
         "settings": {"debug": False, "timeout": 300, "retries": 3},
     }
     yield DestinationFileData(
-        string=json.dumps(json_data2, indent=2), path="configs/app_config_v2.json",
+        string=json.dumps(json_data2, indent=2),
+        path="configs/app_config_v2.json",
     )
 
     # Markdown file
@@ -106,7 +107,8 @@ def hello_world():
 2024-01-15T10:03:00Z,purchase,user_123,checkout
 """
     yield DestinationFileData(
-        string=csv_content, path="gs://test-bucket/analytics/user_events_2024_01_15.csv",
+        string=csv_content,
+        path="gs://test-bucket/analytics/user_events_2024_01_15.csv",
     )
 
     # XML file
@@ -181,12 +183,14 @@ def _create_destination_file_data_special_paths() -> Iterator[DestinationFileDat
 
     # Path with unicode characters
     yield DestinationFileData(
-        string='{"test": "Unicode path"}', path="测试/文件名/数据.json",
+        string='{"test": "Unicode path"}',
+        path="测试/文件名/数据.json",
     )
 
     # Path with special characters
     yield DestinationFileData(
-        string='{"test": "Special chars"}', path="data@2024/test#1/file[v1].json",
+        string='{"test": "Special chars"}',
+        path="data@2024/test#1/file[v1].json",
     )
 
     # Deeply nested path
@@ -226,14 +230,15 @@ def _create_destination_file_data_with_errors() -> Iterator[DestinationFileData]
 
     # Very long filename
     yield DestinationFileData(
-        string='{"test": "long filename"}', path="errors/" + "a" * 200 + ".json",
+        string='{"test": "long filename"}',
+        path="errors/" + "a" * 200 + ".json",
     )
 
     # Path traversal attempt
     yield DestinationFileData(
-        string='{"test": "path traversal"}', path="../../../etc/passwd",
+        string='{"test": "path traversal"}',
+        path="../../../etc/passwd",
     )
-
 
 
 class TestToFilesystemLocal:
@@ -245,7 +250,8 @@ class TestToFilesystemLocal:
         destination_file_data = _create_destination_file_data()
         # Update the path in the fixture data to use tmp_path
         file_data = DestinationFileData(
-            string=destination_file_data.string, path=str(tmp_path / "test_file.json"),
+            string=destination_file_data.string,
+            path=str(tmp_path / "test_file.json"),
         )
 
         # Write the file
@@ -265,7 +271,8 @@ class TestToFilesystemLocal:
         for idx, data in enumerate(destination_file_data_multiple):
             updated_data.append(
                 DestinationFileData(
-                    string=data.string, path=str(tmp_path / f"file_{idx}.txt"),
+                    string=data.string,
+                    path=str(tmp_path / f"file_{idx}.txt"),
                 ),
             )
 
@@ -373,13 +380,16 @@ class TestToFilesystemLocal:
         file_data_list = [
             DestinationFileData(string="Content for file 1", path="/path/to/file1.txt"),
             DestinationFileData(
-                string="Content for file 2", path="/path/to/file2.json",
+                string="Content for file 2",
+                path="/path/to/file2.json",
             ),
             DestinationFileData(
-                string="Content for file 3", path="/path/to/subdir/file3.csv",
+                string="Content for file 3",
+                path="/path/to/subdir/file3.csv",
             ),
             DestinationFileData(
-                string="Content for file 4", path="/path/to/another/file4.xml",
+                string="Content for file 4",
+                path="/path/to/another/file4.xml",
             ),
         ]
 
@@ -446,20 +456,25 @@ class TestToFilesystemLocal:
         # Create test data with various levels of nested paths
         nested_file_data = [
             DestinationFileData(
-                string="Root level file content", path="/root/file.txt",
+                string="Root level file content",
+                path="/root/file.txt",
             ),
             DestinationFileData(string="One level deep", path="/root/level1/file.txt"),
             DestinationFileData(
-                string="Two levels deep", path="/root/level1/level2/file.txt",
+                string="Two levels deep",
+                path="/root/level1/level2/file.txt",
             ),
             DestinationFileData(
-                string="Three levels deep", path="/root/level1/level2/level3/file.txt",
+                string="Three levels deep",
+                path="/root/level1/level2/level3/file.txt",
             ),
             DestinationFileData(
-                string="Different branch", path="/root/branch2/subbranch/file.txt",
+                string="Different branch",
+                path="/root/branch2/subbranch/file.txt",
             ),
             DestinationFileData(
-                string="Deeply nested path", path="/root/a/b/c/d/e/f/g/h/i/j/file.txt",
+                string="Deeply nested path",
+                path="/root/a/b/c/d/e/f/g/h/i/j/file.txt",
             ),
         ]
 
@@ -550,13 +565,18 @@ class TestToFilesystemLocal:
 
         for test_case in test_cases:
             file_data = DestinationFileData(
-                string=str(test_case["content"]), path=str(test_case["path"]),
+                string=str(test_case["content"]),
+                path=str(test_case["path"]),
             )
 
             # Mock Path.open() to raise the specific exception
             exception_instance = test_case["exception"]
             exception_type = type(exception_instance)
-            with patch("pathlib.Path.open", side_effect=exception_instance), pytest.raises(exception_type):  # pyright: ignore[reportArgumentType]
+            with patch(
+                "pathlib.Path.open", side_effect=exception_instance
+            ), pytest.raises(
+                exception_type
+            ):  # pyright: ignore[reportArgumentType]
                 to_filesystem_local(iter([file_data]))
 
     def test_to_filesystem_local_file_handle_cleanup(self) -> None:
@@ -624,5 +644,6 @@ class TestToFilesystemLocal:
             # Verify only the first 3 files were attempted
             # (The function stops at the first exception)
             assert call_count == 3
+
 
 # trunk-ignore-end(ruff/PLR2004,ruff/S101)

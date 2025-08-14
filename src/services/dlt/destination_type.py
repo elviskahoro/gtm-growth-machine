@@ -38,7 +38,6 @@ class DestinationType(str, Enum):
                 raise ValueError(error_msg)
 
 
-
 # trunk-ignore-begin(ruff/PLR2004,ruff/S101)
 def test_destination_type_enum_values() -> None:
     """Check that LOCAL and GCP enum values are correctly defined."""
@@ -233,16 +232,20 @@ def test_get_bucket_url_from_bucket_name_invalid() -> None:
     invalid_destination.__ne__ = mock.Mock(return_value=True)
 
     # Use pytest.raises to verify ValueError is raised
-    with pytest.raises(ValueError, match="Invalid destination type",
+    with pytest.raises(
+        ValueError,
+        match="Invalid destination type",
     ) as exc_info:
         # Call the method using the bound method approach
         DestinationType.get_bucket_url_from_bucket_name(
-            invalid_destination, "test-bucket",
+            invalid_destination,
+            "test-bucket",
         )
 
     # Verify the error message contains "Invalid destination type"
     assert "Invalid destination type" in str(exc_info.value)
     # Verify the error message includes the invalid destination
     assert "invalid" in str(exc_info.value) or "INVALID" in str(exc_info.value)
+
 
 # trunk-ignore-end(ruff/PLR2004,ruff/S101)
