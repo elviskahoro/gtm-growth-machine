@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 image: Image = modal.Image.debian_slim().pip_install(
     "fastapi[standard]",
 )
-image.add_local_python_source(
+image = image.add_local_python_source(
     *[
         "src",
     ],
