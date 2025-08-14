@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pydantic import (
     BaseModel,
@@ -18,18 +18,18 @@ class LinkedinConnection(BaseModel):
     email_address: EmailStr
     company: str
     position: str
-    connected_on: datetime.datetime
-    timestamp: datetime.datetime
+    connected_on: datetime
+    timestamp: datetime
 
     @staticmethod
     def parse_linkedin_date(
         date_str: str,
     ) -> str:
-        parsed_date: datetime = datetime.datetime.strptime(
+        parsed_date: datetime = datetime.strptime(
             date_str,
             "%d %b %Y",
         ).replace(
-            tzinfo=datetime.timezone.utc,
+            tzinfo=timezone.utc,
         )
         return parsed_date.isoformat()
 

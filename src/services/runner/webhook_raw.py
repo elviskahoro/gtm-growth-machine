@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, NamedTuple
 
+import modal
 import orjson
+from modal import Image
 from pydantic import ValidationError
 from uuid_extensions import uuid7
 
-import modal
-from modal import Image
 from src.services.dlt.destination_type import (
     DestinationType,
 )

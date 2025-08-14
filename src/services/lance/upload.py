@@ -58,25 +58,25 @@ class LanceTableExistenceError:
                     exception,
                 )
 
-            case (
-                msg
-            ) if "number of un-indexed rows" in msg and "exceeds the maximum" in msg:
+            case msg if (
+                "number of un-indexed rows" in msg and "exceeds the maximum" in msg
+            ):
                 return cls(
                     LanceTableExistenceErrorType.MAX_UNINDEXED_ROWS_EXCEEDED,
                     exception,
                 )
 
-            case (
-                msg
-            ) if "429" in msg or "Too many concurrent writes" in msg or "retry limit" in msg.lower():
+            case msg if (
+                "429" in msg
+                or "Too many concurrent writes" in msg
+                or "retry limit" in msg.lower()
+            ):
                 return cls(
                     LanceTableExistenceErrorType.RATE_LIMITED,
                     exception,
                 )
 
-            case (
-                msg
-            ) if "timeout" in msg.lower() or "timed out" in msg.lower():
+            case msg if "timeout" in msg.lower() or "timed out" in msg.lower():
                 return cls(
                     LanceTableExistenceErrorType.TIMEOUT,
                     exception,
@@ -201,7 +201,9 @@ def _handle_merge_insert_error(
                 raise exception
             case LanceTableExistenceErrorType.MAX_UNINDEXED_ROWS_EXCEEDED:
                 # Create index and retry
-                print(f"Creating scalar index on column '{primary_key}' with type '{primary_key_index_type}' (this may take a while for large datasets...)")
+                print(
+                    f"Creating scalar index on column '{primary_key}' with type '{primary_key_index_type}' (this may take a while for large datasets...)"
+                )
                 tbl.create_scalar_index(
                     column=primary_key,
                     index_type=primary_key_index_type,  # type: ignore[arg-type]

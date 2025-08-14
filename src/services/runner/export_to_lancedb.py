@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 import modal
 from modal import Image
+
 from src.services.gemini.embed import (
     embed_with_gemini,
     init_client as gemini_init_client,

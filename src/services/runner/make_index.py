@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import modal
 from modal import Image
+
 from src.services.lancedb.setup import init_client
 
 if TYPE_CHECKING:
