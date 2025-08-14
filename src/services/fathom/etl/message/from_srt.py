@@ -12,12 +12,8 @@ from uuid_extensions import uuid7
 from src.services.dlt.destination_type import (
     DestinationType,
 )
-from src.services.dlt.filesystem_gcp import (
-    gcp_bucket_url_from_bucket_name,
-    gcp_clean_bucket_name,
-    to_filesystem_gcs,
-    to_filesystem_local,
-)
+from src.services.dlt.filesystem_gcp import CloudGoogle
+from src.services.dlt.filesystem_local import to_filesystem_local
 from src.services.fathom.etl._srt_file import SrtFile
 from src.services.fathom.etl.webhook import (
     Webhook,
@@ -32,7 +28,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 BUCKET_NAME: str = "chalk-ai-devx-fathom-transcripts-from_srt"
-BUCKET_URL: str = gcp_bucket_url_from_bucket_name(
+BUCKET_URL: str = CloudGoogle.bucket_url_from_bucket_name(
     bucket_name=BUCKET_NAME,
 )
 
@@ -47,7 +43,7 @@ image.add_local_python_source(
     ],
 )
 app = modal.App(
-    name=gcp_clean_bucket_name(
+    name=CloudGoogle.clean_bucket_name(
         bucket_name=BUCKET_NAME,
     ),
     image=image,
@@ -130,7 +126,7 @@ def _to_filesystem(
     )
     match bucket_url:
         case str() as url if url.startswith("gs://"):
-            to_filesystem_gcs(
+            CloudGoogle.to_filesystem_gcs(
                 destination_file_data=destination_file_data,
             )
 

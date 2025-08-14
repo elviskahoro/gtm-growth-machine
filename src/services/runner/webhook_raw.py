@@ -11,10 +11,7 @@ from uuid_extensions import uuid7
 from src.services.dlt.destination_type import (
     DestinationType,
 )
-from src.services.dlt.filesystem_gcp import (
-    gcp_clean_bucket_name,
-    to_filesystem,
-)
+from src.services.dlt.filesystem_gcp import CloudGoogle
 from src.services.local.filesystem import DestinationFileData, FileUtility
 
 if TYPE_CHECKING:
@@ -37,7 +34,7 @@ image = image.add_local_python_source(
     ],
 )
 app = modal.App(
-    name=gcp_clean_bucket_name(
+    name=CloudGoogle.clean_bucket_name(
         bucket_name=BUCKET_NAME,
     ),
     image=image,
@@ -133,7 +130,7 @@ def web(
             ),
         ],
     )
-    return to_filesystem(
+    return CloudGoogle.to_filesystem(
         destination_file_data=data,
         bucket_url=bucket_url,
     )
@@ -161,7 +158,7 @@ def local(
         file_data=file_data,
         bucket_url=bucket_url,
     )
-    response: str = to_filesystem(
+    response: str = CloudGoogle.to_filesystem(
         destination_file_data=data,
         bucket_url=bucket_url,
     )

@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from pathlib import Path
 
-from src.services.dlt.filesystem_gcp import gcp_bucket_url_from_bucket_name
+from src.services.dlt.filesystem_gcp import CloudGoogle
 
 
 class DestinationType(str, Enum):
@@ -27,7 +27,7 @@ class DestinationType(str, Enum):
                     bucket_name=bucket_name,
                 )
             case DestinationType.GCP:
-                return gcp_bucket_url_from_bucket_name(
+                return CloudGoogle.bucket_url_from_bucket_name(
                     bucket_name=bucket_name,
                 )
             case _:
