@@ -218,11 +218,3 @@ class CloudGoogle:
             ValueError: If GCP credentials are not properly set
         """
         CloudGoogle.to_filesystem_gcs(destination_file_data)
-
-
-# Backward compatibility
-gcp_clean_bucket_name = CloudGoogle.clean_bucket_name
-gcp_bucket_url_from_bucket_name = CloudGoogle.bucket_url_from_bucket_name
-gcp_strip_bucket_url = CloudGoogle.strip_bucket_url
-to_filesystem = CloudGoogle.to_filesystem
-to_filesystem_gcs = CloudGoogle.to_filesystem_gcs
