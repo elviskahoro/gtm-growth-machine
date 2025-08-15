@@ -5,7 +5,7 @@ import orjson
 from flatsplode import flatsplode
 from pydantic import BaseModel
 
-from src.services.fathom.etl.message.etl_model import TranscriptMessage
+from src.services.fathom.etl.message.transcript_message import TranscriptMessage
 from src.services.fathom.meeting.meeting import Meeting
 from src.services.fathom.recording.recording import Recording
 from src.services.fathom.transcript.transcript import Transcript

@@ -9,7 +9,7 @@ import pyarrow as pa
 from pydantic import BaseModel, ValidationError, validate_email
 
 from .speaker import Speaker
-from .watch_link_data import TranscriptMessageWatchLinkData
+from .transcript_message_watch_link_data import TranscriptMessageWatchLinkData
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
