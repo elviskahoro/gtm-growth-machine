@@ -19,6 +19,37 @@ class GCPCredentials(NamedTuple):
     private_key: str | None
     client_email: str | None
 
+    @classmethod
+    def get_env_vars(cls) -> "GCPCredentials":
+        """Get GCP credentials from environment variables.
+
+        Returns:
+            GCPCredentials containing project_id, private_key, and client_email
+        """
+        gcp_client_email = os.environ.get(
+            "GCP_CLIENT_EMAIL",
+            None,
+        )
+        gcp_project_id = os.environ.get(
+            "GCP_PROJECT_ID",
+            None,
+        )
+        gcp_private_key = os.environ.get(
+            "GCP_PRIVATE_KEY",
+            None,
+        )
+        if gcp_private_key:
+            gcp_private_key = gcp_private_key.replace(
+                "\\n",
+                "\n",
+            )
+
+        return cls(
+            project_id=gcp_project_id,
+            private_key=gcp_private_key,
+            client_email=gcp_client_email,
+        )
+
 
 class CloudGoogle:
     """Helper class for Google Cloud Platform operations."""
@@ -67,46 +98,6 @@ class CloudGoogle:
             "-",
             "_",
         )
-
-    @staticmethod
-    def _get_env_vars() -> GCPCredentials:
-        """Get GCP credentials from environment variables.
-
-        Returns:
-            GCPCredentials containing project_id, private_key, and client_email
-        """
-        gcp_client_email = os.environ.get(
-            "GCP_CLIENT_EMAIL",
-            None,
-        )
-        gcp_project_id = os.environ.get(
-            "GCP_PROJECT_ID",
-            None,
-        )
-        gcp_private_key = os.environ.get(
-            "GCP_PRIVATE_KEY",
-            None,
-        )
-        if gcp_private_key:
-            gcp_private_key = gcp_private_key.replace(
-                "\\n",
-                "\n",
-            )
-
-        return GCPCredentials(
-            project_id=gcp_project_id,
-            private_key=gcp_private_key,
-            client_email=gcp_client_email,
-        )
-
-    @staticmethod
-    def get_env_vars() -> GCPCredentials:
-        """Get GCP credentials from environment variables.
-
-        Returns:
-            GCPCredentials containing project_id, private_key, and client_email
-        """
-        return CloudGoogle._get_env_vars()
 
     @staticmethod
     def to_filesystem(
@@ -159,7 +150,7 @@ class CloudGoogle:
         Raises:
             ValueError: If GCP credentials are not properly set
         """
-        credentials: GCPCredentials = CloudGoogle._get_env_vars()
+        credentials: GCPCredentials = GCPCredentials.get_env_vars()
         if (
             credentials.project_id is None
             or credentials.private_key is None
@@ -224,7 +215,7 @@ class CloudGoogle:
         CloudGoogle.to_filesystem_gcs(destination_file_data)
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,ruff/SLF001)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101)
 class TestCloudGoogle(unittest.TestCase):
     """Test suite for CloudGoogle class."""
 
@@ -270,7 +261,7 @@ class TestCloudGoogle(unittest.TestCase):
     )
     def test_get_env_vars_with_all_vars(self) -> None:
         """Test _get_env_vars returns credentials when all env vars are set."""
-        creds = CloudGoogle._get_env_vars()
+        creds = GCPCredentials.get_env_vars()
         assert creds.project_id == "test-project"
         assert (
             creds.private_key
@@ -280,8 +271,8 @@ class TestCloudGoogle(unittest.TestCase):
 
     @patch.dict(os.environ, {}, clear=True)
     def test_get_env_vars_with_no_vars(self) -> None:
-        """Test _get_env_vars returns None values when env vars are not set."""
-        creds = CloudGoogle._get_env_vars()
+        """Test get_env_vars returns None values when env vars are not set."""
+        creds = GCPCredentials.get_env_vars()
         assert creds.project_id is None
         assert creds.private_key is None
         assert creds.client_email is None
@@ -291,21 +282,23 @@ class TestCloudGoogle(unittest.TestCase):
         {"GCP_PROJECT_ID": "test-project"},
     )
     def test_get_env_vars_with_partial_vars(self) -> None:
-        """Test _get_env_vars with only some env vars set."""
-        creds = CloudGoogle._get_env_vars()
+        """Test get_env_vars with only some env vars set."""
+        creds = GCPCredentials.get_env_vars()
         assert creds.project_id == "test-project"
         assert creds.private_key is None
         assert creds.client_email is None
 
     def test_get_env_vars_public_method(self) -> None:
-        """Test that get_env_vars calls _get_env_vars."""
-        with patch.object(
-            CloudGoogle,
-            "_get_env_vars",
-            return_value=self.test_credentials,
-        ) as mock_get:
-            result = CloudGoogle.get_env_vars()
-            mock_get.assert_called_once()
+        """Test that get_env_vars works as a class method."""
+        with patch.dict(
+            os.environ,
+            {
+                "GCP_PROJECT_ID": "test-project",
+                "GCP_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\\ntest-key\\n-----END PRIVATE KEY-----",
+                "GCP_CLIENT_EMAIL": "test@test-project.iam.gserviceaccount.com",
+            },
+        ):
+            result = GCPCredentials.get_env_vars()
             assert result == self.test_credentials
 
     def test_to_filesystem_with_gcs_url(self) -> None:
@@ -549,32 +542,6 @@ def test_strip_bucket_url_parametrized(url: str, expected: str) -> None:
     assert CloudGoogle.strip_bucket_url(url) == expected
 
 
-def _create_test_destination_file_data() -> Iterator[DestinationFileData]:
-    """Helper function to create test DestinationFileData instances.
-
-    Yields various test cases including JSON, CSV, and text files.
-    """
-    # JSON file
-    json_data = {"test": "data", "count": 42}
-    yield DestinationFileData(
-        string=json.dumps(json_data),
-        path="gs://test-bucket/data/test.json",
-    )
-
-    # CSV file
-    csv_content = "name,age,city\nJohn,30,NYC\nJane,25,LA"
-    yield DestinationFileData(
-        string=csv_content,
-        path="gs://test-bucket/data/users.csv",
-    )
-
-    # Text file
-    yield DestinationFileData(
-        string="This is a test file content",
-        path="gs://test-bucket/logs/test.log",
-    )
-
-
 @patch.dict(
     os.environ,
     {
@@ -586,6 +553,32 @@ def _create_test_destination_file_data() -> Iterator[DestinationFileData]:
 @patch("gcsfs.GCSFileSystem")
 def test_to_filesystem_gcs_with_various_file_types(mock_gcs_fs: MagicMock) -> None:
     """Test to_filesystem_gcs with different file types."""
+
+    def _create_test_destination_file_data() -> Iterator[DestinationFileData]:
+        """Helper function to create test DestinationFileData instances.
+
+        Yields various test cases including JSON, CSV, and text files.
+        """
+        # JSON file
+        json_data = {"test": "data", "count": 42}
+        yield DestinationFileData(
+            string=json.dumps(json_data),
+            path="gs://test-bucket/data/test.json",
+        )
+
+        # CSV file
+        csv_content = "name,age,city\nJohn,30,NYC\nJane,25,LA"
+        yield DestinationFileData(
+            string=csv_content,
+            path="gs://test-bucket/data/users.csv",
+        )
+
+        # Text file
+        yield DestinationFileData(
+            string="This is a test file content",
+            path="gs://test-bucket/logs/test.log",
+        )
+
     mock_fs_instance = MagicMock()
     mock_file = MagicMock()
     mock_fs_instance.open.return_value.__enter__.return_value = mock_file
@@ -637,4 +630,4 @@ def test_to_filesystem_creates_directory_for_local_path() -> None:
             globals()["to_filesystem_local"] = original_func
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,ruff/SLF001)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101)
