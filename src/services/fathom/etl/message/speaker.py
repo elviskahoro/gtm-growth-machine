@@ -21,7 +21,10 @@ class Speaker(BaseModel):
 
     @field_validator("name")
     @classmethod
-    def name_must_not_be_empty(cls, v: str) -> str:
+    def name_must_not_be_empty(
+        cls: type[Speaker],
+        v: str,
+    ) -> str:
         if not v or not v.strip():
             msg = "Name cannot be empty or whitespace only"
             raise ValueError(msg)
@@ -50,7 +53,7 @@ class Speaker(BaseModel):
 # trunk-ignore-begin(ruff/S101,pyright/reportArgumentType,pyright/reportCallIssue)
 def test_speaker_creation_with_required_fields() -> None:
     """Test creating a Speaker with only required fields."""
-    speaker = Speaker(
+    speaker: Speaker = Speaker(
         name="John Doe",
         email="john.doe@example.com",
     )
@@ -62,7 +65,7 @@ def test_speaker_creation_with_required_fields() -> None:
 
 def test_speaker_creation_with_all_fields() -> None:
     """Test creating a Speaker with all fields including aliases."""
-    speaker = Speaker(
+    speaker: Speaker = Speaker(
         name="Jane Smith",
         email="jane.smith@example.com",
         aliases=["J. Smith", "Jane S.", "JS"],
@@ -75,7 +78,7 @@ def test_speaker_creation_with_all_fields() -> None:
 
 def test_speaker_creation_with_empty_aliases_list() -> None:
     """Test creating a Speaker with explicitly empty aliases list."""
-    speaker = Speaker(
+    speaker: Speaker = Speaker(
         name="Bob Wilson",
         email="bob.wilson@example.com",
         aliases=[],
@@ -133,29 +136,29 @@ def test_speaker_validation_empty_name() -> None:
 def test_build_speaker_lookup_map_empty_list() -> None:
     """Test building lookup map with empty speaker list."""
     speakers: list[Speaker] = []
-    lookup_map = Speaker.build_speaker_lookup_map(speakers)
+    lookup_map: dict[str, str] = Speaker.build_speaker_lookup_map(speakers)
 
     assert lookup_map == {}
 
 
 def test_build_speaker_lookup_map_single_speaker_no_aliases() -> None:
     """Test building lookup map with single speaker without aliases."""
-    speakers = [
+    speakers: list[Speaker] = [
         Speaker(
             name="John Doe",
             email="john.doe@example.com",
         ),
     ]
 
-    lookup_map = Speaker.build_speaker_lookup_map(speakers)
+    lookup_map: dict[str, str] = Speaker.build_speaker_lookup_map(speakers)
 
-    expected = {"john doe": "john.doe@example.com"}
+    expected: dict[str, str] = {"john doe": "john.doe@example.com"}
     assert lookup_map == expected
 
 
 def test_build_speaker_lookup_map_single_speaker_with_aliases() -> None:
     """Test building lookup map with single speaker with aliases."""
-    speakers = [
+    speakers: list[Speaker] = [
         Speaker(
             name="Jane Smith",
             email="jane.smith@example.com",
@@ -163,9 +166,9 @@ def test_build_speaker_lookup_map_single_speaker_with_aliases() -> None:
         ),
     ]
 
-    lookup_map = Speaker.build_speaker_lookup_map(speakers)
+    lookup_map: dict[str, str] = Speaker.build_speaker_lookup_map(speakers)
 
-    expected = {
+    expected: dict[str, str] = {
         "jane smith": "jane.smith@example.com",
         "j. smith": "jane.smith@example.com",
         "jane s.": "jane.smith@example.com",
@@ -175,7 +178,7 @@ def test_build_speaker_lookup_map_single_speaker_with_aliases() -> None:
 
 def test_build_speaker_lookup_map_multiple_speakers() -> None:
     """Test building lookup map with multiple speakers."""
-    speakers = [
+    speakers: list[Speaker] = [
         Speaker(
             name="John Doe",
             email="john.doe@example.com",
@@ -192,9 +195,9 @@ def test_build_speaker_lookup_map_multiple_speakers() -> None:
         ),
     ]
 
-    lookup_map = Speaker.build_speaker_lookup_map(speakers)
+    lookup_map: dict[str, str] = Speaker.build_speaker_lookup_map(speakers)
 
-    expected = {
+    expected: dict[str, str] = {
         "john doe": "john.doe@example.com",
         "johnny": "john.doe@example.com",
         "jane smith": "jane.smith@example.com",
@@ -207,7 +210,7 @@ def test_build_speaker_lookup_map_multiple_speakers() -> None:
 
 def test_build_speaker_lookup_map_case_insensitive() -> None:
     """Test that lookup map keys are case-insensitive (lowercased)."""
-    speakers = [
+    speakers: list[Speaker] = [
         Speaker(
             name="JOHN DOE",
             email="john.doe@example.com",
@@ -215,9 +218,9 @@ def test_build_speaker_lookup_map_case_insensitive() -> None:
         ),
     ]
 
-    lookup_map = Speaker.build_speaker_lookup_map(speakers)
+    lookup_map: dict[str, str] = Speaker.build_speaker_lookup_map(speakers)
 
-    expected = {
+    expected: dict[str, str] = {
         "john doe": "john.doe@example.com",
         "johnny": "john.doe@example.com",
         "john d.": "john.doe@example.com",
@@ -227,7 +230,7 @@ def test_build_speaker_lookup_map_case_insensitive() -> None:
 
 def test_build_speaker_lookup_map_duplicate_names() -> None:
     """Test building lookup map with duplicate names (later speaker overwrites)."""
-    speakers = [
+    speakers: list[Speaker] = [
         Speaker(
             name="John Smith",
             email="john.smith1@example.com",
@@ -238,21 +241,21 @@ def test_build_speaker_lookup_map_duplicate_names() -> None:
         ),
     ]
 
-    lookup_map = Speaker.build_speaker_lookup_map(speakers)
+    lookup_map: dict[str, str] = Speaker.build_speaker_lookup_map(speakers)
 
     # The second speaker should overwrite the first
-    expected = {"john smith": "john.smith2@example.com"}
+    expected: dict[str, str] = {"john smith": "john.smith2@example.com"}
     assert lookup_map == expected
 
 
 def test_get_email_by_name_with_lookup_found() -> None:
     """Test getting email by name when name is found in lookup map."""
-    lookup_map = {
+    lookup_map: dict[str, str] = {
         "john doe": "john.doe@example.com",
         "jane smith": "jane.smith@example.com",
     }
 
-    result = Speaker.get_email_by_name_with_lookup(
+    result: str = Speaker.get_email_by_name_with_lookup(
         lookup_map,
         "John Doe",
     )
@@ -262,12 +265,12 @@ def test_get_email_by_name_with_lookup_found() -> None:
 
 def test_get_email_by_name_with_lookup_not_found() -> None:
     """Test getting email by name when name is not found in lookup map."""
-    lookup_map = {
+    lookup_map: dict[str, str] = {
         "john doe": "john.doe@example.com",
         "jane smith": "jane.smith@example.com",
     }
 
-    result = Speaker.get_email_by_name_with_lookup(
+    result: str = Speaker.get_email_by_name_with_lookup(
         lookup_map,
         "Unknown Person",
     )
@@ -277,11 +280,11 @@ def test_get_email_by_name_with_lookup_not_found() -> None:
 
 def test_get_email_by_name_with_lookup_case_insensitive() -> None:
     """Test that name lookup is case-insensitive."""
-    lookup_map = {
+    lookup_map: dict[str, str] = {
         "john doe": "john.doe@example.com",
     }
 
-    test_cases = [
+    test_cases: list[str] = [
         "John Doe",
         "JOHN DOE",
         "john doe",
@@ -289,7 +292,7 @@ def test_get_email_by_name_with_lookup_case_insensitive() -> None:
     ]
 
     for search_name in test_cases:
-        result = Speaker.get_email_by_name_with_lookup(
+        result: str = Speaker.get_email_by_name_with_lookup(
             lookup_map,
             search_name,
         )
@@ -300,7 +303,7 @@ def test_get_email_by_name_with_lookup_empty_map() -> None:
     """Test getting email by name with empty lookup map."""
     lookup_map: dict[str, str] = {}
 
-    result = Speaker.get_email_by_name_with_lookup(
+    result: str = Speaker.get_email_by_name_with_lookup(
         lookup_map,
         "Any Name",
     )
@@ -310,11 +313,11 @@ def test_get_email_by_name_with_lookup_empty_map() -> None:
 
 def test_get_email_by_name_with_lookup_empty_search_name() -> None:
     """Test getting email with empty search name."""
-    lookup_map = {
+    lookup_map: dict[str, str] = {
         "john doe": "john.doe@example.com",
     }
 
-    result = Speaker.get_email_by_name_with_lookup(
+    result: str = Speaker.get_email_by_name_with_lookup(
         lookup_map,
         "",
     )
@@ -324,12 +327,12 @@ def test_get_email_by_name_with_lookup_empty_search_name() -> None:
 
 def test_get_email_by_name_with_lookup_whitespace_handling() -> None:
     """Test that whitespace in search names is handled properly."""
-    lookup_map = {
+    lookup_map: dict[str, str] = {
         "john doe": "john.doe@example.com",
     }
 
     # Test with extra whitespace - should not match
-    result = Speaker.get_email_by_name_with_lookup(
+    result: str = Speaker.get_email_by_name_with_lookup(
         lookup_map,
         "  John Doe  ",
     )
@@ -339,7 +342,7 @@ def test_get_email_by_name_with_lookup_whitespace_handling() -> None:
 
 def test_integration_build_and_lookup() -> None:
     """Integration test: build lookup map and use it for lookups."""
-    speakers = [
+    speakers: list[Speaker] = [
         Speaker(
             name="Alice Johnson",
             email="alice.johnson@example.com",
@@ -351,7 +354,7 @@ def test_integration_build_and_lookup() -> None:
         ),
     ]
 
-    lookup_map = Speaker.build_speaker_lookup_map(speakers)
+    lookup_map: dict[str, str] = Speaker.build_speaker_lookup_map(speakers)
 
     # Test name lookup
     assert (
@@ -391,7 +394,7 @@ def test_integration_build_and_lookup() -> None:
 
 def test_speaker_aliases_type_validation() -> None:
     """Test that aliases field accepts list of strings."""
-    speaker = Speaker(
+    speaker: Speaker = Speaker(
         name="Test User",
         email="test@example.com",
         aliases=["alias1", "alias2", "alias3"],
@@ -403,7 +406,7 @@ def test_speaker_aliases_type_validation() -> None:
 
 def test_speaker_model_immutability() -> None:
     """Test that Speaker model behaves correctly with field access."""
-    speaker = Speaker(
+    speaker: Speaker = Speaker(
         name="John Doe",
         email="john.doe@example.com",
         aliases=["Johnny"],

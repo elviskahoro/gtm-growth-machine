@@ -4,12 +4,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import NamedTuple
 
-import pytest
-
-# Year constants for date logic
-FATHOM_START_YEAR = 2024  # Year when Fathom became available
-FATHOM_TRANSITION_YEAR = 2025
-FATHOM_FUTURE_YEAR = 2026
+FATHOM_START_YEAR: int = 2024  # Year when Fathom became available
+FATHOM_TRANSITION_YEAR: int = 2025
+FATHOM_FUTURE_YEAR: int = 2026
 
 
 class SrtFile(NamedTuple):
@@ -23,7 +20,7 @@ class SrtFile(NamedTuple):
 
     @classmethod
     def from_file_content(  # trunk-ignore(ruff/PLR0912)
-        cls,
+        cls: type[SrtFile],
         lines: list[str],
         path: Path,
         full_text: str,
@@ -55,11 +52,14 @@ class SrtFile(NamedTuple):
                 # If we're in 2025 and the date is after today, it must be from 2024
                 if date_without_year > now:
                     year_to_use = FATHOM_START_YEAR
+
                 else:
                     year_to_use = FATHOM_TRANSITION_YEAR
+
             elif current_year >= FATHOM_FUTURE_YEAR:
                 # From 2026 onwards, always use the current year
                 year_to_use = current_year
+
             else:
                 # For 2024 or earlier, use current year
                 year_to_use = current_year
@@ -82,10 +82,9 @@ class SrtFile(NamedTuple):
                 )
                 if len(parts) >= min_recording_metadata_section:
                     url = parts[-1].strip()
-                    # Ensure the URL starts with "https:"
                     if url.startswith("//"):
                         url = f"https:{url}"
-                    # Extract duration from the middle part
+
                     duration_text: str = parts[0].split("-")[1].strip()
                     try:
                         duration_minutes = float(duration_text.split()[0])
@@ -124,10 +123,10 @@ class SrtFile(NamedTuple):
         )
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101,ruff/PLC0415)
 def test_srt_file_from_file_content_valid() -> None:
     """Test successful parsing of valid SRT file content."""
-    lines = [
+    lines: list[str] = [
         "Team Meeting - January 15",
         "",
         "VIEW RECORDING - 25 mins (No highlights): https://fathom.video/calls/209771231",
@@ -142,13 +141,11 @@ def test_srt_file_from_file_content_valid() -> None:
         "Let's get started.",
     ]
 
-    path = Path("/test/file.srt")
-    full_text = "\n".join(lines)
-
-    result = SrtFile.from_file_content(lines, path, full_text)
+    path: Path = Path("/test/file.srt")
+    full_text: str = "\n".join(lines)
+    result: SrtFile = SrtFile.from_file_content(lines, path, full_text)
 
     assert result.title == "Team Meeting"
-    # January 15 is before August 15 in 2025, so it should use 2025
     assert result.date == datetime(2025, 1, 15, tzinfo=timezone.utc)
     assert result.url == "https://fathom.video/calls/209771231"
     assert result.duration_minutes == 25.0
@@ -167,17 +164,17 @@ def test_srt_file_from_file_content_valid() -> None:
 
 def test_srt_file_from_file_content_url_with_double_slash() -> None:
     """Test URL parsing when it starts with //."""
-    lines = [
+    lines: list[str] = [
         "Test Meeting - February 20",
         "VIEW RECORDING - 30 mins (No highlights): //fathom.video/calls/123456",
         "---",
         "content here",
     ]
 
-    path = Path("/test/file.srt")
-    full_text = "\n".join(lines)
+    path: Path = Path("/test/file.srt")
+    full_text: str = "\n".join(lines)
 
-    result = SrtFile.from_file_content(lines, path, full_text)
+    result: SrtFile = SrtFile.from_file_content(lines, path, full_text)
 
     assert result.url == "https://fathom.video/calls/123456"
     assert result.duration_minutes == 30.0
@@ -185,51 +182,51 @@ def test_srt_file_from_file_content_url_with_double_slash() -> None:
 
 def test_srt_file_from_file_content_duration_parsing_edge_cases() -> None:
     """Test duration parsing with various formats."""
-    lines = [
+    lines: list[str] = [
         "Meeting - March 10",
         "VIEW RECORDING - 45.5 mins (No highlights): https://fathom.video/calls/123",
         "---",
         "content",
     ]
 
-    path = Path("/test/file.srt")
-    full_text = "\n".join(lines)
+    path: Path = Path("/test/file.srt")
+    full_text: str = "\n".join(lines)
 
-    result = SrtFile.from_file_content(lines, path, full_text)
+    result: SrtFile = SrtFile.from_file_content(lines, path, full_text)
 
     assert result.duration_minutes == 45.5
 
 
 def test_srt_file_from_file_content_duration_parsing_failure() -> None:
     """Test duration parsing when format is unexpected."""
-    lines = [
+    lines: list[str] = [
         "Meeting - April 5",
         "VIEW RECORDING - invalid mins (No highlights): https://fathom.video/calls/123",
         "---",
         "content",
     ]
 
-    path = Path("/test/file.srt")
-    full_text = "\n".join(lines)
+    path: Path = Path("/test/file.srt")
+    full_text: str = "\n".join(lines)
 
-    result = SrtFile.from_file_content(lines, path, full_text)
+    result: SrtFile = SrtFile.from_file_content(lines, path, full_text)
 
     assert result.duration_minutes == 0.0
 
 
 def test_srt_file_from_file_content_year_logic_current_year() -> None:
     """Test year assignment logic for dates before today in 2025."""
-    lines = [
+    lines: list[str] = [
         "Meeting - April 1",  # April 1 is before August 15
         "VIEW RECORDING - 20 mins: https://fathom.video/calls/123",
         "---",
         "content",
     ]
 
-    path = Path("/test/file.srt")
-    full_text = "\n".join(lines)
+    path: Path = Path("/test/file.srt")
+    full_text: str = "\n".join(lines)
 
-    result = SrtFile.from_file_content(lines, path, full_text)
+    result: SrtFile = SrtFile.from_file_content(lines, path, full_text)
 
     # April 1 is before August 15 in 2025, so it should use 2025
     assert result.date.year == 2025
@@ -239,19 +236,19 @@ def test_srt_file_from_file_content_year_logic_current_year() -> None:
 
 def test_srt_file_from_file_content_year_logic_early_months() -> None:
     """Test year assignment logic for months < 4 (should use current year)."""
-    lines = [
+    lines: list[str] = [
         "Meeting - March 1",  # March is month 3, < 4
         "VIEW RECORDING - 20 mins: https://fathom.video/calls/123",
         "---",
         "content",
     ]
 
-    path = Path("/test/file.srt")
-    full_text = "\n".join(lines)
+    path: Path = Path("/test/file.srt")
+    full_text: str = "\n".join(lines)
 
-    result = SrtFile.from_file_content(lines, path, full_text)
+    result: SrtFile = SrtFile.from_file_content(lines, path, full_text)
 
-    current_year = datetime.now(tz=timezone.utc).year
+    current_year: int = datetime.now(tz=timezone.utc).year
     assert result.date.year == current_year
     assert result.date.month == 3
     assert result.date.day == 1
@@ -259,7 +256,7 @@ def test_srt_file_from_file_content_year_logic_early_months() -> None:
 
 def test_srt_file_from_file_content_no_separator_line() -> None:
     """Test parsing when there's no '---' separator."""
-    lines = [
+    lines: list[str] = [
         "Meeting - May 15",
         "VIEW RECORDING - 15 mins: https://fathom.video/calls/123",
         "1",
@@ -267,10 +264,10 @@ def test_srt_file_from_file_content_no_separator_line() -> None:
         "Hello world",
     ]
 
-    path = Path("/test/file.srt")
-    full_text = "\n".join(lines)
+    path: Path = Path("/test/file.srt")
+    full_text: str = "\n".join(lines)
 
-    result = SrtFile.from_file_content(lines, path, full_text)
+    result: SrtFile = SrtFile.from_file_content(lines, path, full_text)
 
     # Should include all lines since no separator found (start_idx remains 0)
     assert result.content == lines
@@ -278,15 +275,17 @@ def test_srt_file_from_file_content_no_separator_line() -> None:
 
 def test_srt_file_from_file_content_missing_url() -> None:
     """Test error when URL is not found."""
-    lines = [
+    import pytest
+
+    lines: list[str] = [
         "Meeting - June 10",
         "Some other content",
         "---",
         "content",
     ]
 
-    path = Path("/test/file.srt")
-    full_text = "\n".join(lines)
+    path: Path = Path("/test/file.srt")
+    full_text: str = "\n".join(lines)
 
     with pytest.raises(ValueError, match="URL is None"):
         SrtFile.from_file_content(lines, path, full_text)
@@ -294,15 +293,17 @@ def test_srt_file_from_file_content_missing_url() -> None:
 
 def test_srt_file_from_file_content_missing_title_and_date() -> None:
     """Test error when title and date are not found."""
-    lines = [
+    import pytest
+
+    lines: list[str] = [
         "Invalid first line",  # No " - " separator
         "VIEW RECORDING - 20 mins: https://fathom.video/calls/123",
         "---",
         "content",
     ]
 
-    path = Path("/test/file.srt")
-    full_text = "\n".join(lines)
+    path: Path = Path("/test/file.srt")
+    full_text: str = "\n".join(lines)
 
     with pytest.raises(ValueError, match="Date is None"):
         SrtFile.from_file_content(lines, path, full_text)
@@ -310,9 +311,11 @@ def test_srt_file_from_file_content_missing_title_and_date() -> None:
 
 def test_srt_file_from_file_content_empty_lines() -> None:
     """Test parsing with empty lines list."""
-    lines = []
-    path = Path("/test/file.srt")
-    full_text = ""
+    import pytest
+
+    lines: list[str] = []
+    path: Path = Path("/test/file.srt")
+    full_text: str = ""
 
     with pytest.raises(ValueError, match="URL is None"):
         SrtFile.from_file_content(lines, path, full_text)
@@ -320,7 +323,7 @@ def test_srt_file_from_file_content_empty_lines() -> None:
 
 def test_srt_file_from_file_content_view_recording_in_different_position() -> None:
     """Test finding VIEW RECORDING line in different positions within first 5 lines."""
-    lines = [
+    lines: list[str] = [
         "Meeting - July 20",
         "Some intro text",
         "More intro",
@@ -331,10 +334,10 @@ def test_srt_file_from_file_content_view_recording_in_different_position() -> No
         "content",
     ]
 
-    path = Path("/test/file.srt")
-    full_text = "\n".join(lines)
+    path: Path = Path("/test/file.srt")
+    full_text: str = "\n".join(lines)
 
-    result = SrtFile.from_file_content(lines, path, full_text)
+    result: SrtFile = SrtFile.from_file_content(lines, path, full_text)
 
     assert result.url == "https://fathom.video/calls/999"
     assert result.duration_minutes == 35.0
@@ -342,7 +345,9 @@ def test_srt_file_from_file_content_view_recording_in_different_position() -> No
 
 def test_srt_file_from_file_content_view_recording_beyond_first_five_lines() -> None:
     """Test that VIEW RECORDING is not found if beyond first 5 lines."""
-    lines = [
+    import pytest
+
+    lines: list[str] = [
         "Meeting - August 25",
         "Line 2",
         "Line 3",
@@ -354,8 +359,8 @@ def test_srt_file_from_file_content_view_recording_beyond_first_five_lines() -> 
         "content",
     ]
 
-    path = Path("/test/file.srt")
-    full_text = "\n".join(lines)
+    path: Path = Path("/test/file.srt")
+    full_text: str = "\n".join(lines)
 
     with pytest.raises(ValueError, match="URL is None"):
         SrtFile.from_file_content(lines, path, full_text)
@@ -363,17 +368,17 @@ def test_srt_file_from_file_content_view_recording_beyond_first_five_lines() -> 
 
 def test_srt_file_from_file_content_complex_url_parsing() -> None:
     """Test URL parsing with multiple colons in the line."""
-    lines = [
+    lines: list[str] = [
         "Complex Meeting - September 30",
         "VIEW RECORDING - 22 mins (Highlights: 3:45, 7:30): https://fathom.video/calls/complex123",
         "---",
         "content",
     ]
 
-    path = Path("/test/file.srt")
-    full_text = "\n".join(lines)
+    path: Path = Path("/test/file.srt")
+    full_text: str = "\n".join(lines)
 
-    result = SrtFile.from_file_content(lines, path, full_text)
+    result: SrtFile = SrtFile.from_file_content(lines, path, full_text)
 
     assert result.url == "https://fathom.video/calls/complex123"
     assert result.duration_minutes == 22.0
@@ -381,15 +386,17 @@ def test_srt_file_from_file_content_complex_url_parsing() -> None:
 
 def test_srt_file_from_file_content_insufficient_url_parts() -> None:
     """Test URL parsing when there aren't enough parts after splitting by colon."""
-    lines = [
+    import pytest
+
+    lines: list[str] = [
         "Meeting - October 5",
         "VIEW RECORDING",  # No colon, insufficient parts
         "---",
         "content",
     ]
 
-    path = Path("/test/file.srt")
-    full_text = "\n".join(lines)
+    path: Path = Path("/test/file.srt")
+    full_text: str = "\n".join(lines)
 
     with pytest.raises(ValueError, match="URL is None"):
         SrtFile.from_file_content(lines, path, full_text)
@@ -397,17 +404,19 @@ def test_srt_file_from_file_content_insufficient_url_parts() -> None:
 
 def test_srt_file_namedtuple_immutability() -> None:
     """Test that SrtFile is immutable as a NamedTuple."""
-    lines = [
+    import pytest
+
+    lines: list[str] = [
         "Test Meeting - November 12",
         "VIEW RECORDING - 10 mins: https://fathom.video/calls/123",
         "---",
         "test content",
     ]
 
-    path = Path("/test/file.srt")
-    full_text = "\n".join(lines)
+    path: Path = Path("/test/file.srt")
+    full_text: str = "\n".join(lines)
 
-    result = SrtFile.from_file_content(lines, path, full_text)
+    result: SrtFile = SrtFile.from_file_content(lines, path, full_text)
 
     # Should not be able to modify fields
     with pytest.raises(AttributeError):
@@ -416,17 +425,17 @@ def test_srt_file_namedtuple_immutability() -> None:
 
 def test_srt_file_namedtuple_field_access() -> None:
     """Test accessing all fields of the NamedTuple."""
-    lines = [
+    lines: list[str] = [
         "Final Test - December 31",
         "VIEW RECORDING - 60 mins: https://fathom.video/calls/final",
         "---",
         "final content line",
     ]
 
-    path = Path("/test/final.srt")
-    full_text = "\n".join(lines)
+    path: Path = Path("/test/final.srt")
+    full_text: str = "\n".join(lines)
 
-    result = SrtFile.from_file_content(lines, path, full_text)
+    result: SrtFile = SrtFile.from_file_content(lines, path, full_text)
 
     # Test all field access
     assert isinstance(result.content, list)
@@ -447,4 +456,4 @@ def test_srt_file_namedtuple_field_access() -> None:
     assert result[6] == result.full_text
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101,ruff/PLC0415)

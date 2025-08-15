@@ -17,7 +17,7 @@ class Storage(BaseModel):
 # trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)
 def test_storage_creation_default() -> None:
     """Test creating Storage with default empty speakers list."""
-    storage = Storage()
+    storage: Storage = Storage()
 
     assert storage.speakers_internal == []
     assert isinstance(storage.speakers_internal, list)
@@ -25,18 +25,18 @@ def test_storage_creation_default() -> None:
 
 def test_storage_creation_empty_speakers_explicit() -> None:
     """Test creating Storage with explicitly empty speakers list."""
-    storage = Storage(speakers_internal=[])
+    storage: Storage = Storage(speakers_internal=[])
 
     assert storage.speakers_internal == []
 
 
 def test_storage_creation_with_single_speaker() -> None:
     """Test creating Storage with a single speaker."""
-    speaker = Speaker(
+    speaker: Speaker = Speaker(
         name="John Doe",
         email="john.doe@example.com",
     )
-    storage = Storage(speakers_internal=[speaker])
+    storage: Storage = Storage(speakers_internal=[speaker])
 
     assert len(storage.speakers_internal) == 1
     assert storage.speakers_internal[0] == speaker
@@ -46,7 +46,7 @@ def test_storage_creation_with_single_speaker() -> None:
 
 def test_storage_creation_with_multiple_speakers() -> None:
     """Test creating Storage with multiple speakers."""
-    speakers = [
+    speakers: list[Speaker] = [
         Speaker(
             name="Alice Johnson",
             email="alice.johnson@example.com",
@@ -62,7 +62,7 @@ def test_storage_creation_with_multiple_speakers() -> None:
             aliases=["Carol D."],
         ),
     ]
-    storage = Storage(speakers_internal=speakers)
+    storage: Storage = Storage(speakers_internal=speakers)
 
     assert len(storage.speakers_internal) == 3
     assert storage.speakers_internal == speakers
@@ -70,8 +70,8 @@ def test_storage_creation_with_multiple_speakers() -> None:
 
 def test_storage_speakers_list_mutability() -> None:
     """Test that speakers list can be modified after creation."""
-    storage = Storage()
-    speaker = Speaker(
+    storage: Storage = Storage()
+    speaker: Speaker = Speaker(
         name="Test User",
         email="test@example.com",
     )
@@ -85,7 +85,7 @@ def test_storage_speakers_list_mutability() -> None:
 
 def test_storage_speakers_list_clear() -> None:
     """Test clearing speakers list after creation."""
-    speakers = [
+    speakers: list[Speaker] = [
         Speaker(
             name="User1",
             email="user1@example.com",
@@ -95,7 +95,7 @@ def test_storage_speakers_list_clear() -> None:
             email="user2@example.com",
         ),
     ]
-    storage = Storage(speakers_internal=speakers)
+    storage: Storage = Storage(speakers_internal=speakers)
 
     assert len(storage.speakers_internal) == 2
 
@@ -108,15 +108,15 @@ def test_storage_speakers_list_clear() -> None:
 
 def test_storage_speakers_list_extend() -> None:
     """Test extending speakers list with additional speakers."""
-    initial_speakers = [
+    initial_speakers: list[Speaker] = [
         Speaker(
             name="User1",
             email="user1@example.com",
         ),
     ]
-    storage = Storage(speakers_internal=initial_speakers)
+    storage: Storage = Storage(speakers_internal=initial_speakers)
 
-    additional_speakers = [
+    additional_speakers: list[Speaker] = [
         Speaker(
             name="User2",
             email="user2@example.com",
@@ -145,14 +145,14 @@ def test_storage_field_description() -> None:
 
 def test_storage_default_factory() -> None:
     """Test that default factory creates separate list instances."""
-    storage1 = Storage()
-    storage2 = Storage()
+    storage1: Storage = Storage()
+    storage2: Storage = Storage()
 
     # Ensure they have separate list instances
     assert storage1.speakers_internal is not storage2.speakers_internal
 
     # Modify one and ensure the other is not affected
-    speaker = Speaker(
+    speaker: Speaker = Speaker(
         name="Test User",
         email="test@example.com",
     )
@@ -174,7 +174,7 @@ def test_storage_invalid_speakers_type() -> None:
 
 def test_storage_mixed_valid_invalid_speakers() -> None:
     """Test validation with mix of valid and invalid speakers."""
-    valid_speaker = Speaker(
+    valid_speaker: Speaker = Speaker(
         name="Valid User",
         email="valid@example.com",
     )
@@ -199,17 +199,17 @@ def test_storage_none_speakers_list() -> None:
 
 def test_storage_duplicate_speakers() -> None:
     """Test Storage with duplicate speakers (should be allowed)."""
-    speaker = Speaker(
+    speaker: Speaker = Speaker(
         name="John Doe",
         email="john.doe@example.com",
     )
     # Create two separate instances with same data
-    duplicate_speaker = Speaker(
+    duplicate_speaker: Speaker = Speaker(
         name="John Doe",
         email="john.doe@example.com",
     )
 
-    storage = Storage(speakers_internal=[speaker, duplicate_speaker])
+    storage: Storage = Storage(speakers_internal=[speaker, duplicate_speaker])
 
     assert len(storage.speakers_internal) == 2
     assert storage.speakers_internal[0] == storage.speakers_internal[1]
@@ -217,7 +217,7 @@ def test_storage_duplicate_speakers() -> None:
 
 def test_storage_speakers_with_complex_aliases() -> None:
     """Test Storage with speakers having complex aliases."""
-    speakers = [
+    speakers: list[Speaker] = [
         Speaker(
             name="Dr. Jane Smith",
             email="jane.smith@example.com",
@@ -241,7 +241,7 @@ def test_storage_speakers_with_complex_aliases() -> None:
         ),
     ]
 
-    storage = Storage(speakers_internal=speakers)
+    storage: Storage = Storage(speakers_internal=speakers)
 
     assert len(storage.speakers_internal) == 2
     assert len(storage.speakers_internal[0].aliases) == 5
@@ -266,18 +266,18 @@ def test_storage_empty_speaker_names() -> None:
 
 def test_storage_model_dump() -> None:
     """Test serialization of Storage model."""
-    speakers = [
+    speakers: list[Speaker] = [
         Speaker(
             name="Alice",
             email="alice@example.com",
             aliases=["Al"],
         ),
     ]
-    storage = Storage(speakers_internal=speakers)
+    storage: Storage = Storage(speakers_internal=speakers)
 
-    dumped = storage.model_dump()
+    dumped: dict[str, list[dict[str, str | list[str]]]] = storage.model_dump()
 
-    expected = {
+    expected: dict[str, list[dict[str, str | list[str]]]] = {
         "speakers_internal": [
             {
                 "name": "Alice",
@@ -292,7 +292,7 @@ def test_storage_model_dump() -> None:
 
 def test_storage_model_rebuild_from_dict() -> None:
     """Test creating Storage from dictionary data."""
-    data = {
+    data: dict[str, list[dict[str, str | list[str]]]] = {
         "speakers_internal": [
             {
                 "name": "Bob Wilson",
@@ -302,7 +302,7 @@ def test_storage_model_rebuild_from_dict() -> None:
         ],
     }
 
-    storage = Storage.model_validate(data)
+    storage: Storage = Storage.model_validate(data)
 
     assert len(storage.speakers_internal) == 1
     assert storage.speakers_internal[0].name == "Bob Wilson"
@@ -312,49 +312,49 @@ def test_storage_model_rebuild_from_dict() -> None:
 
 def test_storage_equality() -> None:
     """Test equality comparison between Storage instances."""
-    speaker1 = Speaker(
+    speaker1: Speaker = Speaker(
         name="John Doe",
         email="john.doe@example.com",
     )
-    speaker2 = Speaker(
+    speaker2: Speaker = Speaker(
         name="John Doe",
         email="john.doe@example.com",
     )
 
-    storage1 = Storage(speakers_internal=[speaker1])
-    storage2 = Storage(speakers_internal=[speaker2])
+    storage1: Storage = Storage(speakers_internal=[speaker1])
+    storage2: Storage = Storage(speakers_internal=[speaker2])
 
     assert storage1 == storage2
 
 
 def test_storage_inequality() -> None:
     """Test inequality comparison between Storage instances."""
-    speaker1 = Speaker(
+    speaker1: Speaker = Speaker(
         name="John Doe",
         email="john.doe@example.com",
     )
-    speaker2 = Speaker(
+    speaker2: Speaker = Speaker(
         name="Jane Smith",
         email="jane.smith@example.com",
     )
 
-    storage1 = Storage(speakers_internal=[speaker1])
-    storage2 = Storage(speakers_internal=[speaker2])
+    storage1: Storage = Storage(speakers_internal=[speaker1])
+    storage2: Storage = Storage(speakers_internal=[speaker2])
 
     assert storage1 != storage2
 
 
 def test_storage_repr() -> None:
     """Test string representation of Storage."""
-    speakers = [
+    speakers: list[Speaker] = [
         Speaker(
             name="Alice",
             email="alice@example.com",
         ),
     ]
-    storage = Storage(speakers_internal=speakers)
+    storage: Storage = Storage(speakers_internal=speakers)
 
-    repr_str = repr(storage)
+    repr_str: str = repr(storage)
 
     assert "Storage" in repr_str
     assert "speakers_internal" in repr_str

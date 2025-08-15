@@ -2,9 +2,6 @@ from __future__ import annotations
 
 from enum import Enum
 from pathlib import Path
-from unittest import mock
-
-import pytest
 
 from src.services.dlt.filesystem_gcp import CloudGoogle
 
@@ -38,7 +35,7 @@ class DestinationType(str, Enum):
                 raise ValueError(error_msg)
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101)
+# trunk-ignore-begin(ruff/PLC0415,ruff/PLR2004,ruff/S101)
 def test_destination_type_enum_values() -> None:
     """Check that LOCAL and GCP enum values are correctly defined."""
     # Verify that the enum has LOCAL and GCP members
@@ -81,13 +78,17 @@ def test_destination_type_is_string_enum() -> None:
 
 def test_get_bucket_url_from_bucket_name_for_local() -> None:
     """Test the get_bucket_url_from_bucket_name_for_local static method."""
+    from unittest import mock
+
     # Mock Path.cwd() to return a controlled path
     with mock.patch("src.services.dlt.destination_type.Path.cwd") as mock_cwd:
         mock_cwd.return_value = Path("/test/path")
 
         # Test with a simple bucket name
-        bucket_name = "test-bucket"
-        result = DestinationType.get_bucket_url_from_bucket_name_for_local(bucket_name)
+        bucket_name: str = "test-bucket"
+        result: str = DestinationType.get_bucket_url_from_bucket_name_for_local(
+            bucket_name,
+        )
         assert result == "/test/path/out/test-bucket"
 
         # Test with different bucket names to ensure proper concatenation
@@ -111,16 +112,18 @@ def test_get_bucket_url_from_bucket_name_for_local() -> None:
 
 def test_get_bucket_url_from_bucket_name_local() -> None:
     """Test get_bucket_url_from_bucket_name for LOCAL destination type."""
+    from unittest import mock
+
     # Mock Path.cwd() to control the working directory
     with mock.patch("src.services.dlt.destination_type.Path.cwd") as mock_cwd:
         mock_cwd.return_value = Path("/mock/working/directory")
 
         # Create a LOCAL DestinationType instance
-        local_destination = DestinationType.LOCAL
+        local_destination: DestinationType = DestinationType.LOCAL
 
         # Test with a simple bucket name
-        bucket_name = "test-bucket"
-        result = local_destination.get_bucket_url_from_bucket_name(bucket_name)
+        bucket_name: str = "test-bucket"
+        result: str = local_destination.get_bucket_url_from_bucket_name(bucket_name)
         assert result == "/mock/working/directory/out/test-bucket"
 
         # Test with different bucket names
@@ -150,19 +153,21 @@ def test_get_bucket_url_from_bucket_name_local() -> None:
 
 def test_get_bucket_url_from_bucket_name_gcp() -> None:
     """Test get_bucket_url_from_bucket_name for GCP destination type."""
+    from unittest import mock
+
     # Mock CloudGoogle.bucket_url_from_bucket_name() to return a controlled value
     with mock.patch(
         "src.services.dlt.filesystem_gcp.CloudGoogle.bucket_url_from_bucket_name",
     ) as mock_bucket_url:
         # Create a GCP DestinationType instance
-        gcp_destination = DestinationType.GCP
+        gcp_destination: DestinationType = DestinationType.GCP
 
         # Test with a simple bucket name
-        bucket_name = "test-bucket"
-        expected_url = "gs://test-bucket"
+        bucket_name: str = "test-bucket"
+        expected_url: str = "gs://test-bucket"
         mock_bucket_url.return_value = expected_url
 
-        result = gcp_destination.get_bucket_url_from_bucket_name(bucket_name)
+        result: str = gcp_destination.get_bucket_url_from_bucket_name(bucket_name)
 
         # Assert the mocked CloudGoogle method was called with correct parameters
         mock_bucket_url.assert_called_once_with(bucket_name=bucket_name)
@@ -216,9 +221,13 @@ def test_get_bucket_url_from_bucket_name_gcp() -> None:
 
 def test_get_bucket_url_from_bucket_name_invalid() -> None:
     """Test get_bucket_url_from_bucket_name raises ValueError for invalid destination type."""
+    from unittest import mock
+
+    import pytest
+
     # Create a mock DestinationType instance with an invalid value
     # We need to bypass the enum validation by mocking the instance
-    invalid_destination = mock.Mock(spec=DestinationType)
+    invalid_destination: mock.Mock = mock.Mock(spec=DestinationType)
 
     # Set the mock to return an invalid value when converted to string
     # This simulates a destination type that isn't LOCAL or GCP
@@ -248,4 +257,4 @@ def test_get_bucket_url_from_bucket_name_invalid() -> None:
     assert "invalid" in str(exc_info.value) or "INVALID" in str(exc_info.value)
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101)
+# trunk-ignore-end(ruff/PLC0415,ruff/PLR2004,ruff/S101)

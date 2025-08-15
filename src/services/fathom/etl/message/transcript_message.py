@@ -5,10 +5,8 @@ import re
 from datetime import datetime, timezone  # trunk-ignore(ruff/TC003)
 from re import Match
 from typing import TYPE_CHECKING
-from unittest.mock import patch
 
 import pyarrow as pa
-import pytest
 from pydantic import BaseModel, ValidationError, validate_email
 
 from .speaker import Speaker
@@ -194,7 +192,7 @@ class TranscriptMessage(BaseModel):
         )
 
     def process_content_line(
-        self,
+        self: TranscriptMessage,
         line: str,
     ) -> None:
         """Process a content line and update the TranscriptMessage instance."""
@@ -278,7 +276,7 @@ class TranscriptMessage(BaseModel):
             yield current_transcript_message
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,pyright/reportCallIssue)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
 def test_gemini_get_column_to_embed() -> None:
     assert TranscriptMessage.gemini_get_column_to_embed() == "message"
 
@@ -320,6 +318,10 @@ def test_lance_get_primary_key_success() -> None:
 
 
 def test_lance_get_primary_key_field_not_found() -> None:
+    from unittest.mock import patch
+
+    import pytest
+
     # Mock model_fields to not include 'id'
     with (
         patch.object(TranscriptMessage, "model_fields", {"other_field": None}),
@@ -332,8 +334,8 @@ def test_lance_get_schema() -> None:
     schema = TranscriptMessage.lance_get_schema()
     assert isinstance(schema, pa.Schema)
 
-    field_names = [field.name for field in schema]
-    expected_fields = [
+    field_names: list[str] = [field.name for field in schema]
+    expected_fields: list[str] = [
         "id",
         "recording_id",
         "message_id",
@@ -362,23 +364,25 @@ def test_lance_get_schema() -> None:
 
 def test_convert_timestamp_to_seconds_mm_ss_format() -> None:
     # Test MM:SS format
-    result = TranscriptMessage.convert_timestamp_to_seconds("05:30")
+    result: int = TranscriptMessage.convert_timestamp_to_seconds("05:30")
     assert result == 330  # 5*60 + 30
 
 
 def test_convert_timestamp_to_seconds_hh_mm_ss_format() -> None:
     # Test HH:MM:SS format
-    result = TranscriptMessage.convert_timestamp_to_seconds("1:05:30")
+    result: int = TranscriptMessage.convert_timestamp_to_seconds("1:05:30")
     assert result == 3930  # 1*3600 + 5*60 + 30
 
 
 def test_convert_timestamp_to_seconds_with_decimal_seconds() -> None:
     # Test with decimal seconds
-    result = TranscriptMessage.convert_timestamp_to_seconds("1:05:30.5")
+    result: int = TranscriptMessage.convert_timestamp_to_seconds("1:05:30.5")
     assert result == 3930  # int(float("30.5")) = 30
 
 
 def test_convert_timestamp_to_seconds_invalid_format() -> None:
+    import pytest
+
     with pytest.raises(ValueError, match="Invalid timestamp format: 5"):
         TranscriptMessage.convert_timestamp_to_seconds("5")
 
@@ -387,15 +391,15 @@ def test_convert_timestamp_to_seconds_invalid_format() -> None:
 
 
 def test_parse_timestamp_line_success() -> None:
-    line = "05:30 - John Doe (Acme Corp)"
-    recording_id = "rec123"
-    message_id = 1
-    url = "https://example.com"
-    title = "Test Meeting"
-    date = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
-    speaker_map = {"john doe": "john@example.com"}
+    line: str = "05:30 - John Doe (Acme Corp)"
+    recording_id: str = "rec123"
+    message_id: int = 1
+    url: str = "https://example.com"
+    title: str = "Test Meeting"
+    date: datetime = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+    speaker_map: dict[str, str] = {"john doe": "john@example.com"}
 
-    result = TranscriptMessage.parse_timestamp_line(
+    result: TranscriptMessage | None = TranscriptMessage.parse_timestamp_line(
         line=line,
         recording_id=recording_id,
         message_id=message_id,
@@ -421,15 +425,15 @@ def test_parse_timestamp_line_success() -> None:
 
 
 def test_parse_timestamp_line_without_organization() -> None:
-    line = "05:30 - John Doe"
-    recording_id = "rec123"
-    message_id = 1
-    url = "https://example.com"
-    title = "Test Meeting"
-    date = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
-    speaker_map = {"john doe": "john@example.com"}
+    line: str = "05:30 - John Doe"
+    recording_id: str = "rec123"
+    message_id: int = 1
+    url: str = "https://example.com"
+    title: str = "Test Meeting"
+    date: datetime = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+    speaker_map: dict[str, str] = {"john doe": "john@example.com"}
 
-    result = TranscriptMessage.parse_timestamp_line(
+    result: TranscriptMessage | None = TranscriptMessage.parse_timestamp_line(
         line=line,
         recording_id=recording_id,
         message_id=message_id,
@@ -445,15 +449,15 @@ def test_parse_timestamp_line_without_organization() -> None:
 
 
 def test_parse_timestamp_line_invalid_email_with_org() -> None:
-    line = "05:30 - Unknown Speaker (Acme Corp)"
-    recording_id = "rec123"
-    message_id = 1
-    url = "https://example.com"
-    title = "Test Meeting"
-    date = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
-    speaker_map = {}
+    line: str = "05:30 - Unknown Speaker (Acme Corp)"
+    recording_id: str = "rec123"
+    message_id: int = 1
+    url: str = "https://example.com"
+    title: str = "Test Meeting"
+    date: datetime = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+    speaker_map: dict[str, str] = {}
 
-    result = TranscriptMessage.parse_timestamp_line(
+    result: TranscriptMessage | None = TranscriptMessage.parse_timestamp_line(
         line=line,
         recording_id=recording_id,
         message_id=message_id,
@@ -470,15 +474,15 @@ def test_parse_timestamp_line_invalid_email_with_org() -> None:
 
 
 def test_parse_timestamp_line_no_match() -> None:
-    line = "This is not a valid timestamp line"
-    recording_id = "rec123"
-    message_id = 1
-    url = "https://example.com"
-    title = "Test Meeting"
-    date = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
-    speaker_map = {}
+    line: str = "This is not a valid timestamp line"
+    recording_id: str = "rec123"
+    message_id: int = 1
+    url: str = "https://example.com"
+    title: str = "Test Meeting"
+    date: datetime = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+    speaker_map: dict[str, str] = {}
 
-    result = TranscriptMessage.parse_timestamp_line(
+    result: TranscriptMessage | None = TranscriptMessage.parse_timestamp_line(
         line=line,
         recording_id=recording_id,
         message_id=message_id,
@@ -492,7 +496,7 @@ def test_parse_timestamp_line_no_match() -> None:
 
 
 def test_process_content_line_action_item() -> None:
-    message = TranscriptMessage(
+    message: TranscriptMessage = TranscriptMessage(
         id="test-00001",
         recording_id="rec123",
         message_id=1,
@@ -512,7 +516,9 @@ def test_process_content_line_action_item() -> None:
 
 
 def test_process_content_line_watch_link() -> None:
-    message = TranscriptMessage(
+    from unittest.mock import patch
+
+    message: TranscriptMessage = TranscriptMessage(
         id="test-00001",
         recording_id="rec123",
         message_id=1,
@@ -543,7 +549,9 @@ def test_process_content_line_watch_link() -> None:
 
 
 def test_process_content_line_watch_link_append_to_existing_message() -> None:
-    message = TranscriptMessage(
+    from unittest.mock import patch
+
+    message: TranscriptMessage = TranscriptMessage(
         id="test-00001",
         recording_id="rec123",
         message_id=1,
@@ -574,7 +582,7 @@ def test_process_content_line_watch_link_append_to_existing_message() -> None:
 
 
 def test_process_content_line_regular_content() -> None:
-    message = TranscriptMessage(
+    message: TranscriptMessage = TranscriptMessage(
         id="test-00001",
         recording_id="rec123",
         message_id=1,
@@ -597,7 +605,7 @@ def test_process_content_line_regular_content() -> None:
 
 
 def test_process_content_line_empty_string() -> None:
-    message = TranscriptMessage(
+    message: TranscriptMessage = TranscriptMessage(
         id="test-00001",
         recording_id="rec123",
         message_id=1,
@@ -618,7 +626,9 @@ def test_process_content_line_empty_string() -> None:
 
 
 def test_process_content_line_invalid_type() -> None:
-    message = TranscriptMessage(
+    import pytest
+
+    message: TranscriptMessage = TranscriptMessage(
         id="test-00001",
         recording_id="rec123",
         message_id=1,
@@ -638,18 +648,18 @@ def test_process_content_line_invalid_type() -> None:
 
 
 def test_parse_transcript_lines_single_message() -> None:
-    lines = [
+    lines: list[str] = [
         "05:30 - John Doe (Acme Corp)",
         "This is the message content",
         "More content",
     ]
-    recording_id = "rec123"
-    url = "https://example.com"
-    title = "Test Meeting"
-    date = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
-    speaker_map = {"john doe": "john@example.com"}
+    recording_id: str = "rec123"
+    url: str = "https://example.com"
+    title: str = "Test Meeting"
+    date: datetime = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+    speaker_map: dict[str, str] = {"john doe": "john@example.com"}
 
-    messages = list(
+    messages: list[TranscriptMessage] = list(
         TranscriptMessage.parse_transcript_lines(
             lines=lines,
             recording_id=recording_id,
@@ -661,7 +671,7 @@ def test_parse_transcript_lines_single_message() -> None:
     )
 
     assert len(messages) == 1
-    message = messages[0]
+    message: TranscriptMessage = messages[0]
     assert message.id == "rec123-00001"
     assert message.timestamp == 330
     assert message.speaker == "john@example.com"
@@ -670,23 +680,23 @@ def test_parse_transcript_lines_single_message() -> None:
 
 
 def test_parse_transcript_lines_multiple_messages() -> None:
-    lines = [
+    lines: list[str] = [
         "05:30 - John Doe",
         "First message",
         "10:45 - Jane Smith",
         "Second message",
         "ACTION ITEM: Do something",
     ]
-    recording_id = "rec123"
-    url = "https://example.com"
-    title = "Test Meeting"
-    date = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
-    speaker_map = {
+    recording_id: str = "rec123"
+    url: str = "https://example.com"
+    title: str = "Test Meeting"
+    date: datetime = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+    speaker_map: dict[str, str] = {
         "john doe": "john@example.com",
         "jane smith": "jane@example.com",
     }
 
-    messages = list(
+    messages: list[TranscriptMessage] = list(
         TranscriptMessage.parse_transcript_lines(
             lines=lines,
             recording_id=recording_id,
@@ -699,13 +709,13 @@ def test_parse_transcript_lines_multiple_messages() -> None:
 
     assert len(messages) == 2
 
-    first_message = messages[0]
+    first_message: TranscriptMessage = messages[0]
     assert first_message.id == "rec123-00001"
     assert first_message.speaker == "john@example.com"
     assert first_message.message == "First message"
     assert first_message.action_item is None
 
-    second_message = messages[1]
+    second_message: TranscriptMessage = messages[1]
     assert second_message.id == "rec123-00002"
     assert second_message.speaker == "jane@example.com"
     assert second_message.message == "Second message"
@@ -713,7 +723,7 @@ def test_parse_transcript_lines_multiple_messages() -> None:
 
 
 def test_parse_transcript_lines_empty_lines() -> None:
-    lines = [
+    lines: list[str] = [
         "",
         "05:30 - John Doe",
         "",
@@ -723,16 +733,16 @@ def test_parse_transcript_lines_empty_lines() -> None:
         "Another message",
         "",
     ]
-    recording_id = "rec123"
-    url = "https://example.com"
-    title = "Test Meeting"
-    date = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
-    speaker_map = {
+    recording_id: str = "rec123"
+    url: str = "https://example.com"
+    title: str = "Test Meeting"
+    date: datetime = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+    speaker_map: dict[str, str] = {
         "john doe": "john@example.com",
         "jane smith": "jane@example.com",
     }
 
-    messages = list(
+    messages: list[TranscriptMessage] = list(
         TranscriptMessage.parse_transcript_lines(
             lines=lines,
             recording_id=recording_id,
@@ -749,16 +759,18 @@ def test_parse_transcript_lines_empty_lines() -> None:
 
 
 def test_parse_transcript_lines_content_without_timestamp() -> None:
-    lines = [
+    import pytest
+
+    lines: list[str] = [
         "This is content without a timestamp",
         "05:30 - John Doe",
         "Valid message",
     ]
-    recording_id = "rec123"
-    url = "https://example.com"
-    title = "Test Meeting"
-    date = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
-    speaker_map = {"john doe": "john@example.com"}
+    recording_id: str = "rec123"
+    url: str = "https://example.com"
+    title: str = "Test Meeting"
+    date: datetime = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+    speaker_map: dict[str, str] = {"john doe": "john@example.com"}
 
     with pytest.raises(
         ValueError,
@@ -777,14 +789,14 @@ def test_parse_transcript_lines_content_without_timestamp() -> None:
 
 
 def test_parse_transcript_lines_empty_list() -> None:
-    lines = []
-    recording_id = "rec123"
-    url = "https://example.com"
-    title = "Test Meeting"
-    date = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
-    speaker_map = {}
+    lines: list[str] = []
+    recording_id: str = "rec123"
+    url: str = "https://example.com"
+    title: str = "Test Meeting"
+    date: datetime = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+    speaker_map: dict[str, str] = {}
 
-    messages = list(
+    messages: list[TranscriptMessage] = list(
         TranscriptMessage.parse_transcript_lines(
             lines=lines,
             recording_id=recording_id,
@@ -799,14 +811,16 @@ def test_parse_transcript_lines_empty_list() -> None:
 
 
 def test_transcript_message_model_validation() -> None:
+    import pytest
+
     # Test that the Pydantic model validates required fields
     with pytest.raises(ValidationError):
-        TranscriptMessage(
+        TranscriptMessage(  # trunk-ignore(pyright/reportCallIssue)
             # Creating without any required fields to trigger validation error
         )
 
     # Test valid model creation
-    message = TranscriptMessage(
+    message: TranscriptMessage = TranscriptMessage(
         id="test-00001",
         recording_id="rec123",
         message_id=1,
@@ -828,15 +842,15 @@ def test_transcript_message_model_validation() -> None:
 
 
 def test_parse_timestamp_line_hh_mm_ss_format() -> None:
-    line = "1:05:30 - John Doe (Acme Corp)"
-    recording_id = "rec123"
-    message_id = 1
-    url = "https://example.com"
-    title = "Test Meeting"
-    date = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
-    speaker_map = {"john doe": "john@example.com"}
+    line: str = "1:05:30 - John Doe (Acme Corp)"
+    recording_id: str = "rec123"
+    message_id: int = 1
+    url: str = "https://example.com"
+    title: str = "Test Meeting"
+    date: datetime = datetime(2023, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+    speaker_map: dict[str, str] = {"john doe": "john@example.com"}
 
-    result = TranscriptMessage.parse_timestamp_line(
+    result: TranscriptMessage | None = TranscriptMessage.parse_timestamp_line(
         line=line,
         recording_id=recording_id,
         message_id=message_id,
@@ -850,4 +864,4 @@ def test_parse_timestamp_line_hh_mm_ss_format() -> None:
     assert result.timestamp == 3930  # 1*3600 + 5*60 + 30
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,pyright/reportCallIssue)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)

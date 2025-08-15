@@ -112,7 +112,7 @@ class Mention(BaseModel):
     )
     @classmethod
     def parse_timestamp(
-        cls,
+        cls: type[Mention],
         value: Any,
     ) -> datetime:
         if not isinstance(value, str):
@@ -133,7 +133,7 @@ class Mention(BaseModel):
                 raise ValueError(error_msg) from e
 
     def get_file_name(
-        self,
+        self: Mention,
         extension: str = ".jsonl",
     ) -> str:
         source: str = FileUtility.file_clean_string(self.source)
