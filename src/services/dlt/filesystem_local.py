@@ -27,37 +27,67 @@ def to_filesystem_local(
 
 
 # trunk-ignore-begin(ruff/PLR2004,ruff/S101)
-def _create_destination_file_data_multiple() -> Iterator[DestinationFileData]:
-    """Helper function providing multiple DestinationFileData instances.
+class TestContentGenerator:
+    """Test content generator class providing various file types and scenarios for testing."""
 
-    From FIXTURES_README: Yields 5 different DestinationFileData instances
-    including various file types: JSON, Markdown, CSV, XML.
-    Mix of GCS paths (gs://) and local paths.
-    """
-    # JSON file 1 - GCS path
-    json_data1 = {
-        "event_id": "evt_001",
-        "event_type": "user_login",
-        "timestamp": "2024-01-15T09:00:00Z",
-        "user_id": "user_123",
-    }
-    yield DestinationFileData(
-        string=json.dumps(json_data1, indent=2),
-        path="gs://test-bucket/events/login_events_2024_01_15.json",
-    )
+    @staticmethod
+    def create_destination_file_data() -> DestinationFileData:
+        """Helper function providing a single DestinationFileData instance with test data.
 
-    # JSON file 2 - Local path
-    json_data2 = {
-        "config_version": "2.0",
-        "settings": {"debug": False, "timeout": 300, "retries": 3},
-    }
-    yield DestinationFileData(
-        string=json.dumps(json_data2, indent=2),
-        path="configs/app_config_v2.json",
-    )
+        From FIXTURES_README: Returns a single DestinationFileData instance
+        containing sample JSON data with test content.
+        Path: test_bucket/test_folder/test_file_2024_01_15.json
+        """
+        test_data = {
+            "id": 1,
+            "name": "Test Item",
+            "description": "A sample test item for unit testing",
+            "timestamp": "2024-01-15T10:30:00Z",
+            "active": True,
+            "tags": ["test", "sample", "unit-test"],
+            "metadata": {
+                "created_by": "test_user",
+                "version": "1.0.0",
+                "environment": "test",
+            },
+        }
+        return DestinationFileData(
+            string=json.dumps(test_data, indent=2),
+            path="test_bucket/test_folder/test_file_2024_01_15.json",
+        )
 
-    # Markdown file
-    markdown_content = """# Test Documentation
+    @staticmethod
+    def create_destination_file_data_multiple() -> Iterator[DestinationFileData]:
+        """Helper function providing multiple DestinationFileData instances.
+
+        From FIXTURES_README: Yields 5 different DestinationFileData instances
+        including various file types: JSON, Markdown, CSV, XML.
+        Mix of GCS paths (gs://) and local paths.
+        """
+        # JSON file 1 - GCS path
+        json_data1 = {
+            "event_id": "evt_001",
+            "event_type": "user_login",
+            "timestamp": "2024-01-15T09:00:00Z",
+            "user_id": "user_123",
+        }
+        yield DestinationFileData(
+            string=json.dumps(json_data1, indent=2),
+            path="gs://test-bucket/events/login_events_2024_01_15.json",
+        )
+
+        # JSON file 2 - Local path
+        json_data2 = {
+            "config_version": "2.0",
+            "settings": {"debug": False, "timeout": 300, "retries": 3},
+        }
+        yield DestinationFileData(
+            string=json.dumps(json_data2, indent=2),
+            path="configs/app_config_v2.json",
+        )
+
+        # Markdown file
+        markdown_content = """# Test Documentation
 
 ## Overview
 This is a test markdown file for unit testing.
@@ -72,22 +102,25 @@ def hello_world():
     print("Hello, World!")
 ```
 """
-    yield DestinationFileData(string=markdown_content, path="docs/test_readme.md")
+        yield DestinationFileData(
+            string=markdown_content,
+            path="docs/test_readme.md",
+        )
 
-    # CSV file
-    csv_content = """timestamp,event,user_id,action
+        # CSV file
+        csv_content = """timestamp,event,user_id,action
 2024-01-15T10:00:00Z,page_view,user_123,home
 2024-01-15T10:01:00Z,page_view,user_123,products
 2024-01-15T10:02:00Z,click,user_123,add_to_cart
 2024-01-15T10:03:00Z,purchase,user_123,checkout
 """
-    yield DestinationFileData(
-        string=csv_content,
-        path="gs://test-bucket/analytics/user_events_2024_01_15.csv",
-    )
+        yield DestinationFileData(
+            string=csv_content,
+            path="gs://test-bucket/analytics/user_events_2024_01_15.csv",
+        )
 
-    # XML file
-    xml_content = """<?xml version="1.0" encoding="UTF-8"?>
+        # XML file
+        xml_content = """<?xml version="1.0" encoding="UTF-8"?>
 <catalog>
     <product id="1">
         <name>Test Product 1</name>
@@ -101,84 +134,125 @@ def hello_world():
     </product>
 </catalog>
 """
-    yield DestinationFileData(string=xml_content, path="data/products_catalog.xml")
+        yield DestinationFileData(
+            string=xml_content,
+            path="data/products_catalog.xml",
+        )
 
+    @staticmethod
+    def create_destination_file_data_empty() -> Iterator[DestinationFileData]:
+        """Helper function providing an empty iterator of DestinationFileData.
 
-def _create_destination_file_data_empty() -> Iterator[DestinationFileData]:
-    """Helper function providing an empty iterator of DestinationFileData.
+        From FIXTURES_README: Returns an empty iterator for testing edge cases
+        where no data is available. Used to test functions that should handle
+        empty inputs gracefully.
+        """
+        return
+        yield  # Make it a generator that yields nothing
 
-    From FIXTURES_README: Returns an empty iterator for testing edge cases
-    where no data is available. Used to test functions that should handle
-    empty inputs gracefully.
-    """
-    return
-    yield  # Make it a generator that yields nothing
+    @staticmethod
+    def create_destination_file_data_large_content() -> DestinationFileData:
+        """Helper function providing DestinationFileData with large content.
 
+        From FIXTURES_README: Returns a DestinationFileData instance with
+        content larger than 1MB for testing large file handling.
+        Contains repeated JSON array data.
+        """
+        # Create a large JSON array with repeated data
+        base_record = {
+            "id": 1,
+            "timestamp": "2024-01-15T12:00:00Z",
+            "data": "x" * 1000,  # 1KB per record
+            "metadata": {
+                "source": "test_generator",
+                "version": "1.0",
+                "processed": False,
+            },
+        }
 
-def _create_destination_file_data_large_content() -> DestinationFileData:
-    """Helper function providing DestinationFileData with large content.
+        # Create array with ~1100 records to exceed 1MB
+        large_array = []
+        for i in range(1100):
+            record = base_record.copy()
+            record["id"] = i
+            large_array.append(record)
 
-    From FIXTURES_README: Returns a DestinationFileData instance with
-    content larger than 1MB for testing large file handling.
-    Contains repeated JSON array data.
-    """
-    # Create a large JSON array with repeated data
-    base_record = {
-        "id": 1,
-        "timestamp": "2024-01-15T12:00:00Z",
-        "data": "x" * 1000,  # 1KB per record
-        "metadata": {"source": "test_generator", "version": "1.0", "processed": False},
-    }
+        return DestinationFileData(
+            string=json.dumps(large_array, indent=2),
+            path="large_files/big_data_export_2024_01_15.json",
+        )
 
-    # Create array with ~1100 records to exceed 1MB
-    large_array = []
-    for i in range(1100):
-        record = base_record.copy()
-        record["id"] = i
-        large_array.append(record)
+    @staticmethod
+    def create_destination_file_data_special_paths() -> Iterator[DestinationFileData]:
+        """Helper function providing DestinationFileData with special characters in paths.
 
-    return DestinationFileData(
-        string=json.dumps(large_array, indent=2),
-        path="large_files/big_data_export_2024_01_15.json",
-    )
+        From FIXTURES_README: Yields DestinationFileData instances with paths
+        containing spaces, unicode characters, special symbols, and deeply nested
+        structures for testing path handling edge cases.
+        """
+        # Path with spaces
+        yield DestinationFileData(
+            string='{"test": "Path with spaces"}',
+            path="test folder/sub folder/file with spaces.json",
+        )
 
+        # Path with unicode characters
+        yield DestinationFileData(
+            string='{"test": "Unicode path"}',
+            path="测试/文件名/数据.json",
+        )
 
-def _create_destination_file_data_special_paths() -> Iterator[DestinationFileData]:
-    """Helper function providing DestinationFileData with special characters in paths.
+        # Path with special characters
+        yield DestinationFileData(
+            string='{"test": "Special chars"}',
+            path="data@2024/test#1/file[v1].json",
+        )
 
-    From FIXTURES_README: Yields DestinationFileData instances with paths
-    containing spaces, unicode characters, special symbols, and deeply nested
-    structures for testing path handling edge cases.
-    """
-    # Path with spaces
-    yield DestinationFileData(
-        string='{"test": "Path with spaces"}',
-        path="test folder/sub folder/file with spaces.json",
-    )
+        # Deeply nested path
+        yield DestinationFileData(
+            string='{"test": "Deep nesting"}',
+            path="level1/level2/level3/level4/level5/level6/level7/level8/deep_file.json",
+        )
 
-    # Path with unicode characters
-    yield DestinationFileData(
-        string='{"test": "Unicode path"}',
-        path="测试/文件名/数据.json",
-    )
+        # Path with dots and dashes
+        yield DestinationFileData(
+            string='{"test": "Dots and dashes"}',
+            path="data-2024.01.15/test-file.v2.backup.json",
+        )
 
-    # Path with special characters
-    yield DestinationFileData(
-        string='{"test": "Special chars"}',
-        path="data@2024/test#1/file[v1].json",
-    )
+    @staticmethod
+    def create_destination_file_data_with_errors() -> Iterator[DestinationFileData]:
+        """Helper function providing DestinationFileData that may cause errors.
+        From FIXTURES_README: Yields DestinationFileData instances designed to
+        trigger various error conditions like invalid JSON, binary content,
+        or problematic paths.
+        """
+        # Invalid JSON content
+        yield DestinationFileData(
+            string='{"invalid": "json", missing_quote: "value"}',
+            path="errors/invalid_json.json",
+        )
 
-    # Deeply nested path
-    yield DestinationFileData(
-        string='{"test": "Deep nesting"}',
-        path="level1/level2/level3/level4/level5/level6/level7/level8/deep_file.json",
-    )
+        # Binary-like content
+        yield DestinationFileData(
+            string="\x00\x01\x02\x03\x04\x05Binary content\xff\xfe\xfd",
+            path="errors/binary_data.bin",
+        )
 
-    # Path with dots and dashes
-    yield DestinationFileData(
-        string='{"test": "Dots and dashes"}',
-        path="data-2024.01.15/test-file.v2.backup.json",
-    )
+        # Empty string content
+        yield DestinationFileData(string="", path="errors/empty_file.txt")
+
+        # Very long filename
+        yield DestinationFileData(
+            string='{"test": "long filename"}',
+            path="errors/" + "a" * 200 + ".json",
+        )
+
+        # Path traversal attempt
+        yield DestinationFileData(
+            string='{"test": "path traversal"}',
+            path="../../../etc/passwd",
+        )
 
 
 class TestToFilesystemLocal:
@@ -186,34 +260,8 @@ class TestToFilesystemLocal:
 
     def test_single_file_write(self, tmp_path: Path) -> None:
         """Test writing a single file using the helper function."""
-
-        def _create_destination_file_data() -> DestinationFileData:
-            """Helper function providing a single DestinationFileData instance with test data.
-
-            From FIXTURES_README: Returns a single DestinationFileData instance
-            containing sample JSON data with test content.
-            Path: test_bucket/test_folder/test_file_2024_01_15.json
-            """
-            test_data = {
-                "id": 1,
-                "name": "Test Item",
-                "description": "A sample test item for unit testing",
-                "timestamp": "2024-01-15T10:30:00Z",
-                "active": True,
-                "tags": ["test", "sample", "unit-test"],
-                "metadata": {
-                    "created_by": "test_user",
-                    "version": "1.0.0",
-                    "environment": "test",
-                },
-            }
-            return DestinationFileData(
-                string=json.dumps(test_data, indent=2),
-                path="test_bucket/test_folder/test_file_2024_01_15.json",
-            )
-
         # Get test data from helper function
-        destination_file_data = _create_destination_file_data()
+        destination_file_data = TestContentGenerator.create_destination_file_data()
         # Update the path in the fixture data to use tmp_path
         file_data = DestinationFileData(
             string=destination_file_data.string,
@@ -231,7 +279,9 @@ class TestToFilesystemLocal:
     def test_multiple_files_write(self, tmp_path: Path) -> None:
         """Test writing multiple files using the iterator helper function."""
         # Get test data from helper function
-        destination_file_data_multiple = _create_destination_file_data_multiple()
+        destination_file_data_multiple = (
+            TestContentGenerator.create_destination_file_data_multiple()
+        )
         # Update paths to use tmp_path
         updated_data = []
         for idx, data in enumerate(destination_file_data_multiple):
@@ -254,7 +304,9 @@ class TestToFilesystemLocal:
     def test_empty_iterator(self) -> None:
         """Test handling of empty iterator."""
         # Get empty iterator from helper function
-        destination_file_data_empty = _create_destination_file_data_empty()
+        destination_file_data_empty = (
+            TestContentGenerator.create_destination_file_data_empty()
+        )
         # Should complete without errors
         to_filesystem_local(destination_file_data_empty)
 
@@ -262,7 +314,7 @@ class TestToFilesystemLocal:
         """Test writing large content files."""
         # Get large content from helper function
         destination_file_data_large_content = (
-            _create_destination_file_data_large_content()
+            TestContentGenerator.create_destination_file_data_large_content()
         )
         # Update path to use tmp_path
         file_data = DestinationFileData(
@@ -282,7 +334,7 @@ class TestToFilesystemLocal:
         """Test handling of special characters in paths."""
         # Get special paths data from helper function
         destination_file_data_special_paths = (
-            _create_destination_file_data_special_paths()
+            TestContentGenerator.create_destination_file_data_special_paths()
         )
         # Convert to list and update paths
         special_data = list(destination_file_data_special_paths)
@@ -301,44 +353,10 @@ class TestToFilesystemLocal:
 
     def test_with_error_data(self, tmp_path: Path) -> None:
         """Test handling files that might contain problematic content."""
-
         # Get error data from helper function
-        def _create_destination_file_data_with_errors() -> (
-            Iterator[DestinationFileData]
-        ):
-            """Helper function providing DestinationFileData that may cause errors.
-            From FIXTURES_README: Yields DestinationFileData instances designed to
-            trigger various error conditions like invalid JSON, binary content,
-            or problematic paths.
-            """
-            # Invalid JSON content
-            yield DestinationFileData(
-                string='{"invalid": "json", missing_quote: "value"}',
-                path="errors/invalid_json.json",
-            )
-
-            # Binary-like content
-            yield DestinationFileData(
-                string="\x00\x01\x02\x03\x04\x05Binary content\xff\xfe\xfd",
-                path="errors/binary_data.bin",
-            )
-
-            # Empty string content
-            yield DestinationFileData(string="", path="errors/empty_file.txt")
-
-            # Very long filename
-            yield DestinationFileData(
-                string='{"test": "long filename"}',
-                path="errors/" + "a" * 200 + ".json",
-            )
-
-            # Path traversal attempt
-            yield DestinationFileData(
-                string='{"test": "path traversal"}',
-                path="../../../etc/passwd",
-            )
-
-        error_data_iter = _create_destination_file_data_with_errors()
+        error_data_iter = (
+            TestContentGenerator.create_destination_file_data_with_errors()
+        )
         error_data = list(error_data_iter)
 
         # Test only the valid files (skip path traversal attempts)

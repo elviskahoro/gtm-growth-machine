@@ -20,6 +20,7 @@ class Recording(BaseModel):
         )
         call_pattern: Pattern[str] = re.compile(r"/calls/(\d+)")
         share_pattern: Pattern[str] = re.compile(r"/share/([A-Za-z0-9_-]+)")
+
         # trunk-ignore-begin(pyright/reportOptionalMemberAccess)
         match parsed_url.path:
             case str() as path_to_match if call_pattern.match(path_to_match):
@@ -31,5 +32,4 @@ class Recording(BaseModel):
             case _:
                 error_msg: str = f"Could not parse fathom url: {url}"
                 raise AssertionError(error_msg)
-
         # trunk-ignore-end(pyright/reportOptionalMemberAccess)
