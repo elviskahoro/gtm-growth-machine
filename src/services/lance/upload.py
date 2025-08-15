@@ -454,6 +454,7 @@ def integration_test_error_handling_paths() -> None:
             mock_db.open_table.assert_called_once_with(name="test_table")
             mock_table.merge_insert.assert_called_once_with(on="id")
             print("✓ End-to-end upload functionality works correctly")
+
         except Exception as e:
             print(f"✗ End-to-end upload test failed: {e}")
 
@@ -567,6 +568,7 @@ def integration_test_retry_and_failure_scenarios() -> None:
         except ValueError as e:
             if "429" in str(e):
                 print("✓ Rate limiting correctly fails after max retries exceeded")
+
             else:
                 print(f"✗ Unexpected error: {e}")
 
@@ -604,6 +606,7 @@ def integration_test_retry_and_failure_scenarios() -> None:
             print(
                 f"✓ Mixed rate limiting patterns handled correctly (calls: {call_count})",
             )
+
         except Exception as e:
             print(f"✗ Mixed error patterns test failed: {e}")
 
@@ -622,9 +625,11 @@ def integration_test_retry_and_failure_scenarios() -> None:
                 base_model_type=test_model,
             )
             print("✗ Expected table creation to fail")
+
         except RuntimeError as e:
             if "Failed to create table" in str(e):
                 print("✓ Table creation failures are properly propagated")
+
             else:
                 print(f"✗ Unexpected error: {e}")
 
@@ -647,9 +652,11 @@ def integration_test_retry_and_failure_scenarios() -> None:
                 base_delay=0.05,
             )
             print("✗ Expected non-rate-limiting error to be re-raised immediately")
+
         except ValueError as e:
             if "Column 'invalid' not found" in str(e):
                 print("✓ Non-rate-limiting errors are immediately re-raised")
+
             else:
                 print(f"✗ Unexpected error: {e}")
 
@@ -679,11 +686,14 @@ def integration_test_retry_and_failure_scenarios() -> None:
                 exception=max_rows_exception,
             )
             print("✗ Expected failure after index creation and retry")
+
         except RuntimeError as e:
             if "Database connection lost" in str(e):
                 print("✓ Post-index-creation failures are properly propagated")
+
             else:
                 print(f"✗ Unexpected error: {e}")
+
         except ValueError as e:
             # The original exception might be re-raised if parsing fails in the retry logic
             if "Database connection lost" in str(
@@ -692,8 +702,10 @@ def integration_test_retry_and_failure_scenarios() -> None:
                 print(
                     "✓ Post-index-creation failures are properly propagated (via original exception)",
                 )
+
             else:
                 print(f"✗ Unexpected ValueError: {e}")
+
         except Exception as e:
             print(f"✗ Unexpected exception type: {type(e).__name__}: {e}")
 
@@ -732,6 +744,7 @@ def integration_test_retry_and_failure_scenarios() -> None:
                     error_type == expected_type
                 ), f"Expected {expected_type}, got {error_type}"
                 print(f"✓ Complex error parsing for '{error_msg[:40]}...' works")
+
             except Exception as e:
                 print(f"✗ Complex error parsing failed for '{error_msg[:40]}...': {e}")
 

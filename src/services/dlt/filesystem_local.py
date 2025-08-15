@@ -27,32 +27,6 @@ def to_filesystem_local(
 
 
 # trunk-ignore-begin(ruff/PLR2004,ruff/S101)
-def _create_destination_file_data() -> DestinationFileData:
-    """Helper function providing a single DestinationFileData instance with test data.
-
-    From FIXTURES_README: Returns a single DestinationFileData instance
-    containing sample JSON data with test content.
-    Path: test_bucket/test_folder/test_file_2024_01_15.json
-    """
-    test_data = {
-        "id": 1,
-        "name": "Test Item",
-        "description": "A sample test item for unit testing",
-        "timestamp": "2024-01-15T10:30:00Z",
-        "active": True,
-        "tags": ["test", "sample", "unit-test"],
-        "metadata": {
-            "created_by": "test_user",
-            "version": "1.0.0",
-            "environment": "test",
-        },
-    }
-    return DestinationFileData(
-        string=json.dumps(test_data, indent=2),
-        path="test_bucket/test_folder/test_file_2024_01_15.json",
-    )
-
-
 def _create_destination_file_data_multiple() -> Iterator[DestinationFileData]:
     """Helper function providing multiple DestinationFileData instances.
 
@@ -207,46 +181,37 @@ def _create_destination_file_data_special_paths() -> Iterator[DestinationFileDat
     )
 
 
-def _create_destination_file_data_with_errors() -> Iterator[DestinationFileData]:
-    """Helper function providing DestinationFileData that may cause errors.
-
-    From FIXTURES_README: Yields DestinationFileData instances designed to
-    trigger various error conditions like invalid JSON, binary content,
-    or problematic paths.
-    """
-    # Invalid JSON content
-    yield DestinationFileData(
-        string='{"invalid": "json", missing_quote: "value"}',
-        path="errors/invalid_json.json",
-    )
-
-    # Binary-like content
-    yield DestinationFileData(
-        string="\x00\x01\x02\x03\x04\x05Binary content\xff\xfe\xfd",
-        path="errors/binary_data.bin",
-    )
-
-    # Empty string content
-    yield DestinationFileData(string="", path="errors/empty_file.txt")
-
-    # Very long filename
-    yield DestinationFileData(
-        string='{"test": "long filename"}',
-        path="errors/" + "a" * 200 + ".json",
-    )
-
-    # Path traversal attempt
-    yield DestinationFileData(
-        string='{"test": "path traversal"}',
-        path="../../../etc/passwd",
-    )
-
-
 class TestToFilesystemLocal:
     """Test cases for the to_filesystem_local function."""
 
     def test_single_file_write(self, tmp_path: Path) -> None:
         """Test writing a single file using the helper function."""
+
+        def _create_destination_file_data() -> DestinationFileData:
+            """Helper function providing a single DestinationFileData instance with test data.
+
+            From FIXTURES_README: Returns a single DestinationFileData instance
+            containing sample JSON data with test content.
+            Path: test_bucket/test_folder/test_file_2024_01_15.json
+            """
+            test_data = {
+                "id": 1,
+                "name": "Test Item",
+                "description": "A sample test item for unit testing",
+                "timestamp": "2024-01-15T10:30:00Z",
+                "active": True,
+                "tags": ["test", "sample", "unit-test"],
+                "metadata": {
+                    "created_by": "test_user",
+                    "version": "1.0.0",
+                    "environment": "test",
+                },
+            }
+            return DestinationFileData(
+                string=json.dumps(test_data, indent=2),
+                path="test_bucket/test_folder/test_file_2024_01_15.json",
+            )
+
         # Get test data from helper function
         destination_file_data = _create_destination_file_data()
         # Update the path in the fixture data to use tmp_path
@@ -336,7 +301,43 @@ class TestToFilesystemLocal:
 
     def test_with_error_data(self, tmp_path: Path) -> None:
         """Test handling files that might contain problematic content."""
+
         # Get error data from helper function
+        def _create_destination_file_data_with_errors() -> (
+            Iterator[DestinationFileData]
+        ):
+            """Helper function providing DestinationFileData that may cause errors.
+            From FIXTURES_README: Yields DestinationFileData instances designed to
+            trigger various error conditions like invalid JSON, binary content,
+            or problematic paths.
+            """
+            # Invalid JSON content
+            yield DestinationFileData(
+                string='{"invalid": "json", missing_quote: "value"}',
+                path="errors/invalid_json.json",
+            )
+
+            # Binary-like content
+            yield DestinationFileData(
+                string="\x00\x01\x02\x03\x04\x05Binary content\xff\xfe\xfd",
+                path="errors/binary_data.bin",
+            )
+
+            # Empty string content
+            yield DestinationFileData(string="", path="errors/empty_file.txt")
+
+            # Very long filename
+            yield DestinationFileData(
+                string='{"test": "long filename"}',
+                path="errors/" + "a" * 200 + ".json",
+            )
+
+            # Path traversal attempt
+            yield DestinationFileData(
+                string='{"test": "path traversal"}',
+                path="../../../etc/passwd",
+            )
+
         error_data_iter = _create_destination_file_data_with_errors()
         error_data = list(error_data_iter)
 

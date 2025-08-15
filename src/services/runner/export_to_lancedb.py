@@ -116,6 +116,7 @@ def _get_existing_primary_keys(
             tbl.search().limit(None).select([primary_key]).to_list()
         )
         return {row[primary_key] for row in result}
+
     except ValueError as e:
         # Table doesn't exist yet
         if "was not found" in str(e):
@@ -183,6 +184,7 @@ def embed_with_gemini_and_upload_to_lance(
 
     if existing_keys:
         print(f"Found {len(existing_keys):07d} existing records in LanceDB")
+
     else:
         print("No existing records found - will create new table")
 

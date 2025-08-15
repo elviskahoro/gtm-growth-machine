@@ -1,9 +1,14 @@
+import json
 import os
+import tempfile
+import unittest
 from collections.abc import Iterator
 from pathlib import Path
 from typing import NamedTuple
+from unittest.mock import MagicMock, patch
 
 import gcsfs
+import pytest
 
 from src.services.dlt.filesystem_local import to_filesystem_local
 from src.services.local.filesystem import DestinationFileData
@@ -106,7 +111,7 @@ class CloudGoogle:
     @staticmethod
     def to_filesystem(
         destination_file_data: Iterator[DestinationFileData],
-        bucket_url: str,
+        bucket_url: str | None,
     ) -> str:
         """Export data to filesystem (GCS or local).
 
@@ -128,7 +133,6 @@ class CloudGoogle:
 
             case str():
                 bucket_url_path: Path = Path(bucket_url)
-                print(bucket_url_path)
                 bucket_url_path.mkdir(
                     parents=True,
                     exist_ok=True,
@@ -218,3 +222,419 @@ class CloudGoogle:
             ValueError: If GCP credentials are not properly set
         """
         CloudGoogle.to_filesystem_gcs(destination_file_data)
+
+
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101,ruff/SLF001)
+class TestCloudGoogle(unittest.TestCase):
+    """Test suite for CloudGoogle class."""
+
+    def setUp(self) -> None:
+        """Set up test fixtures."""
+        self.test_credentials = GCPCredentials(
+            project_id="test-project",
+            private_key="-----BEGIN PRIVATE KEY-----\ntest-key\n-----END PRIVATE KEY-----",
+            client_email="test@test-project.iam.gserviceaccount.com",
+        )
+
+    def test_clean_bucket_name(self) -> None:
+        """Test clean_bucket_name replaces hyphens with underscores."""
+        assert CloudGoogle.clean_bucket_name("my-bucket-name") == "my_bucket_name"
+        assert CloudGoogle.clean_bucket_name("my_bucket_name") == "my_bucket_name"
+        assert (
+            CloudGoogle.clean_bucket_name("my-bucket-name-123") == "my_bucket_name_123"
+        )
+        assert CloudGoogle.clean_bucket_name("") == ""
+
+    def test_bucket_url_from_bucket_name(self) -> None:
+        """Test bucket_url_from_bucket_name generates correct GCS URLs."""
+        assert CloudGoogle.bucket_url_from_bucket_name("my-bucket") == "gs://my-bucket"
+        assert (
+            CloudGoogle.bucket_url_from_bucket_name("test_bucket") == "gs://test_bucket"
+        )
+        assert CloudGoogle.bucket_url_from_bucket_name("") == "gs://"
+
+    def test_strip_bucket_url(self) -> None:
+        """Test strip_bucket_url removes gs:// prefix and cleans bucket name."""
+        assert CloudGoogle.strip_bucket_url("gs://my-bucket-name") == "my_bucket_name"
+        assert CloudGoogle.strip_bucket_url("gs://my_bucket_name") == "my_bucket_name"
+        assert CloudGoogle.strip_bucket_url("my-bucket-name") == "my_bucket_name"
+        assert CloudGoogle.strip_bucket_url("") == ""
+
+    @patch.dict(
+        os.environ,
+        {
+            "GCP_PROJECT_ID": "test-project",
+            "GCP_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\\ntest-key\\n-----END PRIVATE KEY-----",
+            "GCP_CLIENT_EMAIL": "test@test-project.iam.gserviceaccount.com",
+        },
+    )
+    def test_get_env_vars_with_all_vars(self) -> None:
+        """Test _get_env_vars returns credentials when all env vars are set."""
+        creds = CloudGoogle._get_env_vars()
+        assert creds.project_id == "test-project"
+        assert (
+            creds.private_key
+            == "-----BEGIN PRIVATE KEY-----\ntest-key\n-----END PRIVATE KEY-----"
+        )
+        assert creds.client_email == "test@test-project.iam.gserviceaccount.com"
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_get_env_vars_with_no_vars(self) -> None:
+        """Test _get_env_vars returns None values when env vars are not set."""
+        creds = CloudGoogle._get_env_vars()
+        assert creds.project_id is None
+        assert creds.private_key is None
+        assert creds.client_email is None
+
+    @patch.dict(
+        os.environ,
+        {"GCP_PROJECT_ID": "test-project"},
+    )
+    def test_get_env_vars_with_partial_vars(self) -> None:
+        """Test _get_env_vars with only some env vars set."""
+        creds = CloudGoogle._get_env_vars()
+        assert creds.project_id == "test-project"
+        assert creds.private_key is None
+        assert creds.client_email is None
+
+    def test_get_env_vars_public_method(self) -> None:
+        """Test that get_env_vars calls _get_env_vars."""
+        with patch.object(
+            CloudGoogle,
+            "_get_env_vars",
+            return_value=self.test_credentials,
+        ) as mock_get:
+            result = CloudGoogle.get_env_vars()
+            mock_get.assert_called_once()
+            assert result == self.test_credentials
+
+    def test_to_filesystem_with_gcs_url(self) -> None:
+        """Test to_filesystem routes to GCS when URL starts with gs://."""
+        with patch.object(CloudGoogle, "to_filesystem_gcs") as mock_to_gcs:
+            # Mock to_filesystem_gcs to avoid credential check
+            mock_to_gcs.return_value = None
+
+            file_data = [DestinationFileData(string="test", path="test.json")]
+            result = CloudGoogle.to_filesystem(iter(file_data), "gs://my-bucket")
+
+            mock_to_gcs.assert_called_once()
+            assert result == "Successfully exported to filesystem."
+
+    def test_to_filesystem_with_local_path(self) -> None:
+        """Test to_filesystem routes to local filesystem for non-GCS paths."""
+        # Create a list to hold the data passed to to_filesystem_local
+        captured_data = []
+
+        def mock_to_filesystem_local(
+            *,
+            destination_file_data: Iterator[DestinationFileData],
+        ) -> None:
+            # Consume the iterator to capture the data
+            captured_data.extend(list(destination_file_data))
+
+        # Store the original function
+        original_func = globals()["to_filesystem_local"]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Replace the function in globals
+            globals()["to_filesystem_local"] = mock_to_filesystem_local
+
+            try:
+                # Use temp directory path
+                local_path = Path(tmpdir) / "local" / "path"
+
+                file_data = [DestinationFileData(string="test", path="test.json")]
+                result = CloudGoogle.to_filesystem(iter(file_data), str(local_path))
+
+                # Verify the directory was created
+                assert local_path.exists()
+                assert local_path.is_dir()
+
+                # Verify to_filesystem_local was called
+                assert len(captured_data) == 1
+                assert captured_data[0].string == "test"
+                assert result == "Successfully exported to filesystem."
+            finally:
+                # Restore the original function
+                globals()["to_filesystem_local"] = original_func
+
+    def test_to_filesystem_with_invalid_url(self) -> None:
+        """Test to_filesystem raises ValueError for None bucket_url."""
+        file_data = [DestinationFileData(string="test", path="test.json")]
+        with pytest.raises(ValueError, match="Invalid bucket url: None"):
+            CloudGoogle.to_filesystem(iter(file_data), None)  # type: ignore[arg-type]
+
+    @patch.dict(
+        os.environ,
+        {
+            "GCP_PROJECT_ID": "test-project",
+            "GCP_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\\ntest-key\\n-----END PRIVATE KEY-----",
+            "GCP_CLIENT_EMAIL": "test@test-project.iam.gserviceaccount.com",
+        },
+    )
+    @patch("gcsfs.GCSFileSystem")
+    def test_to_filesystem_gcs_success(self, mock_gcs_fs: MagicMock) -> None:
+        """Test to_filesystem_gcs successfully writes files to GCS."""
+        # Setup mock filesystem
+        mock_fs_instance = MagicMock()
+        mock_file = MagicMock()
+        mock_fs_instance.open.return_value.__enter__.return_value = mock_file
+        mock_gcs_fs.return_value = mock_fs_instance
+
+        # Create test data
+        file_data = [
+            DestinationFileData(string="test content 1", path="gs://bucket/file1.json"),
+            DestinationFileData(string="test content 2", path="gs://bucket/file2.json"),
+        ]
+
+        # Execute
+        CloudGoogle.to_filesystem_gcs(iter(file_data))
+
+        # Verify
+        assert mock_gcs_fs.call_count == 1
+        assert mock_fs_instance.open.call_count == 2
+        assert mock_file.write.call_count == 2
+        mock_file.write.assert_any_call("test content 1")
+        mock_file.write.assert_any_call("test content 2")
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_to_filesystem_gcs_missing_credentials(self) -> None:
+        """Test to_filesystem_gcs raises ValueError when credentials are missing."""
+        file_data = [DestinationFileData(string="test", path="test.json")]
+
+        with pytest.raises(
+            ValueError,
+            match="GCP_PROJECT_ID, GCP_PRIVATE_KEY, and GCP_CLIENT_EMAIL must be set",
+        ):
+            CloudGoogle.to_filesystem_gcs(iter(file_data))
+
+    @patch.dict(
+        os.environ,
+        {
+            "GCP_PROJECT_ID": "test-project",
+            "GCP_CLIENT_EMAIL": "test@test-project.iam.gserviceaccount.com",
+        },
+    )
+    def test_to_filesystem_gcs_partial_credentials(self) -> None:
+        """Test to_filesystem_gcs raises ValueError when some credentials are missing."""
+        file_data = [DestinationFileData(string="test", path="test.json")]
+
+        with pytest.raises(
+            ValueError,
+            match="GCP_PROJECT_ID, GCP_PRIVATE_KEY, and GCP_CLIENT_EMAIL must be set",
+        ):
+            CloudGoogle.to_filesystem_gcs(iter(file_data))
+
+    @patch.dict(
+        os.environ,
+        {
+            "GCP_PROJECT_ID": "test-project",
+            "GCP_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\\ntest-key\\n-----END PRIVATE KEY-----",
+            "GCP_CLIENT_EMAIL": "test@test-project.iam.gserviceaccount.com",
+        },
+    )
+    @patch("gcsfs.GCSFileSystem")
+    def test_to_filesystem_gcs_empty_iterator(self, mock_gcs_fs: MagicMock) -> None:
+        """Test to_filesystem_gcs handles empty iterator gracefully."""
+        mock_fs_instance = MagicMock()
+        mock_gcs_fs.return_value = mock_fs_instance
+
+        # Empty iterator
+        file_data = []
+
+        # Should not raise any errors
+        CloudGoogle.to_filesystem_gcs(iter(file_data))
+
+        # Filesystem should be created but no files opened
+        assert mock_gcs_fs.call_count == 1
+        assert mock_fs_instance.open.call_count == 0
+
+    @patch.dict(
+        os.environ,
+        {
+            "GCP_PROJECT_ID": "test-project",
+            "GCP_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\\ntest-key\\n-----END PRIVATE KEY-----",
+            "GCP_CLIENT_EMAIL": "test@test-project.iam.gserviceaccount.com",
+        },
+    )
+    @patch("gcsfs.GCSFileSystem")
+    def test_to_filesystem_gcs_write_error(self, mock_gcs_fs: MagicMock) -> None:
+        """Test to_filesystem_gcs when file write fails."""
+        mock_fs_instance = MagicMock()
+        mock_file = MagicMock()
+        mock_file.write.side_effect = OSError("Write failed")
+        mock_fs_instance.open.return_value.__enter__.return_value = mock_file
+        mock_gcs_fs.return_value = mock_fs_instance
+
+        file_data = [DestinationFileData(string="test", path="gs://bucket/file.json")]
+
+        with pytest.raises(IOError, match="Write failed"):
+            CloudGoogle.to_filesystem_gcs(iter(file_data))
+
+    def test_export_to_filesystem(self) -> None:
+        """Test export_to_filesystem delegates to to_filesystem."""
+        with patch.object(
+            CloudGoogle,
+            "to_filesystem",
+            return_value="Success",
+        ) as mock_to_fs:
+            file_data = [DestinationFileData(string="test", path="test.json")]
+            result = CloudGoogle.export_to_filesystem(iter(file_data), "gs://bucket")
+
+            mock_to_fs.assert_called_once()
+            assert result == "Success"
+
+    def test_export_to_gcs(self) -> None:
+        """Test export_to_gcs delegates to to_filesystem_gcs."""
+        with patch.object(CloudGoogle, "to_filesystem_gcs") as mock_to_gcs:
+            file_data = [DestinationFileData(string="test", path="test.json")]
+            CloudGoogle.export_to_gcs(iter(file_data))
+
+            mock_to_gcs.assert_called_once()
+
+
+def test_gcp_credentials_namedtuple() -> None:
+    """Test GCPCredentials NamedTuple creation and access."""
+    creds = GCPCredentials(
+        project_id="test-project",
+        private_key="test-key",
+        client_email="test@example.com",
+    )
+
+    assert creds.project_id == "test-project"
+    assert creds.private_key == "test-key"
+    assert creds.client_email == "test@example.com"
+
+    # Test with None values
+    empty_creds = GCPCredentials(
+        project_id=None,
+        private_key=None,
+        client_email=None,
+    )
+
+    assert empty_creds.project_id is None
+    assert empty_creds.private_key is None
+    assert empty_creds.client_email is None
+
+
+@pytest.mark.parametrize(
+    ("bucket_name", "expected"),
+    [
+        ("simple-bucket", "simple_bucket"),
+        ("bucket-with-many-hyphens", "bucket_with_many_hyphens"),
+        ("bucket_already_clean", "bucket_already_clean"),
+        ("mixed-bucket_name-123", "mixed_bucket_name_123"),
+        ("", ""),
+        ("a-b-c-d-e-f", "a_b_c_d_e_f"),
+    ],
+)
+def test_clean_bucket_name_parametrized(bucket_name: str, expected: str) -> None:
+    """Parametrized test for clean_bucket_name with various inputs."""
+    assert CloudGoogle.clean_bucket_name(bucket_name) == expected
+
+
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        ("gs://bucket-name", "bucket_name"),
+        ("gs://bucket_name", "bucket_name"),
+        ("bucket-name", "bucket_name"),
+        ("gs://complex-bucket-name-123", "complex_bucket_name_123"),
+        ("", ""),
+        ("no-prefix-bucket", "no_prefix_bucket"),
+    ],
+)
+def test_strip_bucket_url_parametrized(url: str, expected: str) -> None:
+    """Parametrized test for strip_bucket_url with various inputs."""
+    assert CloudGoogle.strip_bucket_url(url) == expected
+
+
+def _create_test_destination_file_data() -> Iterator[DestinationFileData]:
+    """Helper function to create test DestinationFileData instances.
+
+    Yields various test cases including JSON, CSV, and text files.
+    """
+    # JSON file
+    json_data = {"test": "data", "count": 42}
+    yield DestinationFileData(
+        string=json.dumps(json_data),
+        path="gs://test-bucket/data/test.json",
+    )
+
+    # CSV file
+    csv_content = "name,age,city\nJohn,30,NYC\nJane,25,LA"
+    yield DestinationFileData(
+        string=csv_content,
+        path="gs://test-bucket/data/users.csv",
+    )
+
+    # Text file
+    yield DestinationFileData(
+        string="This is a test file content",
+        path="gs://test-bucket/logs/test.log",
+    )
+
+
+@patch.dict(
+    os.environ,
+    {
+        "GCP_PROJECT_ID": "test-project",
+        "GCP_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\\ntest-key\\n-----END PRIVATE KEY-----",
+        "GCP_CLIENT_EMAIL": "test@test-project.iam.gserviceaccount.com",
+    },
+)
+@patch("gcsfs.GCSFileSystem")
+def test_to_filesystem_gcs_with_various_file_types(mock_gcs_fs: MagicMock) -> None:
+    """Test to_filesystem_gcs with different file types."""
+    mock_fs_instance = MagicMock()
+    mock_file = MagicMock()
+    mock_fs_instance.open.return_value.__enter__.return_value = mock_file
+    mock_gcs_fs.return_value = mock_fs_instance
+
+    # Execute with test data
+    CloudGoogle.to_filesystem_gcs(_create_test_destination_file_data())
+
+    # Verify all files were processed
+    assert mock_fs_instance.open.call_count == 3
+    assert mock_file.write.call_count == 3
+
+
+def test_to_filesystem_creates_directory_for_local_path() -> None:
+    """Test that to_filesystem creates directories for local paths."""
+    # Create a list to hold the data passed to to_filesystem_local
+    captured_data = []
+
+    def mock_to_filesystem_local(
+        *,
+        destination_file_data: Iterator[DestinationFileData],
+    ) -> None:
+        # Consume the iterator to capture the data
+        captured_data.extend(list(destination_file_data))
+
+    # Store the original function
+    original_func = globals()["to_filesystem_local"]
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Replace the function in globals
+        globals()["to_filesystem_local"] = mock_to_filesystem_local
+
+        try:
+            # Use temp directory path
+            local_path = Path(tmpdir) / "local" / "path" / "to" / "dir"
+
+            file_data = [DestinationFileData(string="test", path="test.json")]
+            CloudGoogle.to_filesystem(iter(file_data), str(local_path))
+
+            # Verify directory creation
+            assert local_path.exists()
+            assert local_path.is_dir()
+
+            # Verify to_filesystem_local was called
+            assert len(captured_data) == 1
+
+        finally:
+            # Restore the original function
+            globals()["to_filesystem_local"] = original_func
+
+
+# trunk-ignore-end(ruff/PLR2004,ruff/S101,ruff/SLF001)
