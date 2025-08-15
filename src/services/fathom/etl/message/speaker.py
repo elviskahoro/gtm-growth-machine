@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import pytest
-from pydantic import BaseModel, EmailStr, Field, ValidationError
+from pydantic import BaseModel, EmailStr, Field, ValidationError, field_validator
 
 
 class Speaker(BaseModel):
     name: str = Field(
         ...,
         description="Name of the speaker",
+        min_length=1,
     )
     email: EmailStr = Field(
         ...,
@@ -17,6 +18,14 @@ class Speaker(BaseModel):
         default_factory=list,
         description="List of alternative names or aliases",
     )
+
+    @field_validator("name")
+    @classmethod
+    def name_must_not_be_empty(cls, v: str) -> str:
+        if not v or not v.strip():
+            msg = "Name cannot be empty or whitespace only"
+            raise ValueError(msg)
+        return v
 
     @staticmethod
     def build_speaker_lookup_map(
