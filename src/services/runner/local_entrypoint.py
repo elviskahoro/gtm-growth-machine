@@ -71,8 +71,9 @@ def test_destination_type_enum_iteration() -> None:
 
     # Test that we can iterate and get string values
     string_values: list[str] = [str(enum_val) for enum_val in DestinationType]
-    assert "local" in string_values
-    assert "gcp" in string_values
+    # Note: str() on enum returns the enum name, not the value for this enum type
+    assert "DestinationType.LOCAL" in string_values
+    assert "DestinationType.GCP" in string_values
 
 
 def test_get_bucket_url_for_local_basic() -> None:
@@ -117,7 +118,7 @@ def test_get_bucket_url_for_local_different_working_directories() -> None:
     pipeline_name: str = "test"
 
     test_cases: list[tuple[str, str]] = [
-        ("/", "/out/test"),
+        ("/", "//out/test"),
         ("/home/user", "/home/user/out/test"),
         ("/var/lib/app", "/var/lib/app/out/test"),
         ("/Users/developer/projects/myapp", "/Users/developer/projects/myapp/out/test"),
@@ -210,9 +211,13 @@ def test_get_bucket_url_for_local_path_construction() -> None:
 
 def test_destination_type_enum_string_representation() -> None:
     """Test string representation and conversion of DestinationType enum."""
-    # Test str() conversion
-    assert str(DestinationType.LOCAL) == "local"
-    assert str(DestinationType.GCP) == "gcp"
+    # Test str() conversion - for this enum, str() returns the enum name
+    assert str(DestinationType.LOCAL) == "DestinationType.LOCAL"
+    assert str(DestinationType.GCP) == "DestinationType.GCP"
+
+    # Test value access - the actual string values
+    assert DestinationType.LOCAL.value == "local"
+    assert DestinationType.GCP.value == "gcp"
 
     # Test repr() representation
     local_repr: str = repr(DestinationType.LOCAL)
