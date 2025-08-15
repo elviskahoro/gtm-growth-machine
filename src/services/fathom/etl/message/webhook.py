@@ -10,9 +10,9 @@ if TYPE_CHECKING:
 
 
 from src.services.fathom.etl.message.etl_model import (
-    EtlTranscriptMessage,
     Speaker,
     Storage,
+    TranscriptMessage,
 )
 from src.services.fathom.meeting.meeting import Meeting
 from src.services.fathom.recording.recording import Recording
@@ -48,23 +48,23 @@ class Webhook(BaseModel):
 
     @staticmethod
     def lance_get_project_name() -> str:
-        return EtlTranscriptMessage.lance_get_project_name()
+        return TranscriptMessage.lance_get_project_name()
 
     @staticmethod
     def lance_get_table_name() -> str:
-        return EtlTranscriptMessage.lance_get_table_name()
+        return TranscriptMessage.lance_get_table_name()
 
     @staticmethod
     def lance_get_primary_key() -> str:
-        return EtlTranscriptMessage.lance_get_primary_key()
+        return TranscriptMessage.lance_get_primary_key()
 
     @staticmethod
     def lance_get_primary_key_index_type() -> str:
-        return EtlTranscriptMessage.lance_get_primary_key_index_type()
+        return TranscriptMessage.lance_get_primary_key_index_type()
 
     @staticmethod
-    def lance_get_base_model_type() -> type[EtlTranscriptMessage]:
-        return EtlTranscriptMessage
+    def lance_get_base_model_type() -> type[TranscriptMessage]:
+        return TranscriptMessage
 
     def etl_is_valid_webhook(
         self: Webhook,
@@ -110,7 +110,7 @@ class Webhook(BaseModel):
     def etl_get_base_models(
         self: Webhook,
         storage: BaseModel,
-    ) -> Iterator[EtlTranscriptMessage]:
+    ) -> Iterator[TranscriptMessage]:
         speakers: list[Speaker] = storage.speakers_internal
         if speakers is None:
             error: str = "Speakers not found in storage"
@@ -121,7 +121,7 @@ class Webhook(BaseModel):
         )
         lines: list[str] = self.transcript.plaintext.split("\n")
         recording_id: str = self.recording.get_recording_id_from_url()
-        yield from EtlTranscriptMessage.parse_transcript_lines(
+        yield from TranscriptMessage.parse_transcript_lines(
             recording_id=recording_id,
             lines=lines,
             url=self.recording.url,

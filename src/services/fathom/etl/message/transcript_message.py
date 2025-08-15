@@ -3,39 +3,19 @@ from __future__ import annotations
 import re
 from datetime import datetime  # trunk-ignore(ruff/TC003)
 from re import Match
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING
 
 import pyarrow as pa
 from pydantic import BaseModel, ValidationError, validate_email
 
 from .speaker import Speaker
+from .watch_link_data import TranscriptMessageWatchLinkData
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
-class EtlTranscriptMessageWatchLinkData(NamedTuple):
-    watch_link: str | None
-    remaining_text: str | None
-
-    @classmethod
-    def parse_watch_link(
-        cls,
-        content: str,
-    ) -> EtlTranscriptMessageWatchLinkData:
-        pattern = r"- WATCH:\s*(https?://[^\s]+)(?:\s+(.*))?"
-        match = re.match(pattern, content)
-        if match:
-            return cls(
-                watch_link=match.group(1),
-                remaining_text=match.group(2).strip() if match.group(2) else None,
-            )
-
-        error_msg: str = f"Invalid watch link: {content}"
-        raise ValueError(error_msg)
-
-
-class EtlTranscriptMessage(BaseModel):
+class TranscriptMessage(BaseModel):
     id: str
     recording_id: str
     message_id: int
@@ -89,7 +69,7 @@ class EtlTranscriptMessage(BaseModel):
     @staticmethod
     def lance_get_primary_key() -> str:
         primary_key: str = "id"
-        fields: set[str] = set(EtlTranscriptMessage.model_fields.keys())
+        fields: set[str] = set(TranscriptMessage.model_fields.keys())
         if primary_key in fields:
             return primary_key
 
@@ -135,7 +115,7 @@ class EtlTranscriptMessage(BaseModel):
                     "embedding",
                     pa.list_(
                         pa.float32(),
-                        EtlTranscriptMessage.lance_get_vector_dimension(),
+                        TranscriptMessage.lance_get_vector_dimension(),
                     ),
                     nullable=True,
                 ),
@@ -160,7 +140,7 @@ class EtlTranscriptMessage(BaseModel):
 
     @classmethod
     def parse_timestamp_line(
-        cls: type[EtlTranscriptMessage],
+        cls: type[TranscriptMessage],
         line: str,
         recording_id: str,
         message_id: int,
@@ -168,7 +148,7 @@ class EtlTranscriptMessage(BaseModel):
         title: str,
         date: datetime,
         speaker_map: dict[str, str],
-    ) -> EtlTranscriptMessage | None:
+    ) -> TranscriptMessage | None:
         transcript_entry_match: Match[str] | None = re.match(
             pattern=r"(\d{1,2}:\d{2}(?::\d{2})?)\s+-\s+(.+?)(?:\s+\(([^)]+)\))?$",
             string=line,
@@ -195,7 +175,7 @@ class EtlTranscriptMessage(BaseModel):
 
         return cls(
             id=f"{recording_id}-{message_id:05d}",
-            timestamp=EtlTranscriptMessage.convert_timestamp_to_seconds(
+            timestamp=TranscriptMessage.convert_timestamp_to_seconds(
                 timestamp=timestamp,
             ),
             speaker=speaker,
@@ -220,8 +200,8 @@ class EtlTranscriptMessage(BaseModel):
                 self.action_item = content[len("ACTION ITEM:") :].strip()
 
             case str() as content if content.startswith("- WATCH:"):
-                watch_data: EtlTranscriptMessageWatchLinkData = (
-                    EtlTranscriptMessageWatchLinkData.parse_watch_link(
+                watch_data: TranscriptMessageWatchLinkData = (
+                    TranscriptMessageWatchLinkData.parse_watch_link(
                         content=content,
                     )
                 )
@@ -252,18 +232,18 @@ class EtlTranscriptMessage(BaseModel):
         title: str,
         date: datetime,
         speaker_map: dict[str, str],
-    ) -> Iterator[EtlTranscriptMessage]:
+    ) -> Iterator[TranscriptMessage]:
         line_index: int = 0
         message_index: int = 1
-        current_transcript_message: EtlTranscriptMessage | None = None
+        current_transcript_message: TranscriptMessage | None = None
         while line_index < len(lines):
             line: str = lines[line_index].strip()
             if not line:
                 line_index += 1
                 continue
 
-            new_transcript_message: EtlTranscriptMessage | None = (
-                EtlTranscriptMessage.parse_timestamp_line(
+            new_transcript_message: TranscriptMessage | None = (
+                TranscriptMessage.parse_timestamp_line(
                     line=line,
                     recording_id=recording_id,
                     message_id=message_index,

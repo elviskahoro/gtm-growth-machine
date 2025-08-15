@@ -5,7 +5,7 @@ import orjson
 from flatsplode import flatsplode
 from pydantic import BaseModel
 
-from src.services.fathom.etl.message.etl_model import EtlTranscriptMessage
+from src.services.fathom.etl.message.etl_model import TranscriptMessage
 from src.services.fathom.meeting.meeting import Meeting
 from src.services.fathom.recording.recording import Recording
 from src.services.fathom.transcript.transcript import Transcript
@@ -43,7 +43,7 @@ class Webhook(BaseModel):
         raise NotImplementedError
 
     @staticmethod
-    def lance_get_base_model_type() -> type[EtlTranscriptMessage]:
+    def lance_get_base_model_type() -> type[TranscriptMessage]:
         raise NotImplementedError
 
     def etl_is_valid_webhook(
