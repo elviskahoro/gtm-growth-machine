@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from collections import deque
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from google.cloud import aiplatform
 from vertexai.preview.language_models import (
@@ -29,10 +29,12 @@ def init_client(
 def _embed(
     embedding_model: TextEmbeddingModel,
     base_models: Iterable[BaseModel],
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     # Use deque for more efficient appending when building collections
-    texts_to_embed_deque = deque()
-    base_models_list = list(base_models)  # Convert to list once for reuse
+    texts_to_embed_deque: deque[str | TextEmbeddingInput] = deque()
+    base_models_list: list[BaseModel] = list(
+        base_models,
+    )  # Convert to list once for reuse
 
     for base_model in base_models_list:
         texts_to_embed_deque.append(base_model.gemini_get_column_to_embed())
@@ -44,7 +46,7 @@ def _embed(
     )
 
     # Use deque for building embedding vectors
-    embedding_vectors_deque = deque()
+    embedding_vectors_deque: deque[list[float]] = deque()
     for embedding in embeddings:
         embedding_vectors_deque.append(embedding.values)
 
@@ -53,8 +55,8 @@ def _embed(
     def add_embedding(
         base_model: BaseModel,
         embedding: list[float],
-    ) -> dict:
-        data: dict = base_model.model_dump(
+    ) -> dict[str, Any]:
+        data: dict[str, Any] = base_model.model_dump(
             mode="python",
             exclude_unset=True,
         )
@@ -67,8 +69,8 @@ def _embed(
 def embed_with_gemini(
     base_models_to_embed: Iterator[BaseModel],
     embed_batch_size: int,
-) -> Generator[list[dict], None, None]:
-    max_api_batch_size = 250  # text-embedding-005 limit
+) -> Generator[list[dict[str, Any]], None, None]:
+    max_api_batch_size: int = 250  # text-embedding-005 limit
     if embed_batch_size > max_api_batch_size:
         print(
             f"Warning: Batch size {embed_batch_size} exceeds API limit. Using {max_api_batch_size} instead.",
@@ -82,7 +84,7 @@ def embed_with_gemini(
     for item in base_models_to_embed:
         batch.append(item)
         if len(batch) >= embed_batch_size:
-            embedded_data = _embed(
+            embedded_data: list[dict[str, Any]] = _embed(
                 embedding_model=model,
                 base_models=batch,
             )
@@ -91,7 +93,7 @@ def embed_with_gemini(
 
     # Handle any remaining items in the last batch
     if batch:
-        embedded_data = _embed(
+        embedded_data: list[dict[str, Any]] = _embed(
             embedding_model=model,
             base_models=batch,
         )
