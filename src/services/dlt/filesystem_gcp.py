@@ -1,12 +1,16 @@
+from __future__ import annotations
+
 import os
-from collections.abc import Iterator
 from pathlib import Path
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 import gcsfs
 
 from src.services.dlt.filesystem_local import to_filesystem_local
 from src.services.local.filesystem import DestinationFileData
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 class GCPCredentials(NamedTuple):
@@ -15,7 +19,7 @@ class GCPCredentials(NamedTuple):
     client_email: str | None
 
     @classmethod
-    def get_env_vars(cls) -> "GCPCredentials":
+    def get_env_vars(cls: type[GCPCredentials]) -> GCPCredentials:
         """Get GCP credentials from environment variables.
 
         Returns:

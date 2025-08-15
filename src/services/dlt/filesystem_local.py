@@ -6,14 +6,6 @@ from src.services.local.filesystem import DestinationFileData
 
 if TYPE_CHECKING:
     import unittest.mock
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    import unittest.mock
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    import unittest.mock
 
 
 def to_filesystem_local(

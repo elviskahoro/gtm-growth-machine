@@ -1,6 +1,7 @@
 .states
 .DS_Store
 .Python
+.claude
 .coverage
 .coverage.*
 .dmypy.json

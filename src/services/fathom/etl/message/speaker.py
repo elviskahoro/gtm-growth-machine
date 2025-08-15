@@ -50,7 +50,7 @@ class Speaker(BaseModel):
         return lookup_map.get(search_name.lower(), search_name)
 
 
-# trunk-ignore-begin(ruff/S101,pyright/reportArgumentType,pyright/reportCallIssue)
+# trunk-ignore-begin(ruff/S101,pyright/reportCallIssue)
 def test_speaker_creation_with_required_fields() -> None:
     """Test creating a Speaker with only required fields."""
     speaker: Speaker = Speaker(
@@ -422,4 +422,4 @@ def test_speaker_model_immutability() -> None:
     assert "JD" in speaker.aliases
 
 
-# trunk-ignore-end(ruff/S101,pyright/reportArgumentType,pyright/reportCallIssue)
+# trunk-ignore-end(ruff/S101,pyright/reportCallIssue)
