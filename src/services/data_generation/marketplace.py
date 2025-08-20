@@ -24,12 +24,17 @@ DATABASE_NAME = "ecommerce"
 NROWS: int | None = None
 SKIPROWS: int | None = None
 
+# Constants for magic numbers
+PERCENT_THRESHOLD_ADDITIONAL_INTERACTIONS = 20
+PERCENT_THRESHOLD_NO_REVIEW_INTERACTIONS = 15
+MIN_ROWS_TO_PROCESS = 1000
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,
 )
-load_dotenv()
 
+load_dotenv()
 DATABASE_USER = os.environ["DB_USER"]
 DATABASE_PASSWORD = os.environ["DB_PASSWORD"]
 DATABASE_HOST = os.environ["DB_HOST"]
@@ -162,12 +167,6 @@ def get_seller_ids_from_disk(
         nrows=nrows,
         skiprows=skiprows,
     )
-
-
-# Constants for magic numbers
-PERCENT_THRESHOLD_ADDITIONAL_INTERACTIONS = 20
-PERCENT_THRESHOLD_NO_REVIEW_INTERACTIONS = 15
-MIN_ROWS_TO_PROCESS = 1000
 
 
 # ----------------------------------------------------------------------------
