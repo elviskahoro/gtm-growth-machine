@@ -62,9 +62,8 @@ class Webhook(BaseModel):
     def lance_get_base_model_type() -> type[Webhook]:
         return Webhook
 
-    @staticmethod
-    def gemini_get_column_to_embed() -> str:
-        return "body"
+    def gemini_get_column_to_embed(self) -> str:
+        return self.body
 
     @staticmethod
     def lance_get_schema() -> pa.Schema:
