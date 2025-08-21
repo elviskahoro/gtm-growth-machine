@@ -100,7 +100,7 @@ class SourceFileData(NamedTuple):
     @staticmethod
     def from_input_folder(
         input_folder: str,
-        base_model: BaseModel,
+        base_model_type: type[BaseModel],
         extension: Iterable[str] | None,
     ) -> Iterator[SourceFileData]:
         paths: Iterator[Path] = FileUtility.get_paths(
@@ -114,7 +114,7 @@ class SourceFileData(NamedTuple):
                 current_path = path
                 yield SourceFileData(
                     path=path,
-                    base_model=base_model.model_validate_json(
+                    base_model=base_model_type.model_validate_json(
                         json_data=path.read_text(),
                     ),
                 )
@@ -463,11 +463,10 @@ def test_source_file_data_from_input_folder_valid() -> None:
         os.chdir(temp_dir)
 
         try:
-            test_model: TestModel = TestModel(name="template", value=0)
             results: list[SourceFileData] = list(
                 SourceFileData.from_input_folder(
                     "input",
-                    test_model,
+                    TestModel,
                     [".json"],
                 ),
             )
@@ -514,10 +513,8 @@ def test_source_file_data_from_input_folder_validation_error() -> None:
         os.chdir(temp_dir)
 
         try:
-            test_model: TestModel = TestModel(name="template", value=0)
-
             with pytest.raises(ValidationError):
-                list(SourceFileData.from_input_folder("input", test_model, [".json"]))
+                list(SourceFileData.from_input_folder("input", TestModel, [".json"]))
 
         finally:
             os.chdir(original_cwd)
@@ -760,11 +757,10 @@ def test_source_file_data_from_input_folder_empty_directory() -> None:
         os.chdir(temp_dir)
 
         try:
-            test_model: TestModel = TestModel(name="template", value=0)
             results: list[SourceFileData] = list(
                 SourceFileData.from_input_folder(
                     "empty_input",
-                    test_model,
+                    TestModel,
                     [".json"],
                 ),
             )

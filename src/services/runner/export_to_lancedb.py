@@ -298,7 +298,7 @@ def local(
 ) -> None:
     source_file_data: Iterator[SourceFileData] = SourceFileData.from_input_folder(
         input_folder=input_folder,
-        base_model=WebhookModel,  # trunk-ignore(pyright/reportArgumentType)
+        base_model_type=WebhookModel,
         extension=[
             ".json",
             ".jsonl",
