@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
-import pytest
 from pydantic import BaseModel
 
 from src.services.fathom.etl.message.speaker import Speaker
@@ -130,7 +129,7 @@ class Webhook(BaseModel):
         )
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,ruff/ANN401)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101,ruff/ANN401,ruff/PLC0415)
 class TestWebhookUtilities:
     """Test utilities for creating mock Webhook components and instances."""
 
@@ -273,6 +272,8 @@ def test_etl_get_invalid_webhook_error_msg() -> None:
 
 
 def test_etl_get_json_with_none_storage() -> None:
+    import pytest
+
     webhook: Webhook = TestWebhookUtilities.create_webhook()
 
     with pytest.raises(AttributeError) as exc_info:
@@ -388,6 +389,8 @@ def test_etl_get_base_models_success() -> None:
 
 
 def test_etl_get_base_models_no_speakers() -> None:
+    import pytest
+
     mock_storage: MagicMock = MagicMock()
     mock_storage.speakers_internal = None
 
@@ -444,4 +447,4 @@ def test_etl_get_json_empty_iterator() -> None:
     assert result == ""
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,ruff/ANN401)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101,ruff/ANN401,ruff/PLC0415)

@@ -5,8 +5,6 @@ from __future__ import annotations
 import re
 from typing import NamedTuple
 
-import pytest
-
 
 class TranscriptMessageWatchLinkData(NamedTuple):
     watch_link: str | None
@@ -29,7 +27,7 @@ class TranscriptMessageWatchLinkData(NamedTuple):
         raise ValueError(error_msg)
 
 
-# trunk-ignore-begin(ruff/S101)
+# trunk-ignore-begin(ruff/S101,ruff/PLC0415)
 def test_parse_watch_link_basic_url() -> None:
     """Test parsing a basic watch link with HTTPS URL."""
     content: str = "- WATCH: https://example.com/watch"
@@ -131,6 +129,8 @@ def test_parse_watch_link_remaining_text_with_whitespace() -> None:
 
 def test_parse_watch_link_invalid_missing_watch_prefix() -> None:
     """Test that invalid content without 'WATCH:' prefix raises ValueError."""
+    import pytest
+
     content: str = "https://example.com/watch"
 
     with pytest.raises(ValueError, match=f"Invalid watch link: {re.escape(content)}"):
@@ -139,6 +139,8 @@ def test_parse_watch_link_invalid_missing_watch_prefix() -> None:
 
 def test_parse_watch_link_invalid_missing_url() -> None:
     """Test that content with 'WATCH:' but no URL raises ValueError."""
+    import pytest
+
     content: str = "- WATCH:"
 
     with pytest.raises(ValueError, match=f"Invalid watch link: {re.escape(content)}"):
@@ -147,6 +149,8 @@ def test_parse_watch_link_invalid_missing_url() -> None:
 
 def test_parse_watch_link_invalid_malformed_prefix() -> None:
     """Test that content with malformed prefix raises ValueError."""
+    import pytest
+
     content: str = "WATCH: https://example.com/watch"
 
     with pytest.raises(ValueError, match=f"Invalid watch link: {re.escape(content)}"):
@@ -155,6 +159,8 @@ def test_parse_watch_link_invalid_malformed_prefix() -> None:
 
 def test_parse_watch_link_invalid_non_http_url() -> None:
     """Test that content with non-HTTP(S) URL raises ValueError."""
+    import pytest
+
     content: str = "- WATCH: ftp://example.com/watch"
 
     with pytest.raises(ValueError, match=f"Invalid watch link: {re.escape(content)}"):
@@ -163,6 +169,8 @@ def test_parse_watch_link_invalid_non_http_url() -> None:
 
 def test_parse_watch_link_invalid_empty_string() -> None:
     """Test that empty string raises ValueError."""
+    import pytest
+
     content: str = ""
 
     with pytest.raises(ValueError, match=f"Invalid watch link: {re.escape(content)}"):
@@ -171,6 +179,8 @@ def test_parse_watch_link_invalid_empty_string() -> None:
 
 def test_parse_watch_link_invalid_only_whitespace() -> None:
     """Test that string with only whitespace raises ValueError."""
+    import pytest
+
     content: str = "   \n\t  "
 
     with pytest.raises(ValueError, match=re.escape("Invalid watch link: ") + ".*"):
@@ -179,6 +189,8 @@ def test_parse_watch_link_invalid_only_whitespace() -> None:
 
 def test_parse_watch_link_invalid_wrong_case() -> None:
     """Test that wrong case for 'WATCH' raises ValueError."""
+    import pytest
+
     content: str = "- watch: https://example.com/watch"
 
     with pytest.raises(ValueError, match=f"Invalid watch link: {re.escape(content)}"):
@@ -235,4 +247,4 @@ def test_named_tuple_with_none_values() -> None:
     assert data[1] is None
 
 
-# trunk-ignore-end(ruff/S101)
+# trunk-ignore-end(ruff/S101,ruff/PLC0415)

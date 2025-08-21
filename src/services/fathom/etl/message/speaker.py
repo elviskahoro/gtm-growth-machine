@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 from pydantic import BaseModel, EmailStr, Field, ValidationError, field_validator
 
 
@@ -50,7 +49,7 @@ class Speaker(BaseModel):
         return lookup_map.get(search_name.lower(), search_name)
 
 
-# trunk-ignore-begin(ruff/S101,pyright/reportCallIssue)
+# trunk-ignore-begin(ruff/S101,pyright/reportCallIssue,ruff/PLC0415)
 def test_speaker_creation_with_required_fields() -> None:
     """Test creating a Speaker with only required fields."""
     speaker: Speaker = Speaker(
@@ -91,6 +90,8 @@ def test_speaker_creation_with_empty_aliases_list() -> None:
 
 def test_speaker_validation_missing_name() -> None:
     """Test that creating a Speaker without name raises ValidationError."""
+    import pytest
+
     with pytest.raises(ValidationError) as exc_info:
         Speaker(
             email="test@example.com",
@@ -102,6 +103,8 @@ def test_speaker_validation_missing_name() -> None:
 
 def test_speaker_validation_missing_email() -> None:
     """Test that creating a Speaker without email raises ValidationError."""
+    import pytest
+
     with pytest.raises(ValidationError) as exc_info:
         Speaker(
             name="Test User",
@@ -113,6 +116,8 @@ def test_speaker_validation_missing_email() -> None:
 
 def test_speaker_validation_invalid_email() -> None:
     """Test that creating a Speaker with invalid email raises ValidationError."""
+    import pytest
+
     with pytest.raises(ValidationError) as exc_info:
         Speaker(
             name="Test User",
@@ -124,6 +129,8 @@ def test_speaker_validation_invalid_email() -> None:
 
 def test_speaker_validation_empty_name() -> None:
     """Test that creating a Speaker with empty name raises ValidationError."""
+    import pytest
+
     with pytest.raises(ValidationError) as exc_info:
         Speaker(
             name="",
@@ -422,4 +429,4 @@ def test_speaker_model_immutability() -> None:
     assert "JD" in speaker.aliases
 
 
-# trunk-ignore-end(ruff/S101,pyright/reportCallIssue)
+# trunk-ignore-end(ruff/S101,pyright/reportCallIssue,ruff/PLC0415)

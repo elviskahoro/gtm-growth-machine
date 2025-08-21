@@ -1,7 +1,6 @@
 # trunk-ignore-all(trunk/ignore-does-nothing)
 from __future__ import annotations
 
-import pytest
 from pydantic import BaseModel, Field, ValidationError
 
 from .speaker import Speaker  # trunk-ignore(ruff/TC001)
@@ -14,7 +13,7 @@ class Storage(BaseModel):
     )
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
 def test_storage_creation_default() -> None:
     """Test creating Storage with default empty speakers list."""
     storage: Storage = Storage()
@@ -164,6 +163,8 @@ def test_storage_default_factory() -> None:
 
 def test_storage_invalid_speakers_type() -> None:
     """Test that invalid speaker types raise ValidationError."""
+    import pytest
+
     with pytest.raises(ValidationError) as exc_info:
         Storage(
             speakers_internal=["not_a_speaker"],  # type: ignore[list-item]
@@ -174,6 +175,8 @@ def test_storage_invalid_speakers_type() -> None:
 
 def test_storage_mixed_valid_invalid_speakers() -> None:
     """Test validation with mix of valid and invalid speakers."""
+    import pytest
+
     valid_speaker: Speaker = Speaker(
         name="Valid User",
         email="valid@example.com",
@@ -189,6 +192,8 @@ def test_storage_mixed_valid_invalid_speakers() -> None:
 
 def test_storage_none_speakers_list() -> None:
     """Test that None is not accepted for speakers_internal."""
+    import pytest
+
     with pytest.raises(ValidationError) as exc_info:
         Storage(
             speakers_internal=None,  # type: ignore[arg-type]
@@ -253,6 +258,8 @@ def test_storage_speakers_with_complex_aliases() -> None:
 def test_storage_empty_speaker_names() -> None:
     """Test that Storage validation handles speakers with edge case data."""
     # This should raise ValidationError due to empty name in Speaker
+    import pytest
+
     with pytest.raises(ValidationError):
         Storage(
             speakers_internal=[
@@ -360,4 +367,4 @@ def test_storage_repr() -> None:
     assert "speakers_internal" in repr_str
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
