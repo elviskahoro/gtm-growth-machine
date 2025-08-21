@@ -179,15 +179,16 @@ def embed_with_gemini_and_upload_to_lance(
         primary_key=primary_key,
     )
 
-    chain_base_models_to_embed: chain[list[BaseModel]] = chain(
-        list(
+    all_base_models: list[BaseModel] = list(
+        chain.from_iterable(
             source_file_data.base_model.etl_get_base_models(
                 storage=storage,
-            ),
+            )
+            for source_file_data in source_file_data
         )
-        for source_file_data in source_file_data
     )
     print(f"Batch size {embed_batch_size:04d}")
+    print(f"Total models to process: {len(all_base_models):07d}")
 
     if existing_keys:
         print(f"Found {len(existing_keys):07d} existing records in LanceDB")
@@ -198,47 +199,45 @@ def embed_with_gemini_and_upload_to_lance(
     count: int = 0
     skipped: int = 0
 
-    batch_models: list[BaseModel]
-    for batch_models in chain_base_models_to_embed:
-        # Filter out models that already exist if we have existing keys
-        filtered_models: list[BaseModel] = batch_models
-        if existing_keys:
-            original_count: int = len(batch_models)
-            filtered_models = _filter_new_base_models(
-                base_models_to_embed=batch_models,
-                existing_keys=existing_keys,
-                primary_key=primary_key,
-            )
+    # Filter out models that already exist if we have existing keys
+    filtered_models: list[BaseModel] = all_base_models
+    if existing_keys:
+        original_count: int = len(all_base_models)
+        filtered_models = _filter_new_base_models(
+            base_models_to_embed=all_base_models,
+            existing_keys=existing_keys,
+            primary_key=primary_key,
+        )
 
-            skipped_in_batch: int = original_count - len(filtered_models)
-            skipped += skipped_in_batch
+        skipped_total: int = original_count - len(filtered_models)
+        skipped += skipped_total
 
-            if skipped_in_batch > 0:
-                print(f"{skipped_in_batch:07d} records already exist - skipping")
+        if skipped_total > 0:
+            print(f"{skipped_total:07d} records already exist - skipping")
 
-        if not filtered_models:
-            print("No new records to process in this batch")
-            continue
+    if not filtered_models:
+        print("No new records to process")
+        return f"Successfully processed {count:07d} batches and uploaded to LanceDB. Skipped {skipped:07d} existing records."
 
-        print(f"{len(filtered_models):07d} new records to embed with Gemini")
-        for data_to_upload in embed_with_gemini(
-            base_models_to_embed=iter(filtered_models),
-            embed_batch_size=embed_batch_size,
-        ):
-            upload_to_lance(
-                data_to_upload=data_to_upload,
-                base_model_type=base_model_type,
-                db=db,
-                table_name=table_name,
-                primary_key=primary_key,
-                primary_key_index_type=primary_key_index_type,
-            )
-            count += 1
-            print(f"{count:07d} Uploaded to LanceDB")
+    print(f"{len(filtered_models):07d} new records to embed with Gemini")
+    for data_to_upload in embed_with_gemini(
+        base_models_to_embed=iter(filtered_models),
+        embed_batch_size=embed_batch_size,
+    ):
+        upload_to_lance(
+            data_to_upload=data_to_upload,
+            base_model_type=base_model_type,
+            db=db,
+            table_name=table_name,
+            primary_key=primary_key,
+            primary_key_index_type=primary_key_index_type,
+        )
+        count += 1
+        print(f"{count:07d} Uploaded to LanceDB")
 
-            # Add a configurable delay between uploads to prevent rate limiting
-            if upload_delay > 0:
-                time.sleep(upload_delay)
+        # Add a configurable delay between uploads to prevent rate limiting
+        if upload_delay > 0:
+            time.sleep(upload_delay)
 
     final_message: str = (
         f"Successfully processed {count:07d} batches and uploaded to LanceDB."
