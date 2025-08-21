@@ -186,7 +186,7 @@ def embed_with_gemini_and_upload_to_lance(
         print(f"Found {len(existing_keys):07d} existing records in LanceDB")
 
     else:
-        print("No existing records found - will create new table")
+        print("No existing records found - plan on creating a new table")
 
     count: int = 0
     skipped: int = 0
