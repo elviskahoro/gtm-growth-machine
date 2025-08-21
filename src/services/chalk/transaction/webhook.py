@@ -134,9 +134,4 @@ class Webhook(BaseModel):
         storage: BaseModel | None,
     ) -> Iterator[Webhook]:
         del storage
-        yield Webhook(
-            id=self.id,
-            at=self.at,
-            user_id=self.user_id,
-            body=self.body,
-        )
+        yield self
