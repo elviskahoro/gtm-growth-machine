@@ -15,3 +15,4 @@ pydantic>=2.4.0
 reflex
 s3fs
 uuid7
+openai

@@ -180,7 +180,7 @@ class SourceFileData(NamedTuple):
             ):
                 print(
                     "Error: JSONL files with multiple JSON objects per file are not supported "
-                    "for input folders. Use from_jsonl_file() method instead for JSONL files.",
+                    "for input folders. Use from_jsonl_file() method to parse jsonl files that have multiple JSON objects.",
                 )
             raise
 

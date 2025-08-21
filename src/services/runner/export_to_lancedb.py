@@ -31,6 +31,9 @@ from src.services.fathom.etl.message import (
 from src.services.octolens.etl import (
     Webhook as OctolensWebhook,
 )
+from src.services.chalk.transaction.webhook import (
+    Webhook,
+)
 # fmt: on
 # trunk-ignore-end(ruff/F401,ruff/I001,pyright/reportUnusedImport)
 
@@ -66,7 +69,7 @@ app = modal.App(
 
 VOLUME: modal.Volume = modal.Volume.from_name(
     BUCKET_NAME,
-    create_if_missing=False,
+    create_if_missing=True,
 )
 
 
