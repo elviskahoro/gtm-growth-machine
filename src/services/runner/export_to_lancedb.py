@@ -93,10 +93,14 @@ def _get_storage_source_file_data(
             base_model_type=WebhookModel.storage_get_base_model_type(),
         )
 
-    return SourceFileData.from_json_data(
-        json_data=_get_data_from_storage_remote.remote(),  # trunk-ignore(pyright/reportFunctionMemberAccess)
-        base_model_type=WebhookModel.storage_get_base_model_type(),
-    )
+    if WebhookModel.etl_expects_storage_file():
+        return SourceFileData.from_json_data(
+            json_data=_get_data_from_storage_remote.remote(),  # trunk-ignore(pyright/reportFunctionMemberAccess)
+            base_model_type=WebhookModel.storage_get_base_model_type(),
+        )
+
+    print("Assuming storage file is not expected for the webhook model")
+    return None
 
 
 def _get_existing_primary_keys(

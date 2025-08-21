@@ -28,6 +28,10 @@ class Webhook(BaseModel):
     def storage_get_base_model_type() -> None:
         return None
 
+    @staticmethod
+    def etl_expects_storage_file() -> bool:
+        return False
+
     def etl_is_valid_webhook(
         self: Webhook,
     ) -> bool:

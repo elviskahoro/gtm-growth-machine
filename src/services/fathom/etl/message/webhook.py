@@ -64,6 +64,10 @@ class Webhook(BaseModel):
     def lance_get_base_model_type() -> type[TranscriptMessage]:
         return TranscriptMessage
 
+    @staticmethod
+    def etl_expects_storage_file() -> bool:
+        return True
+
     def etl_is_valid_webhook(
         self: Webhook,
     ) -> bool:
