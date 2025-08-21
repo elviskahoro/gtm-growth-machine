@@ -185,7 +185,7 @@ def embed_with_gemini_and_upload_to_lance(
                 storage=storage,
             )
             for source_file_data in source_file_data
-        )
+        ),
     )
     print(f"Batch size {embed_batch_size:04d}")
     print(f"Total models to process: {len(all_base_models):07d}")
