@@ -292,18 +292,36 @@ def web(
 
 @app.local_entrypoint()
 def local(
-    input_folder: str,
+    input_path: str,
     embed_batch_size: int = GEMINI_EMBED_BATCH_SIZE,
     upload_delay: float = UPLOAD_DELAY_SECONDS,
 ) -> None:
-    source_file_data: Iterator[SourceFileData] = SourceFileData.from_input_folder(
-        input_folder=input_folder,
-        base_model_type=WebhookModel,
-        extension=[
-            ".json",
-            ".jsonl",
-        ],
-    )
+    input_path_obj: Path = Path(input_path)
+    match input_path_obj:
+        case path if path.is_dir():
+            source_file_data: Iterator[SourceFileData] = (
+                SourceFileData.from_input_folder(
+                    input_folder=input_path,
+                    base_model_type=WebhookModel,
+                    extension=[
+                        ".json",
+                        ".jsonl",
+                    ],
+                )
+            )
+
+        case path if path.is_file():
+            source_file_data: Iterator[SourceFileData] = SourceFileData.from_jsonl_file(
+                jsonl_path=input_path,
+                base_model_type=WebhookModel,
+            )
+
+        case _:
+            error_msg: str = (
+                f"Input path {input_path} is neither a file nor a directory"
+            )
+            raise ValueError(error_msg)
+
     storage_file_data: SourceFileData | None = _get_storage_source_file_data(
         local_storage_path=None,
     )

@@ -98,6 +98,54 @@ class SourceFileData(NamedTuple):
         )
 
     @staticmethod
+    def from_jsonl_file(
+        jsonl_path: str,
+        base_model_type: type[BaseModel] | None,
+    ) -> Iterator[SourceFileData]:
+        if base_model_type is None:
+            error_msg = "base_model_type cannot be None"
+            raise ValueError(error_msg)
+
+        cwd: str = str(Path.cwd())
+        path: Path = Path(f"{cwd}/{jsonl_path}")
+
+        # Check file extension
+        if path.suffix.lower() != ".jsonl":
+            error_msg = f"File must have .jsonl extension, got: {path.suffix}"
+            raise ValueError(error_msg)
+
+        if not path.exists():
+            error_msg: str = f"File not found at {path}"
+            raise FileNotFoundError(error_msg)
+
+        try:
+            file = path.open(encoding="utf-8")
+
+        except OSError as e:
+            error_msg: str = f"Error opening file {path}: {e}"
+            raise FileNotFoundError(error_msg) from e
+
+        with file:
+            for line_number, raw_line in enumerate(file, start=1):
+                line: str = raw_line.strip()
+                if not line:  # Skip empty lines
+                    continue
+
+                try:
+                    yield SourceFileData(
+                        path=path,
+                        base_model=base_model_type.model_validate_json(
+                            json_data=line,
+                        ),
+                    )
+                except ValidationError as e:
+                    error_msg: str = (
+                        f"Validation error on line {line_number} in {path}: {e}"
+                    )
+                    print(error_msg)
+                    raise
+
+    @staticmethod
     def from_input_folder(
         input_folder: str,
         base_model_type: type[BaseModel],
@@ -122,6 +170,18 @@ class SourceFileData(NamedTuple):
         except ValidationError as e:
             print(e)
             print(current_path)
+            if (
+                current_path
+                and current_path.suffix.lower() == ".jsonl"
+                and any(
+                    "trailing characters" in str(error.get("msg", ""))
+                    for error in e.errors()
+                )
+            ):
+                print(
+                    "Error: JSONL files with multiple JSON objects per file are not supported "
+                    "for input folders. Use from_jsonl_file() method instead for JSONL files.",
+                )
             raise
 
 
