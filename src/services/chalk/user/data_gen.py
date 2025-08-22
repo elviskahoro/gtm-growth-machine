@@ -153,7 +153,7 @@ async def process_users_and_generate_profiles(sql_session: Session) -> None:
     logger.info("Successfully saved %d user profiles!", len(profiles))
 
 
-def make_tables(
+def replace_database_tables(
     *ts: DeclarativeMeta,
 ) -> None:
     for t in ts:
@@ -163,7 +163,7 @@ def make_tables(
 
 async def main() -> None:
     with SessionMaker() as sql_session:
-        make_tables(UserProfile)
+        replace_database_tables(UserProfile)
         await process_users_and_generate_profiles(sql_session)
 
 
