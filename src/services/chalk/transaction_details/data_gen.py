@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -10,7 +11,7 @@ if TYPE_CHECKING:
     from sqlalchemy.engine import Engine
     from sqlalchemy.orm import Session
 
-import pandas as pd
+import polars as pl
 from anyio import Semaphore
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
@@ -78,24 +79,15 @@ class TransactionReceipt(Base):
 def get_transactions_from_disk(
     nrows: int | None,
     skiprows: int | None,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     path: Path = Path.cwd() / "data/fraud/txns.csv"
-    skiprows_array: list[int] | None = None
-    if skiprows:
-        # noinspection PyTypeChecker
-        skiprows_array = list(
-            range(
-                1,
-                skiprows,
-            ),
-        )
+    skip_rows: int = skiprows or 0
 
-    return pd.read_csv(
-        filepath_or_buffer=path,
-        header=0,
-        on_bad_lines="error",
-        nrows=nrows,
-        skiprows=skiprows_array,
+    return pl.read_csv(
+        source=path,
+        has_header=True,
+        skip_rows=skip_rows,
+        n_rows=nrows,
     )
 
 
@@ -126,12 +118,14 @@ async def generate_receipt_body_from_memo(memo: str) -> str:
 
 
 # ----------------------------------------------------------------------------
-async def create_transaction_receipt(row: pd.Series) -> TransactionReceipt:
+async def create_transaction_receipt(row: dict[str, Any]) -> TransactionReceipt:
     """Create a TransactionReceipt from a transaction row using OpenAI to generate the body.
     Uses the same transaction ID to match the original transaction.
     """
     # Parse datetime from CSV
-    transaction_at: Any = pd.to_datetime(row["at"])
+    transaction_at: datetime = (
+        datetime.fromisoformat(row["at"]) if isinstance(row["at"], str) else row["at"]
+    )
 
     # Generate receipt body using OpenAI based on the memo
     receipt_body: str = await generate_receipt_body_from_memo(row["memo"])
@@ -159,7 +153,7 @@ async def commit_receipt_batch(
 
 # ----------------------------------------------------------------------------
 async def process_single_transaction(
-    row: pd.Series,
+    row: dict[str, Any],
     semaphore: Semaphore,
 ) -> TransactionReceipt | None:
     """Process a single transaction with semaphore limiting concurrency."""
@@ -174,7 +168,7 @@ async def process_single_transaction(
 
 async def process_transactions_and_generate_receipts(sql_session: Session) -> None:
     """Process transactions from CSV and generate receipts using OpenAI with parallel processing."""
-    transactions: pd.DataFrame = get_transactions_from_disk(
+    transactions: pl.DataFrame = get_transactions_from_disk(
         nrows=NROWS,
         skiprows=SKIPROWS,
     )
@@ -191,7 +185,7 @@ async def process_transactions_and_generate_receipts(sql_session: Session) -> No
     tasks: list[Any] = []
     processed_count: int = 0
 
-    for processed_count, (_index, row) in enumerate(transactions.iterrows()):
+    for processed_count, row in enumerate(transactions.iter_rows(named=True)):
         if processed_count >= MAX_RECEIPTS_TO_GENERATE:
             logger.info(
                 "Reached maximum limit of %d receipts, stopping processing",
@@ -236,7 +230,7 @@ def replace_database_table(
 async def main() -> None:
     with SessionMaker() as sql_session:
         # Create tables if they don't exist
-        replace_database_table(TransactionReceipt)
+        # replace_database_table(TransactionReceipt)
 
         # Process transactions and generate receipts
         await process_transactions_and_generate_receipts(sql_session)
