@@ -225,7 +225,7 @@ async def process_transactions_and_generate_receipts(sql_session: Session) -> No
     logger.info("Successfully processed %d receipts total!", total_successful)
 
 
-def make_tables(
+def replace_database_table(
     *ts,  # trunk-ignore(ruff/ANN002)
 ) -> None:
     for t in ts:
@@ -236,7 +236,7 @@ def make_tables(
 async def main() -> None:
     with SessionMaker() as sql_session:
         # Create tables if they don't exist
-        make_tables(TransactionReceipt)
+        replace_database_table(TransactionReceipt)
 
         # Process transactions and generate receipts
         await process_transactions_and_generate_receipts(sql_session)
