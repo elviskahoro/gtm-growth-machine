@@ -104,4 +104,5 @@ wheels/
 bin/
 bruno/*
 DATABOT.md
+docs/
 dbt_internal_packages/
