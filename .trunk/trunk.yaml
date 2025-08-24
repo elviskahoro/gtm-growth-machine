@@ -9,7 +9,7 @@ cli:
 plugins:
   sources:
     - id: trunk
-      ref: v1.7.1
+      ref: v1.7.2
       uri: https://github.com/trunk-io/plugins
 
     - id: oss-linter-trunk
@@ -21,21 +21,21 @@ plugins:
 lint:
   enabled:
     - actionlint@1.7.7
-    - checkov@3.2.461
+    - checkov@3.2.464
     - git-diff-check
     - markdownlint@0.45.0
-    - osv-scanner@2.0.3
+    - osv-scanner@2.2.1
     - oxipng@9.1.5
-    - pyright@1.1.403
-    - ruff@0.12.7
-    - semgrep@1.131.0
-    - shellcheck@0.10.0
+    - pyright@1.1.404
+    - ruff@0.12.10
+    - semgrep@1.132.1
+    - shellcheck@0.11.0
     - shfmt@3.6.0
     - sqlfmt@0.27.0
     - svgo@4.0.0
-    - taplo@0.9.3
-    - trivy@0.64.1
-    - trufflehog@3.90.3
+    - taplo@0.10.0
+    - trivy@0.65.0
+    - trufflehog@3.90.5
     - yamllint@1.37.1
 
   disabled:
