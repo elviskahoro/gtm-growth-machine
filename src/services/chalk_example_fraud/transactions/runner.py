@@ -267,7 +267,7 @@ def local(  # trunk-ignore(ruff/PLR0915)
     input_path_transactions: str | None = None,
     replace_or_append: str = "APPEND",
     *,
-    generate_receipts: bool = True,
+    generate_receipts: bool = False,
     target_date: str | None = None,
     user_id: int = 1,
 ) -> None:
