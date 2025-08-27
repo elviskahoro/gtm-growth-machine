@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import random
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
@@ -91,8 +92,14 @@ async def generate_daily_transactions(
         f"Found {len(matching_transactions)} transactions matching weekday {today_weekday}",
     )
 
+    # Randomly select between 1 and 7 transactions from the matching results
+    num_transactions = min(random.randint(1, 7), len(matching_transactions))
+    selected_transactions = random.sample(matching_transactions, num_transactions)
+
+    print(f"Randomly selected {num_transactions} transactions to generate")
+
     # Create new transactions for today based on historical patterns
-    for historical_transaction in matching_transactions:
+    for historical_transaction in selected_transactions:
         # Create new transaction with today's date but same time of day
         new_at = target_date.replace(
             hour=historical_transaction.at.hour,
@@ -114,7 +121,7 @@ async def generate_daily_transactions(
         next_id += 1
 
     print(
-        f"Generated {len(matching_transactions)} new transactions for {target_date.date()}",
+        f"Generated {num_transactions} new transactions for {target_date.date()}",
     )
 
 
