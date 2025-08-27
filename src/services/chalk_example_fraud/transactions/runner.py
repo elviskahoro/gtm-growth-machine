@@ -57,11 +57,11 @@ async def generate_daily_transactions(
         target_date = datetime.now(tz=timezone.utc)
 
     # Get today's weekday (0=Monday, 6=Sunday)
-    today_weekday = target_date.weekday()
+    today_weekday: int = target_date.weekday()
 
     # Query database for all transactions that match today's weekday
     try:
-        matching_transactions = (
+        matching_transactions: list[Transaction] = (
             sql_session.query(Transaction)
             .filter(
                 extract("dow", Transaction.at) == (today_weekday + 1) % 7,
@@ -94,21 +94,21 @@ async def generate_daily_transactions(
     )
 
     # Randomly select between 1 and 7 transactions from the matching results
-    num_transactions = min(secrets.randbelow(7) + 1, len(matching_transactions))
-    selected_transactions = random.sample(matching_transactions, num_transactions)
-
+    num_transactions: int = min(secrets.randbelow(7) + 1, len(matching_transactions))
+    selected_transactions: list[Transaction] = random.sample(
+        matching_transactions, num_transactions
+    )
     print(f"Randomly selected {num_transactions} transactions to generate")
 
     # Create new transactions for today based on historical patterns
     for historical_transaction in selected_transactions:
-        # Create new transaction with today's date but same time of day
-        new_at = target_date.replace(
+        new_at: datetime = target_date.replace(
             hour=historical_transaction.at.hour,
             minute=historical_transaction.at.minute,
             second=historical_transaction.at.second,
             microsecond=historical_transaction.at.microsecond,
         )
-        new_transaction = Transaction(
+        new_transaction: Transaction = Transaction(
             id=next_id,
             amount=historical_transaction.amount,
             at=new_at,
