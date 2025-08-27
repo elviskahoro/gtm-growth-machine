@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import random
+import secrets
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
@@ -93,7 +94,7 @@ async def generate_daily_transactions(
     )
 
     # Randomly select between 1 and 7 transactions from the matching results
-    num_transactions = min(random.randint(1, 7), len(matching_transactions))
+    num_transactions = min(secrets.randbelow(7) + 1, len(matching_transactions))
     selected_transactions = random.sample(matching_transactions, num_transactions)
 
     print(f"Randomly selected {num_transactions} transactions to generate")
