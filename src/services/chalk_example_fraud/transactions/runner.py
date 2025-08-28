@@ -29,12 +29,11 @@ if TYPE_CHECKING:
 APP_NAME: str = "chalk-fraud-transactions-data-generator"
 
 image: Image = modal.Image.debian_slim().uv_pip_install(
-    "fastapi[standard]",
-    "sqlalchemy",
-    "psycopg2-binary",
-    "openai",
     "anyio",
-    "python-dotenv",
+    "openai",
+    "polars",
+    "psycopg2-binary",
+    "sqlalchemy",
 )
 image = image.add_local_python_source(
     *[
