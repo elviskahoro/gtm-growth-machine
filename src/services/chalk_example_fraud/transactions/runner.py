@@ -95,7 +95,8 @@ async def generate_daily_transactions(
     # Randomly select between 1 and 7 transactions from the matching results
     num_transactions: int = min(secrets.randbelow(7) + 1, len(matching_transactions))
     selected_transactions: list[Transaction] = random.sample(
-        matching_transactions, num_transactions,
+        matching_transactions,
+        num_transactions,
     )
     print(f"Randomly selected {num_transactions} transactions to generate")
 
