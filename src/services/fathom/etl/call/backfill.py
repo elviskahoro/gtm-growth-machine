@@ -4,6 +4,7 @@ import json
 import os
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -18,9 +19,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.semconv.attributes import service_attributes
 
-from src.services.fathom.etl.call.successful_recordings_writer import (
-    SuccessfulRecordingsWriter,
-)
+from src.services.fathom.etl.call.recordings_writer import RecordingWriter
 
 if TYPE_CHECKING:
     from chalk.client.response import OnlineQueryResult
@@ -96,18 +95,72 @@ def setup_otel(
     return trace.get_tracer(__name__)
 
 
-def convert_datetimes(obj: Any) -> Any:  # trunk-ignore(ruff/ANN401)
+def _convert_datetimes(obj: Any) -> Any:  # trunk-ignore(ruff/ANN401)
     """Recursively convert datetime objects to ISO strings."""
     if isinstance(obj, datetime):
         return obj.isoformat()
 
     if isinstance(obj, dict):
-        return {key: convert_datetimes(value) for key, value in obj.items()}
+        return {key: _convert_datetimes(value) for key, value in obj.items()}
 
     if isinstance(obj, list):
-        return [convert_datetimes(item) for item in obj]
+        return [_convert_datetimes(item) for item in obj]
 
     return obj
+
+
+def _load_successful_recordings() -> set[str]:
+    """Load previously successful recordings from disk."""
+    output_path: Path = Path("out/fathom-call-backfill_successful_recordings.json")
+    if not output_path.exists():
+        return set()
+
+    try:
+        with output_path.open(mode="r") as f:
+            successful_recordings: list[str] = json.load(f)
+            return set(successful_recordings)
+
+    except (json.JSONDecodeError, ValueError):
+        print("Warning: Could not load successful recordings file, starting fresh")
+        return set()
+
+
+def _get_recording_ids(
+    input_csv_path: str = "",
+) -> list[str]:
+    def _load_recording_ids_from_csv(
+        csv_path: str,
+    ) -> list[str]:
+        """Load recording IDs from a CSV file."""
+        df: pl.DataFrame = pl.read_csv(
+            source=csv_path,
+            has_header=True,
+            schema_overrides={"recording_id": pl.Utf8},
+        )
+        recording_ids: list[str] = df["recording_id"].to_list()
+        print(
+            f"Loaded {len(recording_ids)} recording IDs from custom CSV file: {input_csv_path}",
+        )
+        return recording_ids
+
+    # Get the initial list of recording IDs
+    if not input_csv_path:
+        error_msg: str = "CSV path is required"
+        raise ValueError(error_msg)
+
+    initial_recording_ids: list[str] = _load_recording_ids_from_csv(input_csv_path)
+    successful_recordings: set[str] = _load_successful_recordings()
+    filtered_recording_ids: list[str] = [
+        recording_id
+        for recording_id in initial_recording_ids
+        if recording_id not in successful_recordings
+    ]
+    print(
+        f"Filtered out {len(initial_recording_ids) - len(filtered_recording_ids)} "
+        f"already processed recordings",
+    )
+    print(f"Remaining recordings to process: {len(filtered_recording_ids)}")
+    return filtered_recording_ids
 
 
 @app.function(
@@ -217,7 +270,7 @@ def process_recording(
                 "fathom_call_processed",
                 {
                     "recording_id": recording_id,
-                    "data": json.dumps(convert_datetimes(data)),
+                    "data": json.dumps(_convert_datetimes(data)),
                 },
             )
             print(
@@ -238,92 +291,64 @@ def main(
     recording_ids: list[str],
     branch: str = "",
 ) -> None:
-    backfill_config.set_branch(branch)
-    id_count: int = len(recording_ids)
+    class ProcessingStatus(Enum):
+        SUCCESS = "successful"
+        FAILED = "failed"
 
-    count: int = 0
+    def _handle_recording(
+        recording_id: str,
+        count: int,
+        id_count: int,
+        status: ProcessingStatus,
+        writer: RecordingWriter,
+    ) -> None:
+        message: str = (
+            "Successfully processed"
+            if status == ProcessingStatus.SUCCESS
+            else "Error processing recording"
+        )
+        print(f"{count:05d}/{id_count:05d}: {recording_id}: {message}")
+        try:
+            writer.add(recording_id)
+
+        except Exception as e:
+            status_text: str = (
+                "successful" if status == ProcessingStatus.SUCCESS else "failed"
+            )
+            print(f"ERROR: Failed to write {status_text} recording {recording_id}: {e}")
+
+    backfill_config.set_branch(branch)
+    id_count = len(recording_ids)
+
     successfully_processed: list[str] = []
     failed_recordings: list[str] = []
-    with SuccessfulRecordingsWriter() as success_writer:
-        for (
-            recording_id,
-            success,
-        ) in process_recording.map(  # trunk-ignore(pyright/reportFunctionMemberAccess)
-            recording_ids,
-        ):
-            count = count + 1
-            if success:
-                successfully_processed.append(recording_id)
-                print(
-                    f"{count:05d}/{id_count:05d}: {recording_id}: Successfully processed",
-                )
-                success_writer.add(recording_id)
 
-            else:
-                failed_recordings.append(recording_id)
-                print(
-                    f"{count:05d}/{id_count:05d}: {recording_id}: Error processing recording",
-                )
+    with RecordingWriter(
+        ProcessingStatus.SUCCESS.value,
+    ) as success_writer, RecordingWriter(
+        ProcessingStatus.FAILED.value,
+    ) as failed_writer:
+        for count, (recording_id, success) in enumerate(
+            process_recording.map(recording_ids),
+            start=1,
+        ):
+            status: ProcessingStatus = (
+                ProcessingStatus.SUCCESS if success else ProcessingStatus.FAILED
+            )
+            writer: RecordingWriter = success_writer if success else failed_writer
+            _handle_recording(
+                recording_id=recording_id,
+                count=count,
+                id_count=id_count,
+                status=status,
+                writer=writer,
+            )
 
     if successfully_processed:
         print(f"Successfully processed: {len(successfully_processed)} recordings")
 
     if failed_recordings:
         print(f"Failed to process: {len(failed_recordings)} recordings")
-
-
-def _load_successful_recordings() -> set[str]:
-    """Load previously successful recordings from disk."""
-    output_path: Path = Path("out/fathom-call-backfill_successful_recordings.json")
-    if not output_path.exists():
-        return set()
-
-    try:
-        with output_path.open(mode="r") as f:
-            successful_recordings: list[str] = json.load(f)
-            return set(successful_recordings)
-
-    except (json.JSONDecodeError, ValueError):
-        print("Warning: Could not load successful recordings file, starting fresh")
-        return set()
-
-
-def _get_recording_ids(
-    input_csv_path: str = "",
-) -> list[str]:
-    def load_recording_ids_from_csv(
-        csv_path: str,
-    ) -> list[str]:
-        """Load recording IDs from a CSV file."""
-        df: pl.DataFrame = pl.read_csv(
-            source=csv_path,
-            has_header=True,
-            schema_overrides={"recording_id": pl.Utf8},
-        )
-        recording_ids: list[str] = df["recording_id"].to_list()
-        print(
-            f"Loaded {len(recording_ids)} recording IDs from custom CSV file: {input_csv_path}",
-        )
-        return recording_ids
-
-    # Get the initial list of recording IDs
-    if not input_csv_path:
-        error_msg: str = "CSV path is required"
-        raise ValueError(error_msg)
-
-    initial_recording_ids: list[str] = load_recording_ids_from_csv(input_csv_path)
-    successful_recordings: set[str] = _load_successful_recordings()
-    filtered_recording_ids: list[str] = [
-        recording_id
-        for recording_id in initial_recording_ids
-        if recording_id not in successful_recordings
-    ]
-    print(
-        f"Filtered out {len(initial_recording_ids) - len(filtered_recording_ids)} "
-        f"already processed recordings",
-    )
-    print(f"Remaining recordings to process: {len(filtered_recording_ids)}")
-    return filtered_recording_ids
 
 
 @app.local_entrypoint()
@@ -359,7 +384,7 @@ def test_convert_datetimes_with_datetime() -> None:
     from datetime import datetime, timezone
 
     dt = datetime(2024, 1, 15, 10, 30, 45, tzinfo=timezone.utc)
-    result = convert_datetimes(dt)
+    result = _convert_datetimes(dt)
     assert result == "2024-01-15T10:30:45+00:00"
 
 
@@ -376,7 +401,7 @@ def test_convert_datetimes_with_dict() -> None:
         },
     }
 
-    result = convert_datetimes(data)
+    result = _convert_datetimes(data)
     expected = {
         "created_at": "2024-01-15T10:30:45+00:00",
         "title": "Test Call",
@@ -398,7 +423,7 @@ def test_convert_datetimes_with_list() -> None:
         {"timestamp": datetime(2024, 1, 15, 11, 0, 0, tzinfo=timezone.utc)},
     ]
 
-    result = convert_datetimes(data)
+    result = _convert_datetimes(data)
     expected = [
         "2024-01-15T10:30:45+00:00",
         "regular_string",
@@ -409,13 +434,13 @@ def test_convert_datetimes_with_list() -> None:
 
 def test_convert_datetimes_with_primitive_types() -> None:
     """Test convert_datetimes function with primitive types."""
-    assert convert_datetimes("string") == "string"
-    assert convert_datetimes(123) == 123
-    assert convert_datetimes(12.34) == 12.34
+    assert _convert_datetimes("string") == "string"
+    assert _convert_datetimes(123) == 123
+    assert _convert_datetimes(12.34) == 12.34
     # Test boolean value preservation
     bool_value = True
-    assert convert_datetimes(bool_value) is True
-    assert convert_datetimes(None) is None
+    assert _convert_datetimes(bool_value) is True
+    assert _convert_datetimes(None) is None
 
 
 def test_load_successful_recordings_file_not_exists() -> None:
