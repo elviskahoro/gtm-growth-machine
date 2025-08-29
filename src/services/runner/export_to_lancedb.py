@@ -31,7 +31,7 @@ from src.services.fathom.etl.message import (
 from src.services.octolens.etl import (
     Webhook as OctolensWebhook,
 )
-from src.services.chalk.transaction.webhook import (
+from src.services.chalk_example_fraud.transactions.webhook import (
     Webhook,
 )
 # fmt: on

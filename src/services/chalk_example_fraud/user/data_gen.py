@@ -26,11 +26,11 @@ logging.basicConfig(
 )
 
 load_dotenv()
-DATABASE_USER: str = os.environ["DB_USER"]
-DATABASE_PASSWORD: str = os.environ["DB_PASSWORD"]
-DATABASE_HOST: str = os.environ["DB_HOST"]
-DATABASE_NAME: str = os.environ["DB_NAME"]
-OPENAI_API_TOKEN: str = os.environ["OPENAI_API_TOKEN"]
+DATABASE_USER: str = os.environ.get("DB_USER", "postgres")
+DATABASE_PASSWORD: str = os.environ.get("DB_PASSWORD", "password")
+DATABASE_HOST: str = os.environ.get("DB_HOST", "localhost")
+DATABASE_NAME: str = os.environ.get("DB_NAME", "testdb")
+OPENAI_API_TOKEN: str = os.environ.get("OPENAI_API_TOKEN", "")
 
 url: URL = URL.create(
     drivername="postgresql",
