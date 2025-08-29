@@ -123,7 +123,8 @@ def main(
                     webhook_status_code = data.get("fathom_call.webhook_status_code")
                     if webhook_status_code is not None:
                         recording_span.set_attribute(
-                            "webhook_status_code", webhook_status_code,
+                            "webhook_status_code",
+                            webhook_status_code,
                         )
 
                     # Remove unwanted fields
