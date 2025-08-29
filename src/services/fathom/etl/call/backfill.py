@@ -71,7 +71,13 @@ def convert_datetimes(obj: Any) -> Any:  # trunk-ignore(ruff/ANN401)
     return obj
 
 
+@app.function(
+    secrets=[
+        modal.Secret.from_name("chalk-fathom-calls"),
+    ],
+)
 def main(
+    recording_ids: list[str],
     branch: str = "",
 ) -> None:
     # 1️⃣ Get environment variables (from Modal secrets)
@@ -90,24 +96,24 @@ def main(
     )
 
     # 4️⃣ Load recording IDs
-    call_ids_data: pl.DataFrame = pl.read_csv(
-        source="data/fathom/call_ids.csv",
-        has_header=True,
-        schema_overrides={"recording_id": pl.Utf8},
-    )
+
     branch_used: str = branch if branch else "default"
     print(f"Loaded call IDs data with branch: {branch_used}")
 
     # 5️⃣ Iterate over recordings, query, clean & log
     with tracer.start_as_current_span("fathom_call_processing") as span:
-        span.set_attribute("total_recordings", len(call_ids_data))
+        span.set_attribute("total_recordings", len(recording_ids))
         span.set_attribute("branch", branch_used)
 
-        for i, recording_id in enumerate(call_ids_data["recording_id"]):
+        for i, recording_id in enumerate(recording_ids):
             with tracer.start_as_current_span("process_recording") as recording_span:
                 recording_span.set_attribute("recording_id", recording_id)
                 recording_span.set_attribute("recording_index", i)
 
+                base_msg: str = (
+                    f"Recording {(i + 1):05d}/{len(recording_ids):05d}: {recording_id}"
+                )
+                print(base_msg + ": Processing")
                 try:
                     # Query Chalk
                     query: OnlineQueryResult = client.query(
@@ -115,6 +121,7 @@ def main(
                         output=[
                             "fathom_call.id",
                             "fathom_call.webhook_status_code",
+                            "fathom_call.llm_call_insights_sales",
                         ],
                     )
                     data: dict[str, Any] = query.to_dict()
@@ -141,22 +148,19 @@ def main(
                             data.pop(key, None)
                             removed_count += 1
 
-                    cleaned_dict: Any = convert_datetimes(data)
+                    recording_span.set_attribute("fields_removed_count", removed_count)
+                    recording_span.set_attribute("status", "success")
 
-                    # Log the data as JSON
                     recording_span.add_event(
-                        "fathom_call_data",
+                        "fathom_call_processed",
                         {
                             "recording_id": recording_id,
-                            "data": json.dumps(cleaned_dict),
-                            "fields_removed_count": removed_count,
-                            "webhook_status_code": webhook_status_code,
+                            "data": json.dumps(convert_datetimes(data)),
                         },
                     )
-
-                    recording_span.set_attribute("status", "success")
                     print(
-                        f"Logged data for recording {recording_id} with webhook status {webhook_status_code}",
+                        base_msg
+                        + f": Succeeded - with webhook status {webhook_status_code}",
                     )
 
                 except Exception as e:
@@ -182,11 +186,15 @@ def local(branch: str = "", mode: str = "") -> None:
             test_otel_connection()
 
         case _:
-            main(branch=branch)
-
-
-if __name__ == "__main__":
-    main()
+            recording_ids: list[str] = pl.read_csv(
+                source="data/fathom/call_ids.csv",
+                has_header=True,
+                schema_overrides={"recording_id": pl.Utf8},
+            )["recording_id"].to_list()
+            main.remote(  # trunk-ignore(pyright/reportFunctionMemberAccess)
+                recording_ids=recording_ids,
+                branch=branch,
+            )
 
 
 # TESTS =========
