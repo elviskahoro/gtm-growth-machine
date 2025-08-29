@@ -18,7 +18,9 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.semconv.attributes import service_attributes
 
-from .successful_recordings_writer import SuccessfulRecordingsWriter
+from src.services.fathom.etl.call.successful_recordings_writer import (
+    SuccessfulRecordingsWriter,
+)
 
 if TYPE_CHECKING:
     from chalk.client.response import OnlineQueryResult
@@ -26,11 +28,17 @@ if TYPE_CHECKING:
 
 image: Image = modal.Image.debian_slim().uv_pip_install(
     "chalkpy",
+    "flatsplode",
     "polars",
     "opentelemetry-api",
     "opentelemetry-sdk",
     "opentelemetry-exporter-otlp-proto-http",
     "opentelemetry-semantic-conventions",
+)
+image = image.add_local_python_source(
+    *[
+        "src",
+    ],
 )
 
 APP_NAME: str = "chalk-fathom-calls"
