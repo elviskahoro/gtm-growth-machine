@@ -4,6 +4,7 @@ import asyncio
 import random
 import secrets
 from datetime import datetime, timezone
+from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 import modal
@@ -11,7 +12,7 @@ from modal import Image
 from openai import AsyncOpenAI
 from sqlalchemy import extract, func
 
-from src.services.chalk_example_fraud.transactions.data_gen.fake_data_generator import (
+from src.services.chalk_example_fraud.transactions.data_gen.generator import (
     generate_receipts_from_transactions,
 )
 from src.services.chalk_example_fraud.transactions.models import (
@@ -26,7 +27,14 @@ if TYPE_CHECKING:
     from sqlalchemy.engine import Engine
     from sqlalchemy.orm import Session, sessionmaker
 
+
+class AppVersion(Enum):
+    ELLIOT = "elliot"
+    ELVIS = "elvis"
+
+
 APP_NAME: str = "chalk-fraud-transactions-data-generator"
+APP_VERSION: AppVersion = AppVersion.ELLIOT
 
 image: Image = modal.Image.debian_slim().uv_pip_install(
     "anyio",
@@ -285,7 +293,7 @@ def main(
     ),
     secrets=[
         modal.Secret.from_name(
-            name=APP_NAME + "-elvis",
+            name=f"{APP_NAME}-{APP_VERSION.value}",
         ),
     ],
     region="us-east-1",
