@@ -126,17 +126,20 @@ def main(
                             "webhook_status_code",
                             webhook_status_code,
                         )
-
                     # Remove unwanted fields
-                    for key in [
+                    keys_to_remove = [
                         "fathom_call.llm_call_summary_general",
                         "fathom_call.llm_call_summary_sales",
                         "fathom_call.llm_call_summary_marketing",
                         "fathom_call.llm_call_type",
                         "fathom_call.llm_call_insights_sales",
                         "fathom_call.transcript_plaintext_list",
-                    ]:
-                        data.pop(key, None)
+                    ]
+                    removed_count: int = 0
+                    for key in keys_to_remove:
+                        if key in data:
+                            data.pop(key, None)
+                            removed_count += 1
 
                     cleaned_dict: Any = convert_datetimes(data)
 
@@ -146,7 +149,7 @@ def main(
                         {
                             "recording_id": recording_id,
                             "data": json.dumps(cleaned_dict),
-                            "fields_removed_count": 6,
+                            "fields_removed_count": removed_count,
                             "webhook_status_code": webhook_status_code,
                         },
                     )
