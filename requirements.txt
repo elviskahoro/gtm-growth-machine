@@ -19,3 +19,4 @@ openai
 opentelemetry-api
 opentelemetry-sdk
 opentelemetry-exporter-otlp
+pytest-xdist
