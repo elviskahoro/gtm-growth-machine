@@ -35,7 +35,8 @@ async def generate_receipt_body_from_description(
             max_tokens=10000,
             temperature=0.9,
         )
-        return response.choices[0].message.content.strip()
+        content = response.choices[0].message.content
+        return content.strip() if content else f"Transaction: {description}"
 
     except (OSError, ValueError, KeyError) as e:
         print(f"Failed to generate receipt body for description '{description}': {e}")

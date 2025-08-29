@@ -154,7 +154,7 @@ async def process_users_and_generate_profiles(sql_session: Session) -> None:
 
 
 def replace_database_tables(
-    *ts: DeclarativeMeta,
+    *ts: type[DeclarativeMeta],
 ) -> None:
     for t in ts:
         t.__table__.drop(engine, checkfirst=True)

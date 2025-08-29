@@ -85,7 +85,7 @@ async def generate_daily_transactions(
 
     # Get the current max transaction ID from database
     try:
-        max_id_result: tuple[int] | None = sql_session.query(
+        max_id_result = sql_session.query(
             func.max(Transaction.id),
         ).first()
         next_id: int = (
@@ -181,13 +181,10 @@ async def generate_daily_transactions_with_receipts(
         for t in transactions
     ]
     print(f"Generating receipts for {len(transaction_dicts)} transactions...")
-    async for receipt_dict in generate_receipts_for_transactions(
+    async for receipt in generate_receipts_for_transactions(
         transaction_dicts,
         client,
     ):
-        receipt: TransactionReceipt = TransactionReceipt.dict_to_transaction_receipt(
-            receipt_dict,
-        )
         yield receipt
 
     print(f"Daily data generation complete!")
