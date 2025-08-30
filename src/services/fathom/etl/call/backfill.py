@@ -281,12 +281,6 @@ def process_recording(
         return (recording_id, True)
 
 
-@app.function(
-    secrets=[
-        modal.Secret.from_name(name=APP_NAME),
-    ],
-    timeout=(60 * 60 * 23),
-)
 def main(
     recording_ids: list[str],
     branch: str = "",
@@ -316,6 +310,7 @@ def main(
                 "successful" if status == ProcessingStatus.SUCCESS else "failed"
             )
             print(f"ERROR: Failed to write {status_text} recording {recording_id}: {e}")
+            raise
 
     backfill_config.set_branch(branch)
     id_count = len(recording_ids)
@@ -329,7 +324,9 @@ def main(
         ProcessingStatus.FAILED.value,
     ) as failed_writer:
         for count, (recording_id, success) in enumerate(
-            process_recording.map(recording_ids),
+            process_recording.map(  # trunk-ignore(pyright/reportFunctionMemberAccess)
+                recording_ids,
+            ),
             start=1,
         ):
             status: ProcessingStatus = (
@@ -357,7 +354,7 @@ def local(
     branch: str = "",
 ) -> None:
     recording_ids: list[str] = _get_recording_ids(input_csv_path=input_csv_path)
-    main.remote(  # trunk-ignore(pyright/reportFunctionMemberAccess)
+    main(
         recording_ids=recording_ids,
         branch=branch,
     )
