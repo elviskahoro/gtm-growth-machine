@@ -19,7 +19,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.semconv.attributes import service_attributes
 
-from src.services.fathom.etl.call.recordings_writer import RecordingWriter
+from src.services.fathom.etl.call.backfill_recordings_writer import RecordingWriter
 
 if TYPE_CHECKING:
     from chalk.client.response import OnlineQueryResult
