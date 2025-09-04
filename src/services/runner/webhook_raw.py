@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
     from pathlib import Path
 
-BUCKET_NAME: str = "elvis-bucket"
+BUCKET_NAME: str = "placeholder-bucket"
 MODAL_SECRET_COLLECTION_NAME: str = "devx-growth-gcp"  # trunk-ignore(ruff/S105)
 
 
