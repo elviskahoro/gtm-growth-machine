@@ -109,7 +109,6 @@ def _execute_merge_insert_with_retry(
                 error_msg: str = str(e).lower()
                 if (
                     "429" in error_msg
-
                     or "too many" in error_msg
                     or "rate limit" in error_msg
                     or "retry" in error_msg
@@ -133,7 +132,6 @@ def _execute_merge_insert_with_retry(
 
 
 def _get_or_create_table(
-
     db: DBConnection,
     table_name: str,
     data_to_upload: list[dict],
@@ -248,7 +246,6 @@ def upload_to_lance(
 
         except (ValueError, RuntimeError, ConnectionError, TimeoutError) as exception:
             _handle_merge_insert_error(
-
                 tbl=tbl,
                 primary_key=primary_key,
                 primary_key_index_type=primary_key_index_type,
