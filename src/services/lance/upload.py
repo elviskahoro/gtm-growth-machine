@@ -87,6 +87,7 @@ def _execute_merge_insert_with_retry(
                 error_type: LanceTableExistenceErrorType = (
                     LanceTableExistenceErrorType.parse_existence_error(e)
                 )
+
                 if error_type == LanceTableExistenceErrorType.RATE_LIMITED:
                     if attempt < max_retries:
                         delay: float = base_delay * (2**attempt)  # Exponential backoff
@@ -108,6 +109,7 @@ def _execute_merge_insert_with_retry(
                 error_msg: str = str(e).lower()
                 if (
                     "429" in error_msg
+
                     or "too many" in error_msg
                     or "rate limit" in error_msg
                     or "retry" in error_msg
@@ -131,6 +133,7 @@ def _execute_merge_insert_with_retry(
 
 
 def _get_or_create_table(
+
     db: DBConnection,
     table_name: str,
     data_to_upload: list[dict],
@@ -144,6 +147,7 @@ def _get_or_create_table(
         error_type: LanceTableExistenceErrorType = (
             LanceTableExistenceErrorType.parse_existence_error(exception)
         )
+
         match error_type:
             case LanceTableExistenceErrorType.NOT_FOUND:
                 tbl: Table = db.create_table(
@@ -212,6 +216,7 @@ def _handle_merge_insert_error(
     except ValueError:
         # Handle the case where parse_existence_error raises ValueError
         # If we can't parse the exception, re-raise the original
+
         raise exception from None
 
 
@@ -243,6 +248,7 @@ def upload_to_lance(
 
         except (ValueError, RuntimeError, ConnectionError, TimeoutError) as exception:
             _handle_merge_insert_error(
+
                 tbl=tbl,
                 primary_key=primary_key,
                 primary_key_index_type=primary_key_index_type,
@@ -522,6 +528,7 @@ def test_invalid_error_message_handling() -> None:
         msg: str = "Expected ValueError for unknown error"
         raise AssertionError(msg)
     except ValueError:
+
         pass  # Expected
 
 
@@ -655,6 +662,7 @@ def test_index_creation_with_subsequent_failure() -> None:
         )
         msg: str = "Expected failure after index creation and retry"
         raise AssertionError(msg)
+
     except (RuntimeError, ValueError) as e:
         error_msg: str = str(e)
         assert (

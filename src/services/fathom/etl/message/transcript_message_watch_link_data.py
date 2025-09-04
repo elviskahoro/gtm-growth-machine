@@ -230,6 +230,7 @@ def test_named_tuple_immutability() -> None:
         data.watch_link = "https://other.com/watch"
         msg: str = "Expected AttributeError for immutable NamedTuple"
         raise AssertionError(msg)
+
     except AttributeError:
         pass  # Expected behavior
 

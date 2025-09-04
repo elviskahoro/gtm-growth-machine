@@ -122,6 +122,7 @@ class SourceFileData(NamedTuple):
             file = path.open(encoding="utf-8")
 
         except OSError as e:
+
             error_msg: str = f"Error opening file {path}: {e}"
             raise FileNotFoundError(error_msg) from e
 
@@ -138,6 +139,7 @@ class SourceFileData(NamedTuple):
                             json_data=line,
                         ),
                     )
+
                 except ValidationError as e:
                     error_msg: str = (
                         f"Validation error on line {line_number} in {path}: {e}"

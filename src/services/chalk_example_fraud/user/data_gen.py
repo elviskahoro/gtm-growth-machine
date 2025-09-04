@@ -106,6 +106,7 @@ async def generate_bio_for_user(name: str, age: int) -> str:
         return response.choices[0].message.content.strip()
 
     except Exception:
+
         logger.exception("Failed to generate bio for user '%s'", name)
         return f"Hi, I'm {name}. I enjoy exploring new experiences and connecting with others."
 
@@ -131,6 +132,7 @@ async def process_users_and_generate_profiles(sql_session: Session) -> None:
             logger.info("Processing user %s: %s", row["id"], row["name"])
             try:
                 return await create_user_profile(row)
+
             except Exception:
                 logger.exception("Failed to process user %s", row["id"])
                 return None
