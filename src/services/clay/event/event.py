@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
+import polars as pl
 from pydantic import BaseModel, field_validator
 
 from src.services.local.filesystem_regex import sanitize_string
+
+if TYPE_CHECKING:
+    import polars as pl
 
 
 class EventAttendee(BaseModel):
@@ -27,27 +32,85 @@ class EventAttendee(BaseModel):
         # For example: ensure it's a valid URL format
         return v
 
+    @classmethod
+    def get_field_names(cls: type[EventAttendee]) -> list[str]:
+        """Get all field names from the EventAttendee model.
+
+        Returns:
+            List of field names in the model
+        """
+        return list(cls.model_fields.keys())
+
+    @staticmethod
+    def get_polars_columns_for_base_model(
+        source: str,
+        created_at: datetime,
+        event_url: str | None = None,
+    ) -> list[pl.Expr]:
+        """Generate polars column expressions for EventAttendee base fields.
+
+        Args:
+            source: The source identifier
+            created_at: The creation timestamp
+            event_url: Optional event URL
+
+        Returns:
+            List of polars expressions to add the base model columns
+
+        Raises:
+            ValueError: If provided parameter names don't match model field names
+        """
+        import polars as pl
+
+        # Get field names from the model to validate against
+        field_names: list[str] = EventAttendee.get_field_names()
+
+        # Define parameter mapping - what we're providing values for
+        provided_params: dict[str, str | datetime | None] = {
+            "source": source,
+            "created_at": created_at,
+            "event_url": event_url,
+        }
+
+        # Validate that all provided parameters are actual model fields
+        invalid_params = set(provided_params.keys()) - set(field_names)
+        if invalid_params:
+            msg = (
+                f"Invalid parameters {invalid_params}. Valid fields are: {field_names}"
+            )
+            raise ValueError(msg)
+
+        # Build columns only for parameters that have non-None values
+        columns: list[pl.Expr] = []
+        for param_name, param_value in provided_params.items():
+            if param_value is not None:
+                columns.append(pl.lit(param_value).alias(param_name))
+
+        return columns
+
     def etl_get_file_name(
         self: EventAttendee,
         extension: str = ".jsonl",
     ) -> str:
-        """Generate a file name including email or name for identification.
+        """Generate a file name in format: event_title-date-name.
 
         Args:
             extension: The file extension to use. Defaults to ".jsonl".
 
         Returns:
-            The generated file name with source, timestamp, and identifier.
+            The generated file name with event title, date, and identifier.
         """
         # Use email if available, otherwise fall back to name
         identifier: str | None = self.email or self.name
+        date_str: str = self.created_at.strftime("%Y%m%d")
+
         if identifier:
             # Clean the identifier for filesystem compatibility using sanitize_string
             cleaned_identifier: str = sanitize_string(identifier.replace("@", "·"))
-            return f"{self.source}-{cleaned_identifier}-{self.created_at.strftime('%Y%m%d_%H%M%S')}{extension}".lower()
+            return f"{self.source}-{date_str}-{cleaned_identifier}{extension}".lower()
 
         # Fallback to original format if no identifier available
-        return f"{self.source}-{self.created_at.strftime('%Y%m%d_%H%M%S')}{extension}".lower()
+        return f"{self.source}-{date_str}{extension}".lower()
 
 
 # trunk-ignore-begin(ruff/S101,ruff/PGH003)
@@ -94,11 +157,11 @@ def test_etl_get_file_name_with_email() -> None:
     # Default extension
     filename: str = attendee.etl_get_file_name()
     # Dots are removed by sanitize_string
-    assert filename == "conference_2024-johndoe·examplecom-20240315_103000.jsonl"
+    assert filename == "conference_2024-20240315-johndoe·examplecom.jsonl"
 
     # Custom extension
     filename_csv: str = attendee.etl_get_file_name(".csv")
-    assert filename_csv == "conference_2024-johndoe·examplecom-20240315_103000.csv"
+    assert filename_csv == "conference_2024-20240315-johndoe·examplecom.csv"
 
 
 def test_etl_get_file_name_with_name_only() -> None:
@@ -112,7 +175,7 @@ def test_etl_get_file_name_with_name_only() -> None:
     )
 
     filename: str = attendee.etl_get_file_name()
-    assert filename == "webinar_2024-jane·smith-20240315_144530.jsonl"
+    assert filename == "webinar_2024-20240315-jane·smith.jsonl"
 
 
 def test_etl_get_file_name_no_identifier() -> None:
@@ -125,7 +188,7 @@ def test_etl_get_file_name_no_identifier() -> None:
     )
 
     filename: str = attendee.etl_get_file_name()
-    assert filename == "anonymous_event-20240315_180000.jsonl"
+    assert filename == "anonymous_event-20240315.jsonl"
 
 
 def test_etl_get_file_name_special_characters() -> None:
@@ -140,7 +203,7 @@ def test_etl_get_file_name_special_characters() -> None:
     )
     filename: str = attendee_special_email.etl_get_file_name()
     # Dots are removed by sanitize_string
-    assert filename == "special_event-user+tag·subdomaincom-20240315_120000.jsonl"
+    assert filename == "special_event-20240315-user+tag·subdomaincom.jsonl"
 
     # Test with name containing special characters
     attendee_special_name: EventAttendee = EventAttendee(
@@ -150,7 +213,7 @@ def test_etl_get_file_name_special_characters() -> None:
     )
     filename: str = attendee_special_name.etl_get_file_name()
     # Apostrophe is removed, dots are removed
-    assert filename == "irish_event-john·oconnor·jr-20240315_120000.jsonl"
+    assert filename == "irish_event-20240315-john·oconnor·jr.jsonl"
 
 
 def test_etl_get_file_name_filesystem_unsafe_characters() -> None:
@@ -166,10 +229,7 @@ def test_etl_get_file_name_filesystem_unsafe_characters() -> None:
     filename: str = attendee.etl_get_file_name()
     # Note: source doesn't get sanitized, only the identifier (name/email) gets sanitized
     # Source slash remains as slash, and various special chars are removed from name
-    assert (
-        filename
-        == "test/source-test·user·with·special·characters-20240315_120000.jsonl"
-    )
+    assert filename == "test/source-20240315-test·user·with·special·characters.jsonl"
 
 
 def test_etl_get_file_name_case_sensitivity() -> None:
@@ -183,7 +243,7 @@ def test_etl_get_file_name_case_sensitivity() -> None:
     )
     filename: str = attendee.etl_get_file_name()
     # Dots are removed by sanitize_string
-    assert filename == "uppercase_event-johndoe·examplecom-20240315_120000.jsonl"
+    assert filename == "uppercase_event-20240315-johndoe·examplecom.jsonl"
     assert filename.islower()
 
 
@@ -218,7 +278,7 @@ def test_etl_get_file_name_datetime_formatting() -> None:
     )
     filename: str = attendee.etl_get_file_name()
     # Should have zero-padding, dots removed
-    assert filename == "event-test·examplecom-20240105_080505.jsonl"
+    assert filename == "event-20240105-test·examplecom.jsonl"
 
 
 def test_etl_get_file_name_email_priority() -> None:
@@ -233,7 +293,7 @@ def test_etl_get_file_name_email_priority() -> None:
     )
     filename: str = attendee.etl_get_file_name()
     # Should use email, not name. Dots are removed.
-    assert "differentemail·examplecom" in filename
+    assert filename == "priority_test-20240315-differentemail·examplecom.jsonl"
     assert "john·doe" not in filename
 
 

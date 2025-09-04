@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -44,7 +45,10 @@ def parse_filename_metadata(
     if "-" in filename:
         date_str: str
         source: str
-        date_str, source = filename.split(sep="-", maxsplit=1)
+        date_str, source = filename.split(
+            sep="-",
+            maxsplit=1,
+        )
         try:
             # Parse date from YYYYMMDD format (naive, then add UTC timezone)
             parsed_date: datetime = datetime.strptime(
@@ -66,37 +70,67 @@ def parse_filename_metadata(
 
 def process_csv_file(
     path: Path,
+    source: str,
+    parsed_date: datetime,
+    event_url: str | None = None,
 ) -> pl.DataFrame:
-    """Process a single CSV file and add metadata columns.
+    """Process a single CSV file and add metadata columns from EventAttendee model.
 
     Args:
         path: Path to the CSV file
+        source: Source name extracted from filename
+        parsed_date: Date extracted from filename
+        event_url: Optional event URL to add
 
     Returns:
         DataFrame with added metadata columns
     """
     df_csv: pl.DataFrame = pl.read_csv(source=path)
-    source: str
-    parsed_date: datetime
-    source, parsed_date = parse_filename_metadata(filename=path.stem)
-    return df_csv.with_columns(
-        [
-            pl.lit(source).alias("source"),
-            pl.lit(parsed_date).alias("created_at"),
-        ],
+
+    # Get column expressions from EventAttendee static method
+    base_columns: list[pl.Expr] = EventAttendee.get_polars_columns_for_base_model(
+        source=source,
+        created_at=parsed_date,
+        event_url=event_url,
     )
+
+    return df_csv.with_columns(base_columns)
+
+
+def load_event_url_from_json(
+    csv_path: Path,
+) -> str | None:
+    """Load event URL from corresponding JSON file.
+
+    Args:
+        csv_path: Path to the CSV file
+
+    Returns:
+        Event URL from JSON file, or None if not found
+    """
+    json_path: Path = csv_path.with_suffix(".json")
+    if not json_path.exists():
+        return None
+
+    try:
+        with json_path.open() as f:
+            data: dict[str, str] = json.load(f)
+            return data.get("event_url")
+
+    except (json.JSONDecodeError, KeyError):
+        return None
 
 
 def load_csv_file(
     input_file: str,
-) -> pl.DataFrame:
+) -> tuple[pl.DataFrame, str, datetime, str | None]:
     """Load and process a single CSV file.
 
     Args:
         input_file: Path to the CSV file
 
     Returns:
-        Processed DataFrame with metadata
+        Tuple of (processed DataFrame with metadata, source, parsed_date, event_url)
     """
     file_path: Path = Path(input_file)
     if not file_path.exists():
@@ -107,7 +141,53 @@ def load_csv_file(
         msg = f"File must be a CSV file: {input_file}"
         raise ValueError(msg)
 
-    return process_csv_file(path=file_path)
+    source: str
+    parsed_date: datetime
+    source, parsed_date = parse_filename_metadata(filename=file_path.stem)
+    event_url: str | None = load_event_url_from_json(csv_path=file_path)
+    dataframe: pl.DataFrame = process_csv_file(
+        path=file_path,
+        source=source,
+        parsed_date=parsed_date,
+        event_url=event_url,
+    )
+    return dataframe, source, parsed_date, event_url
+
+
+def load_csv_files_from_folder(
+    input_folder: str,
+) -> Iterator[tuple[pl.DataFrame, str, datetime, str | None]]:
+    """Load and process all CSV files in a folder.
+
+    Args:
+        input_folder: Path to the folder containing CSV files
+
+    Yields:
+        Tuples of (processed DataFrame with metadata, source, parsed_date, event_url)
+    """
+    folder_path: Path = Path(input_folder)
+    if not folder_path.exists():
+        msg = f"Folder not found: {input_folder}"
+        raise FileNotFoundError(msg)
+
+    if not folder_path.is_dir():
+        msg = f"Path is not a directory: {input_folder}"
+        raise ValueError(msg)
+
+    csv_files: list[Path] = list(folder_path.glob("*.csv"))
+    if not csv_files:
+        msg = f"No CSV files found in folder: {input_folder}"
+        raise ValueError(msg)
+
+    for csv_file in sorted(csv_files):
+        dataframe: pl.DataFrame
+        source: str
+        parsed_date: datetime
+        event_url: str | None
+        dataframe, source, parsed_date, event_url = load_csv_file(
+            input_file=str(csv_file),
+        )
+        yield dataframe, source, parsed_date, event_url
 
 
 def create_attendees_generator(
@@ -133,17 +213,23 @@ def create_attendees_generator(
 
 def ensure_output_directory(
     bucket_name: str,
+    source: str,
+    parsed_date: datetime,
 ) -> Path:
-    """Create and return the output directory path.
+    """Create and return the output directory path with date-source subfolder.
 
     Args:
         bucket_name: Name of the bucket/directory
+        source: Source name for the subfolder
+        parsed_date: Date for the subfolder
 
     Returns:
         Path to the output directory
     """
     cwd: str = str(Path.cwd())
-    output_dir: Path = Path(f"{cwd}/out/{bucket_name}")
+    date_str: str = parsed_date.strftime("%Y%m%d")
+    subfolder: str = f"{date_str}-{source}"
+    output_dir: Path = Path(f"{cwd}/out/{bucket_name}/{subfolder}")
     output_dir.mkdir(
         parents=True,
         exist_ok=True,
@@ -164,7 +250,6 @@ def write_attendee_to_file(
     output_file_path: Path = output_dir / attendee.etl_get_file_name(
         extension=".jsonl",
     )
-
     with output_file_path.open(mode="w") as f:
         f.write(
             attendee.model_dump_json(
@@ -189,28 +274,100 @@ def process_attendees_lazy(
     count: int = 0
     for attendee in attendees:
         count += 1
-        write_attendee_to_file(attendee=attendee, output_dir=output_dir)
+        write_attendee_to_file(
+            attendee=attendee,
+            output_dir=output_dir,
+        )
 
     return count
 
 
-@app.local_entrypoint()
-def local(
-    input_file: str,
-    event_url: str | None,
+def create_aggregate_csv(
+    input_folder: str,
 ) -> None:
-    """Main entry point for processing a single CSV file to EventAttendee JSON files.
+    """Create an aggregate CSV file with all attendees from all processed files.
 
     Args:
-        input_file: Path to the CSV file
+        input_folder: Path to the folder containing CSV files and corresponding JSON files
     """
-    # Load and process the single CSV file
-    dataframe: pl.DataFrame = load_csv_file(input_file=input_file)
-    attendees_gen: Iterator[EventAttendee] = create_attendees_generator(
-        dataframe=dataframe,
-        event_url=event_url,
-    )
-    output_dir: Path = ensure_output_directory(bucket_name=BUCKET_NAME)
-    count: int = process_attendees_lazy(attendees=attendees_gen, output_dir=output_dir)
+    all_dataframes: list[pl.DataFrame] = []
 
-    print(f"{count:06d}: {output_dir}")
+    # Get all EventAttendee field names as standard columns
+    standard_columns: list[str] = EventAttendee.get_field_names()
+
+    # Collect all dataframes
+    for dataframe, _source, _parsed_date, _event_url in load_csv_files_from_folder(
+        input_folder=input_folder,
+    ):
+        # The dataframe already has the base EventAttendee columns from process_csv_file
+        # Select only the standard columns that exist, add missing ones as null
+        df_standardized: pl.DataFrame = dataframe.select(
+            [
+                (
+                    pl.col(col).alias(col)
+                    if col in dataframe.columns
+                    else pl.lit(None).alias(col)
+                )
+                for col in standard_columns
+            ],
+        )
+
+        all_dataframes.append(df_standardized)
+
+    if not all_dataframes:
+        print("No dataframes to aggregate")
+        return
+
+    # Combine all dataframes - they now have the same schema
+    combined_df: pl.DataFrame = pl.concat(all_dataframes, how="vertical")
+
+    # Create aggregate output directory
+    cwd: str = str(Path.cwd())
+    aggregate_dir: Path = Path(f"{cwd}/out/{BUCKET_NAME}")
+    aggregate_dir.mkdir(parents=True, exist_ok=True)
+
+    # Write aggregate CSV
+    aggregate_file: Path = aggregate_dir / "aggregate.csv"
+    combined_df.write_csv(file=aggregate_file)
+
+    print(f"Aggregate CSV created: {aggregate_file} ({len(combined_df)} total records)")
+
+
+@app.local_entrypoint()
+def local(
+    input_folder: str,
+) -> None:
+    """Main entry point for processing all CSV files in a folder to EventAttendee JSON files.
+
+    Args:
+        input_folder: Path to the folder containing CSV files and corresponding JSON files
+    """
+    total_count: int = 0
+    processed_files: int = 0
+
+    # Process all CSV files in the folder
+    for dataframe, source, parsed_date, event_url in load_csv_files_from_folder(
+        input_folder=input_folder,
+    ):
+        attendees_gen: Iterator[EventAttendee] = create_attendees_generator(
+            dataframe=dataframe,
+            event_url=event_url,
+        )
+        output_dir: Path = ensure_output_directory(
+            bucket_name=BUCKET_NAME,
+            source=source,
+            parsed_date=parsed_date,
+        )
+        count: int = process_attendees_lazy(
+            attendees=attendees_gen,
+            output_dir=output_dir,
+        )
+        processed_files += 1
+        total_count += count
+        event_url_display: str = event_url or "No event URL"
+        print(f"{count:06d}: {output_dir} | {event_url_display}")
+
+    print(f"\nProcessed {processed_files} files with {total_count} total attendees")
+
+    # Create aggregate CSV
+    create_aggregate_csv(input_folder=input_folder)
