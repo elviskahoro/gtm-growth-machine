@@ -43,7 +43,7 @@ class LinkedinConnection(BaseModel):
         return connected_on.isoformat()
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)
 def test_parse_linkedin_date_valid_input() -> None:
     """Test parsing a valid LinkedIn date string."""
     from datetime import datetime, timezone
@@ -360,4 +360,4 @@ def test_linkedin_connection_datetime_fields() -> None:
     assert isinstance(connection.timestamp, datetime)
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)

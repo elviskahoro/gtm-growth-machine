@@ -33,7 +33,7 @@ def sanitize_string(
     )
 
 
-# trunk-ignore-begin(ruff/S101,ruff/PLC0415)
+# trunk-ignore-begin(ruff/S101)
 def test_sanitize_string_basic_characters() -> None:
     """Test sanitizing basic problematic filesystem characters."""
     # Test individual character replacements
@@ -332,4 +332,4 @@ def test_sanitize_string_performance() -> None:
         assert duration < 1.0  # Should complete in less than 1 second
 
 
-# trunk-ignore-end(ruff/S101,ruff/PLC0415)
+# trunk-ignore-end(ruff/S101)

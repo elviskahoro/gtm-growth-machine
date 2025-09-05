@@ -24,7 +24,7 @@ class Meeting(BaseModel):
     invitees: list[Invitee] | None
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)
 def test_external_domain_valid() -> None:
     """Test creating a valid ExternalDomain instance."""
     domain: ExternalDomain = ExternalDomain(domain_name="example.com")
@@ -391,4 +391,4 @@ def test_meeting_edge_cases() -> None:
     assert meeting_empty_url.join_url == ""
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)

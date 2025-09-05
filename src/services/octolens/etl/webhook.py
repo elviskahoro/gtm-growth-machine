@@ -73,7 +73,7 @@ class Webhook(BaseModel):
         raise NotImplementedError(error)
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)
 def test_webhook_initialization() -> None:
     """Test Webhook model initialization with valid data."""
     mention_data: dict[str, str] = {
@@ -481,4 +481,4 @@ def test_webhook_model_fields() -> None:
     assert len(fields) == 2
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)

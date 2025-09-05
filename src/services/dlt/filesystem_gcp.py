@@ -214,7 +214,7 @@ class CloudGoogle:
         CloudGoogle.to_filesystem_gcs(destination_file_data)
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,ruff/PLC0415)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101)
 def test_clean_bucket_name() -> None:
     """Test clean_bucket_name replaces hyphens with underscores."""
     assert CloudGoogle.clean_bucket_name("my-bucket-name") == "my_bucket_name"
@@ -709,4 +709,4 @@ def test_to_filesystem_creates_directory_for_local_path() -> None:
             globals()["to_filesystem_local"] = original_func
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,ruff/PLC0415)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101)

@@ -50,7 +50,7 @@ class EventAttendee(BaseModel):
         return f"{self.source}-{self.created_at.strftime('%Y%m%d_%H%M%S')}{extension}".lower()
 
 
-# trunk-ignore-begin(ruff/S101,ruff/PLC0415,ruff/PGH003)
+# trunk-ignore-begin(ruff/S101,ruff/PGH003)
 def test_event_attendee_model_creation() -> None:
     """Test creating EventAttendee instances with various field combinations."""
     from datetime import timezone
@@ -237,4 +237,4 @@ def test_etl_get_file_name_email_priority() -> None:
     assert "john·doe" not in filename
 
 
-# trunk-ignore-end(ruff/S101,ruff/PLC0415,ruff/PGH003)
+# trunk-ignore-end(ruff/S101,ruff/PGH003)

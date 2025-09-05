@@ -28,7 +28,7 @@ def init_client(
     )
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,ruff/PLC0415)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101)
 def test_lancedb_region_constant() -> None:
     """Test that LANCEDB_REGION constant has the expected value."""
     assert LANCEDB_REGION == "us-east-1"
@@ -323,4 +323,4 @@ def test_init_client_error_message_content() -> None:
         assert isinstance(exc_info.value, ValueError)
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,ruff/PLC0415)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101)

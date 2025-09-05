@@ -21,7 +21,7 @@ def to_filesystem_local(
             )
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,ruff/PLC0415)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101)
 class TestContentGenerator:
     """Test content generator class providing various file types and scenarios for testing."""
 
@@ -706,4 +706,4 @@ def test_to_filesystem_local_partial_write_failure() -> None:
         assert call_count == 3
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,ruff/PLC0415)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101)

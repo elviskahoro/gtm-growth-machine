@@ -133,7 +133,7 @@ class Webhook(BaseModel):
         )
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,ruff/ANN401,ruff/PLC0415)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101,ruff/ANN401)
 class TestWebhookUtilities:
     """Test utilities for creating mock Webhook components and instances."""
 
@@ -451,4 +451,4 @@ def test_etl_get_json_empty_iterator() -> None:
     assert result == ""
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,ruff/ANN401,ruff/PLC0415)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101,ruff/ANN401)

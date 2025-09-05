@@ -143,7 +143,7 @@ class Mention(BaseModel):
         return f"{source}-{keyword}-{timestamp}-{author}{extension}"
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)
 def test_mention_initialization_with_required_fields() -> None:
     """Test Mention model initialization with all required fields."""
     mention_data: dict[str, str | bool] = {
@@ -673,4 +673,4 @@ def test_timestamp_edge_cases() -> None:
         Mention(**{**base_data, "timestamp": "not-a-date"})
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)

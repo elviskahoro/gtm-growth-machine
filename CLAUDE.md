@@ -117,13 +117,13 @@ This project uses a unique testing approach:
 
 ```python
 # At the bottom of each .py file:
-# trunk-ignore-begin(ruff/ANN002,ruff/ANN003,ruff/BLE001,ruff/PLC0415,ruff/PLR0912,ruff/PLR0915,ruff/PLR2004,ruff/S101)
+# trunk-ignore-begin(ruff/ANN002,ruff/ANN003,ruff/BLE001,ruff/PLR0912,ruff/PLR0915,ruff/PLR2004,ruff/S101)
 
 def test_function_name() -> None:
     """Test description."""
     # Test implementation
 
-# trunk-ignore-end(ruff/ANN002,ruff/ANN003,ruff/BLE001,ruff/PLC0415,ruff/PLR0912,ruff/PLR0915,ruff/PLR2004,ruff/S101)
+# trunk-ignore-end(ruff/ANN002,ruff/ANN003,ruff/BLE001,ruff/PLR0912,ruff/PLR0915,ruff/PLR2004,ruff/S101)
 ```
 
 ### Test Collection Configuration

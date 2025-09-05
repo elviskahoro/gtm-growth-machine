@@ -13,7 +13,7 @@ class Storage(BaseModel):
     )
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)
 def test_storage_creation_default() -> None:
     """Test creating Storage with default empty speakers list."""
     storage: Storage = Storage()
@@ -367,4 +367,4 @@ def test_storage_repr() -> None:
     assert "speakers_internal" in repr_str
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)

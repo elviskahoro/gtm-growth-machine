@@ -360,7 +360,7 @@ def local(
     )
 
 
-# trunk-ignore-begin(ruff/PLC0415,ruff/PLR2004,ruff/S101)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101)
 def test_config_set_branch() -> None:
     """Test Config class branch setting functionality."""
     config = Config()
@@ -764,4 +764,4 @@ def test_otel_connection() -> None:
     )
 
 
-# trunk-ignore-end(ruff/PLC0415,ruff/PLR2004,ruff/S101)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101)

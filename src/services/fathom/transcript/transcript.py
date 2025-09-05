@@ -5,7 +5,7 @@ class Transcript(BaseModel):
     plaintext: str
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,ruff/PLC0415)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101)
 def test_transcript_creation_with_valid_plaintext() -> None:
     """Test creating a Transcript with valid plaintext."""
     plaintext: str = "This is a sample transcript."
@@ -132,4 +132,4 @@ def test_transcript_from_dict() -> None:
     assert transcript.plaintext == "Transcript from dict"
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,ruff/PLC0415)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101)

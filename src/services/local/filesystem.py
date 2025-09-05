@@ -212,7 +212,7 @@ class DestinationFileData(NamedTuple):
                 raise
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,ruff/PLC0415)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101)
 def test_file_utility_get_paths_valid_directory() -> None:
     """Test FileUtility.get_paths with a valid directory."""
     import tempfile
@@ -871,4 +871,4 @@ def test_destination_file_data_with_storage_parameter() -> None:
     assert results[0].path == "gs://bucket/test.json"
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,ruff/PLC0415)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101)

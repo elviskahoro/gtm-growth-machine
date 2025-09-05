@@ -276,7 +276,7 @@ class TranscriptMessage(BaseModel):
             yield current_transcript_message
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)
 def test_gemini_get_column_to_embed() -> None:
     assert TranscriptMessage.gemini_get_column_to_embed() == "message"
 
@@ -864,4 +864,4 @@ def test_parse_timestamp_line_hh_mm_ss_format() -> None:
     assert result.timestamp == 3930  # 1*3600 + 5*60 + 30
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)

@@ -101,7 +101,7 @@ def embed_with_gemini(
         yield embedded_data
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,ruff/PLC0415)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101)
 def test_init_client_with_default_location() -> None:
     """Test init_client with default location parameter."""
     from unittest.mock import patch
@@ -316,4 +316,4 @@ def test_embed_model_dump_behavior() -> None:
     assert result[0]["embedding"] == [0.1, 0.2, 0.3]
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,ruff/PLC0415)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101)

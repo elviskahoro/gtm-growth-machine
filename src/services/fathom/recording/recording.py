@@ -37,7 +37,7 @@ class Recording(BaseModel):
                 raise AssertionError(error_msg)
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)
 def test_recording_model_creation() -> None:
     """Test that Recording model can be created with valid data."""
     recording: Recording = Recording(
@@ -201,4 +201,4 @@ def test_get_recording_id_edge_case_long_ids() -> None:
     assert recording_share.get_recording_id_from_url() == "AbCdEf123456_-XyZ789"
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)

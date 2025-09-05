@@ -7,7 +7,7 @@ class FathomUser(BaseModel):
     team: str
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)
 def test_fathom_user_creation() -> None:
     """Test basic FathomUser creation with valid data."""
     user: FathomUser = FathomUser(
@@ -164,4 +164,4 @@ def test_fathom_user_extra_fields_ignored() -> None:
     assert not hasattr(user, "another_extra")
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)

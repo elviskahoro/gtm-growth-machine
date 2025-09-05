@@ -110,7 +110,7 @@ class Webhook(BaseModel):
         raise NotImplementedError(error)
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)
 class TestWebhookFixtures:
     """Test fixtures and utilities for Webhook testing."""
 
@@ -579,4 +579,4 @@ def test_model_dump_called_in_etl_get_json() -> None:
         mock_model_dump.assert_called_once_with(mode="json")
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType,ruff/PLC0415)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101,pyright/reportArgumentType)

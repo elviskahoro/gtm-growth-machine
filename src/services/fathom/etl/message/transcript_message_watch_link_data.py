@@ -27,7 +27,7 @@ class TranscriptMessageWatchLinkData(NamedTuple):
         raise ValueError(error_msg)
 
 
-# trunk-ignore-begin(ruff/S101,ruff/PLC0415)
+# trunk-ignore-begin(ruff/S101)
 def test_parse_watch_link_basic_url() -> None:
     """Test parsing a basic watch link with HTTPS URL."""
     content: str = "- WATCH: https://example.com/watch"
@@ -248,4 +248,4 @@ def test_named_tuple_with_none_values() -> None:
     assert data[1] is None
 
 
-# trunk-ignore-end(ruff/S101,ruff/PLC0415)
+# trunk-ignore-end(ruff/S101)

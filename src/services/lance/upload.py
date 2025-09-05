@@ -254,7 +254,7 @@ def upload_to_lance(
             )
 
 
-# trunk-ignore-begin(ruff/ANN002,ruff/ANN003,ruff/BLE001,ruff/PLC0415,ruff/PLR0912,ruff/PLR0915,ruff/PLR2004,ruff/S101)
+# trunk-ignore-begin(ruff/ANN002,ruff/ANN003,ruff/BLE001,ruff/PLR0912,ruff/PLR0915,ruff/PLR2004,ruff/S101)
 class TestLanceUpload:
     """Test helper class containing setup methods for lance upload tests."""
 
@@ -702,4 +702,4 @@ def test_complex_error_message_parsing() -> None:
         assert error_type == expected_type
 
 
-# trunk-ignore-end(ruff/ANN002,ruff/ANN003,ruff/BLE001,ruff/PLC0415,ruff/PLR0912,ruff/PLR0915,ruff/PLR2004,ruff/S101)
+# trunk-ignore-end(ruff/ANN002,ruff/ANN003,ruff/BLE001,ruff/PLR0912,ruff/PLR0915,ruff/PLR2004,ruff/S101)

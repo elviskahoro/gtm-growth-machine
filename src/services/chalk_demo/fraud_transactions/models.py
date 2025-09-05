@@ -18,9 +18,9 @@ class Base(DeclarativeBase):
     @staticmethod
     def create_database_connection() -> tuple[Engine, sessionmaker[Session]]:
         """Create database connection using Modal secrets."""
-        import os  # trunk-ignore(ruff/PLC0415)
+        import os
 
-        from sqlalchemy import create_engine  # trunk-ignore(ruff/PLC0415)
+        from sqlalchemy import create_engine
 
         database_user: str = os.environ["DB_USER"]
         database_password: str = os.environ["DB_PASSWORD"]

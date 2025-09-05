@@ -197,7 +197,7 @@ def main(
 ) -> None:
     def create_openai_client() -> AsyncOpenAI:
         """Create OpenAI client using Modal secrets."""
-        import os  # trunk-ignore(ruff/PLC0415)
+        import os
 
         openai_api_token: str = os.environ["OPENAI_API_KEY"]
         return AsyncOpenAI(api_key=openai_api_token)

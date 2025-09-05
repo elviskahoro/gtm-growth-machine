@@ -123,7 +123,7 @@ class SrtFile(NamedTuple):
         )
 
 
-# trunk-ignore-begin(ruff/PLR2004,ruff/S101,ruff/PLC0415)
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101)
 def test_srt_file_from_file_content_valid() -> None:
     """Test successful parsing of valid SRT file content."""
     lines: list[str] = [
@@ -456,4 +456,4 @@ def test_srt_file_namedtuple_field_access() -> None:
     assert result[6] == result.full_text
 
 
-# trunk-ignore-end(ruff/PLR2004,ruff/S101,ruff/PLC0415)
+# trunk-ignore-end(ruff/PLR2004,ruff/S101)
