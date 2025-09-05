@@ -12,10 +12,10 @@ from modal import Image
 from openai import AsyncOpenAI
 from sqlalchemy import extract, func
 
-from src.services.chalk_example_fraud.transactions.data_gen.generator import (
+from src.services.chalk_demo.fraud_transactions.data_gen.generator import (
     generate_receipts_from_transactions,
 )
-from src.services.chalk_example_fraud.transactions.models import (
+from src.services.chalk_demo.fraud_transactions.models import (
     Base,
     Transaction,
     TransactionReceipt,

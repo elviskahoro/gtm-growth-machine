@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
     from openai import AsyncOpenAI
 
-from src.services.chalk_example_fraud.transactions.models import (
+from src.services.chalk_demo.fraud_transactions.models import (
     TransactionReceipt,
 )
 
