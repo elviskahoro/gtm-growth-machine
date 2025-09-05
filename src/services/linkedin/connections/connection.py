@@ -103,7 +103,7 @@ def test_parse_linkedin_date_invalid_format() -> None:
     for invalid_date in invalid_dates:
         with pytest.raises(
             ValueError,
-            match="time data .* does not match format|unconverted data remains",
+            match=r"time data .* does not match format|unconverted data remains",
         ):
             LinkedinConnection.parse_linkedin_date(invalid_date)
 

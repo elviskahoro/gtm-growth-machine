@@ -24,21 +24,21 @@ if TYPE_CHECKING:
     from pydantic import BaseModel
 
 # trunk-ignore-begin(ruff/F401,ruff/I001,pyright/reportUnusedImport)
-# fmt: off
-from src.services.fathom.etl.message import (
-    Webhook as FathomMessageWebhook,
-)
-from src.services.octolens.etl import (
-    Webhook as OctolensWebhook,
-)
 from src.services.chalk_demo.fraud_transactions.webhook import (
-    Webhook,
+    Webhook as FraudTransactionWebhook,  # noqa: F401
 )
-# fmt: on
+from src.services.chalk_demo.marketplace_product.webhook import (
+    Webhook as MarketplaceProductWebhook,  # noqa: F401
+)
+from src.services.fathom.etl.message import (
+    Webhook as FathomMessageWebhook,  # noqa: F401
+)
+from src.services.octolens.etl import Webhook as OctolensWebhook  # noqa: F401
+
 # trunk-ignore-end(ruff/F401,ruff/I001,pyright/reportUnusedImport)
 
 
-class WebhookModel(Webhook):  # type: ignore # trunk-ignore(ruff/F821)
+class WebhookModel(MarketplaceProductWebhook):  # type: ignore # trunk-ignore(ruff/F821)
     pass
 
 
