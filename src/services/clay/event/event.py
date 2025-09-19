@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 class EventAttendee(BaseModel):
     name: str | None = None
     email: str | None = None
+    company: str | None = None
     source: str
     event_url: str | None = None
     created_at: datetime

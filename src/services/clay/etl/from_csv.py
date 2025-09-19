@@ -371,3 +371,78 @@ def local(
 
     # Create aggregate CSV
     create_aggregate_csv(input_folder=input_folder)
+
+
+# trunk-ignore-begin(ruff/PLR2004,ruff/S101)
+
+
+def test_csv_processing_with_company_field() -> None:
+    """Test that CSV processing correctly handles the company field."""
+    import csv
+    import tempfile
+
+    # Create a temporary CSV file with company data
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
+        writer = csv.writer(f)
+        writer.writerow(["name", "email", "company"])
+        writer.writerow(["John Doe", "john@example.com", "Acme Corp"])
+        writer.writerow(["Jane Smith", "jane@example.com", "Tech Inc"])
+        csv_path = f.name
+
+    try:
+        # Load the CSV file
+        dataframe, _, _, event_url = load_csv_file(csv_path)
+
+        # Verify the DataFrame has the company column
+        assert "company" in dataframe.columns
+
+        # Create attendees generator
+        attendees_gen = create_attendees_generator(dataframe, event_url)
+        attendees_list = list(attendees_gen)
+
+        # Verify attendees have company data
+        assert len(attendees_list) == 2
+        assert attendees_list[0].company == "Acme Corp"
+        assert attendees_list[1].company == "Tech Inc"
+        assert attendees_list[0].name == "John Doe"
+        assert attendees_list[1].name == "Jane Smith"
+
+    finally:
+        # Clean up
+        Path(csv_path).unlink()
+
+
+def test_csv_processing_without_company_field() -> None:
+    """Test that CSV processing works when company field is missing."""
+    import csv
+    import tempfile
+
+    # Create a temporary CSV file without company data
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
+        writer = csv.writer(f)
+        writer.writerow(["name", "email"])
+        writer.writerow(["John Doe", "john@example.com"])
+        writer.writerow(["Jane Smith", "jane@example.com"])
+        csv_path = f.name
+
+    try:
+        # Load the CSV file
+        dataframe, _, _, event_url = load_csv_file(csv_path)
+
+        # Create attendees generator
+        attendees_gen = create_attendees_generator(dataframe, event_url)
+        attendees_list = list(attendees_gen)
+
+        # Verify attendees have None for company
+        assert len(attendees_list) == 2
+        assert attendees_list[0].company is None
+        assert attendees_list[1].company is None
+        assert attendees_list[0].name == "John Doe"
+        assert attendees_list[1].name == "Jane Smith"
+
+    finally:
+        # Clean up
+        Path(csv_path).unlink()
+
+
+# trunk-ignore-end(ruff/PLR2004,ruff/S101)
