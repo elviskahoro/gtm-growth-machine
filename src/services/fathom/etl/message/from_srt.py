@@ -7,6 +7,10 @@ from typing import TYPE_CHECKING, NamedTuple
 import modal
 from modal import Image
 from pydantic import ValidationError
+from src.services.fathom.etl._srt_file import SrtFile
+from src.services.fathom.etl.webhook import (
+    Webhook,
+)
 from uuid_extensions import uuid7
 
 from src.services.dlt.destination_type import (
@@ -14,10 +18,6 @@ from src.services.dlt.destination_type import (
 )
 from src.services.dlt.filesystem_gcp import CloudGoogle
 from src.services.dlt.filesystem_local import to_filesystem_local
-from src.services.fathom.etl._srt_file import SrtFile
-from src.services.fathom.etl.webhook import (
-    Webhook,
-)
 from src.services.fathom.meeting import Meeting
 from src.services.fathom.recording import Recording
 from src.services.fathom.transcript import Transcript
