@@ -9,4 +9,6 @@ collect_ignore = [
     "src/services/octolens/etl/from_csv.py",
     "src/services/fathom/etl/message/from_srt.py",
     "src/services/runner/export_to_modal_storage.py",
+    "src/services/runner/export_to_gcp_etl.py",
+    "src/services/fathom/etl/call/backfill.py",
 ]

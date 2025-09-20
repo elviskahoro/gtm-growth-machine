@@ -1,0 +1,28 @@
+# Base requirements (from requirements.txt)
+-r requirements.txt
+
+# Database drivers for development/testing
+psycopg2-binary
+
+# Testing dependencies
+pytest>=7.0.0
+pytest-xdist>=3.0.0
+pytest-anyio
+pytest-mock
+
+# Development tools
+black
+ruff
+
+# Type checking
+mypy
+types-requests
+
+# Documentation
+sphinx
+sphinx-rtd-theme
+
+# Other development utilities
+ipython
+jupyter
+pre-commit
