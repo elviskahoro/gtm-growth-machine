@@ -282,25 +282,31 @@ def process_attendees_lazy(
     return count
 
 
-def create_aggregate_csv(
+def write_aggregate_csv_streaming(
     input_folder: str,
 ) -> None:
-    """Create an aggregate CSV file with all attendees from all processed files.
+    """Create an aggregate CSV file by streaming through files without loading all into memory.
 
     Args:
-        input_folder: Path to the folder containing CSV files and corresponding JSON files
+        input_folder: Path to the folder containing CSV files
     """
-    all_dataframes: list[pl.DataFrame] = []
+    # Create aggregate output directory
+    cwd: str = str(Path.cwd())
+    aggregate_dir: Path = Path(f"{cwd}/out/{BUCKET_NAME}")
+    aggregate_dir.mkdir(parents=True, exist_ok=True)
+    aggregate_file: Path = aggregate_dir / "aggregate.csv"
 
     # Get all EventAttendee field names as standard columns
     standard_columns: list[str] = EventAttendee.get_field_names()
 
-    # Collect all dataframes
+    total_records: int = 0
+    is_first_file: bool = True
+
+    # Stream through files one at a time
     for dataframe, _source, _parsed_date, _event_url in load_csv_files_from_folder(
         input_folder=input_folder,
     ):
-        # The dataframe already has the base EventAttendee columns from process_csv_file
-        # Select only the standard columns that exist, add missing ones as null
+        # Standardize the schema for this dataframe
         df_standardized: pl.DataFrame = dataframe.select(
             [
                 (
@@ -312,25 +318,24 @@ def create_aggregate_csv(
             ],
         )
 
-        all_dataframes.append(df_standardized)
+        # Write to CSV (append mode after first file)
+        if is_first_file:
+            # First file: create new CSV with headers
+            df_standardized.write_csv(file=aggregate_file)
+            is_first_file = False
+        else:
+            # Subsequent files: append without headers
+            with aggregate_file.open(mode="a") as f:
+                df_standardized.write_csv(file=f, include_header=False)
 
-    if not all_dataframes:
-        print("No dataframes to aggregate")
-        return
+        total_records += len(df_standardized)
 
-    # Combine all dataframes - they now have the same schema
-    combined_df: pl.DataFrame = pl.concat(all_dataframes, how="vertical")
-
-    # Create aggregate output directory
-    cwd: str = str(Path.cwd())
-    aggregate_dir: Path = Path(f"{cwd}/out/{BUCKET_NAME}")
-    aggregate_dir.mkdir(parents=True, exist_ok=True)
-
-    # Write aggregate CSV
-    aggregate_file: Path = aggregate_dir / "aggregate.csv"
-    combined_df.write_csv(file=aggregate_file)
-
-    print(f"Aggregate CSV created: {aggregate_file} ({len(combined_df)} total records)")
+    if total_records > 0:
+        print(
+            f"Aggregate CSV created: {aggregate_file} ({total_records} total records)",
+        )
+    else:
+        print("No records to aggregate")
 
 
 @app.local_entrypoint()
@@ -345,7 +350,7 @@ def local(
     total_count: int = 0
     processed_files: int = 0
 
-    # Process all CSV files in the folder
+    # Process all CSV files in the folder - streaming one at a time
     for dataframe, source, parsed_date, event_url in load_csv_files_from_folder(
         input_folder=input_folder,
     ):
@@ -369,13 +374,11 @@ def local(
 
     print(f"\nProcessed {processed_files} files with {total_count} total attendees")
 
-    # Create aggregate CSV
-    create_aggregate_csv(input_folder=input_folder)
+    # Create aggregate CSV using streaming approach (no dataframes stored in memory)
+    write_aggregate_csv_streaming(input_folder=input_folder)
 
 
 # trunk-ignore-begin(ruff/PLR2004,ruff/S101)
-
-
 def test_csv_processing_with_company_field() -> None:
     """Test that CSV processing correctly handles the company field."""
     import csv
