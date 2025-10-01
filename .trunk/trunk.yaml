@@ -14,7 +14,7 @@ plugins:
 
     - id: oss-linter-trunk
 
-      ref: v0.2025.09.04.16.27
+      ref: v0.2025.10.01.16.01
       uri: https://github.com/elviskahoro/oss-linter-trunk
 
 # This is the section where you manage your linters. (https://docs.trunk.io/check/configuration)
