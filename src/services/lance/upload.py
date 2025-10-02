@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import time
-from datetime import timedelta
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 
@@ -80,7 +79,7 @@ def _execute_merge_insert_with_retry(
                 new_data=data_to_upload,
             )
 
-        except (ValueError, RuntimeError, ConnectionError, TimeoutError) as e:
+        except (ValueError, RuntimeError, ConnectionError, TimeoutError, Exception) as e:
             # Parse the error to determine if it's rate limited
             # This catches both requests.HTTPError and LanceDB's HttpError/RetryError
             try:
@@ -184,29 +183,29 @@ def _handle_merge_insert_error(
         error_type: LanceTableExistenceErrorType = (
             LanceTableExistenceErrorType.parse_existence_error(exception)
         )
+        print(f"📋 Parsed error type: {error_type}")
         match error_type:
             case LanceTableExistenceErrorType.RATE_LIMITED:
                 # Re-raise to let the retry logic in _execute_merge_insert_with_retry handle it
                 raise exception
 
             case LanceTableExistenceErrorType.MAX_UNINDEXED_ROWS_EXCEEDED:
-                # Create index and retry
+                # Inform user to create index using the standalone script
+                print("\n" + "=" * 80)
+                print("❌ ERROR: Maximum unindexed rows exceeded")
+                print("=" * 80)
                 print(
-                    f"Creating scalar index on column '{primary_key}' with type '{primary_key_index_type}' (this may take a while for large datasets...)",
+                    "\nThe number of unindexed rows in table exceeds the maximum of 10,000.",
                 )
-                tbl.create_scalar_index(
-                    column=primary_key,
-                    index_type=primary_key_index_type,  # type: ignore[arg-type]
-                    replace=True,
-                    wait_timeout=timedelta(minutes=10),
+                print(
+                    f"An index on column '{primary_key}' is required before data can be uploaded.",
                 )
-                print("Index creation completed successfully")
-                # Retry the operation after creating the index
-                _execute_merge_insert_with_retry(
-                    tbl=tbl,
-                    primary_key=primary_key,
-                    data_to_upload=data_to_upload,
-                )
+                print("\n📝 To fix this issue, run the index creation script:")
+                print("\n    python scripts/create_lancedb_index.py")
+                print("\nThis will create the required index and take 5-15 minutes.")
+                print("After the index is created, re-run your upload operation.")
+                print("=" * 80 + "\n")
+                raise exception
 
             case _:
                 raise exception
@@ -244,7 +243,9 @@ def upload_to_lance(
                 data_to_upload=data_to_upload,
             )
 
-        except (ValueError, RuntimeError, ConnectionError, TimeoutError) as exception:
+        except (ValueError, RuntimeError, ConnectionError, TimeoutError, Exception) as exception:
+            print(f"\n🔍 Caught exception during merge insert: {type(exception).__name__}")
+            print(f"Exception message: {str(exception)[:200]}...")
             _handle_merge_insert_error(
                 tbl=tbl,
                 primary_key=primary_key,
@@ -412,36 +413,30 @@ def test_rate_limiting_triggers_retry() -> None:
 
 
 def test_max_unindexed_rows_triggers_index_creation() -> None:
-    """Test case 3: Max unindexed rows error triggers index creation."""
-    from datetime import timedelta
+    """Test case 3: Max unindexed rows error shows user message and re-raises."""
     from unittest.mock import Mock
+
+    import pytest
 
     test_data: list[dict[str, str]] = TestLanceUpload.get_common_test_data()
     mock_table: Mock = Mock()
-    mock_table.create_scalar_index.return_value = None
-
-    # Create a mock for merge_insert chain
-    merge_insert_mock: Mock = TestLanceUpload.create_merge_insert_mock()
-    merge_insert_mock.execute.return_value = None
-    mock_table.merge_insert.return_value = merge_insert_mock
 
     max_rows_exception: ValueError = ValueError(
         "The number of un-indexed rows in the table exceeds the maximum allowed",
     )
 
-    _handle_merge_insert_error(
-        tbl=mock_table,
-        primary_key="id",
-        primary_key_index_type="BTREE",
-        data_to_upload=test_data,
-        exception=max_rows_exception,
-    )
-    mock_table.create_scalar_index.assert_called_once_with(
-        column="id",
-        index_type="BTREE",
-        replace=True,
-        wait_timeout=timedelta(minutes=10),
-    )
+    # Should re-raise the exception after showing user message
+    with pytest.raises(
+        ValueError,
+        match="number of un-indexed rows",
+    ):
+        _handle_merge_insert_error(
+            tbl=mock_table,
+            primary_key="id",
+            primary_key_index_type="BTREE",
+            data_to_upload=test_data,
+            exception=max_rows_exception,
+        )
 
 
 def test_unexpected_errors_are_reraised() -> None:
@@ -631,40 +626,26 @@ def test_non_rate_limiting_errors_immediate_reraise() -> None:
 
 
 def test_index_creation_with_subsequent_failure() -> None:
-    """Test case 5: Index creation with subsequent failure."""
+    """Test case 5: Max unindexed rows error is re-raised."""
     from unittest.mock import Mock
+
+    import pytest
 
     test_data: list[dict[str, str]] = TestLanceUpload.get_common_test_data()
     mock_table: Mock = Mock()
-    mock_table.create_scalar_index.return_value = None
-
-    # Create a mock for merge_insert that fails even after index creation
-    merge_insert_mock: Mock = Mock()
-    merge_insert_mock.when_matched_update_all.return_value = merge_insert_mock
-    merge_insert_mock.when_not_matched_insert_all.return_value = merge_insert_mock
-    merge_insert_mock.execute.side_effect = RuntimeError("Database connection lost")
-    mock_table.merge_insert.return_value = merge_insert_mock
 
     max_rows_exception: ValueError = ValueError(
         "The number of un-indexed rows in the table exceeds the maximum allowed",
     )
 
-    try:
+    # Should re-raise the original exception
+    with pytest.raises(ValueError, match="number of un-indexed rows"):
         _handle_merge_insert_error(
             tbl=mock_table,
             primary_key="id",
             primary_key_index_type="BTREE",
             data_to_upload=test_data,
             exception=max_rows_exception,
-        )
-        msg: str = "Expected failure after index creation and retry"
-        raise AssertionError(msg)
-
-    except (RuntimeError, ValueError) as e:
-        error_msg: str = str(e)
-        assert (
-            "Database connection lost" in error_msg
-            or "number of un-indexed rows" in error_msg
         )
 
 

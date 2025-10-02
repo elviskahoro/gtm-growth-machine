@@ -118,11 +118,53 @@ def _get_existing_primary_keys(
     """
     try:
         tbl = db.open_table(name=table_name)
-        # Query all rows and get just the primary key column
-        result: list[dict[str, str]] = (
-            tbl.search().limit(None).select([primary_key]).to_list()
-        )
-        return {row[primary_key] for row in result}
+
+        # LanceDB Cloud has a 10,000 record limit per query, so we need to paginate
+        existing_keys: set[str] = set()
+        page_size: int = 10000
+        offset: int = 0
+
+        print("Fetching existing primary keys from LanceDB...")
+
+        while True:
+            try:
+                # Fetch a page of primary keys
+                result = (
+                    tbl.search()
+                    .select([primary_key])
+                    .limit(page_size)
+                    .offset(offset)
+                    .to_arrow()
+                )
+
+                # If no results, we've fetched all records
+                if len(result) == 0:
+                    break
+
+                # Add keys from this page
+                page_keys: list[str] = result[primary_key].to_pylist()
+                existing_keys.update(page_keys)
+
+                print(
+                    f"Fetched {len(page_keys):07d} keys (total: {len(existing_keys):07d})",
+                )
+
+                # If we got fewer records than page_size, we've reached the end
+                if len(result) < page_size:
+                    break
+
+                offset += page_size
+
+            except Exception as e:
+                error_msg: str = str(e)
+                if "cannot be bigger than" in error_msg or "limit" in error_msg.lower():
+                    print(
+                        f"Warning: Cannot fetch existing keys due to pagination limits: {error_msg}",
+                    )
+                    return None
+                raise
+
+        return existing_keys
 
     except ValueError as e:
         # Table doesn't exist yet
