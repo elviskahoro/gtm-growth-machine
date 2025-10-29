@@ -17,18 +17,19 @@ class EventAttendee(BaseModel):
     email: str | None = None
     company: str | None = None
     source: str
-    event_url: str | None = None
+    event_url: str
     created_at: datetime
 
     @field_validator("event_url")
     @classmethod
     def validate_event_url(
         cls: type[EventAttendee],
-        v: str | None,
-    ) -> str | None:
+        v: str,
+    ) -> str:
         """Validate and process the event URL."""
-        if v is None:
-            return v
+        if not v:
+            msg = "event_url cannot be empty"
+            raise ValueError(msg)
         # Add any URL validation logic here if needed
         # For example: ensure it's a valid URL format
         return v
@@ -46,14 +47,14 @@ class EventAttendee(BaseModel):
     def get_polars_columns_for_base_model(
         source: str,
         created_at: datetime,
-        event_url: str | None = None,
+        event_url: str,
     ) -> list[pl.Expr]:
         """Generate polars column expressions for EventAttendee base fields.
 
         Args:
             source: The source identifier
             created_at: The creation timestamp
-            event_url: Optional event URL
+            event_url: Event URL (required)
 
         Returns:
             List of polars expressions to add the base model columns
@@ -67,7 +68,7 @@ class EventAttendee(BaseModel):
         field_names: list[str] = EventAttendee.get_field_names()
 
         # Define parameter mapping - what we're providing values for
-        provided_params: dict[str, str | datetime | None] = {
+        provided_params: dict[str, str | datetime] = {
             "source": source,
             "created_at": created_at,
             "event_url": event_url,
@@ -81,11 +82,10 @@ class EventAttendee(BaseModel):
             )
             raise ValueError(msg)
 
-        # Build columns only for parameters that have non-None values
+        # Build columns for all parameters
         columns: list[pl.Expr] = []
         for param_name, param_value in provided_params.items():
-            if param_value is not None:
-                columns.append(pl.lit(param_value).alias(param_name))
+            columns.append(pl.lit(param_value).alias(param_name))
 
         return columns
 
@@ -136,12 +136,13 @@ def test_event_attendee_model_creation() -> None:
     # Test with minimal fields (only required ones)
     minimal_attendee: EventAttendee = EventAttendee(
         source="webinar",
+        event_url="https://example.com/webinar",
         created_at=datetime(2024, 3, 15, 10, 30, 0, tzinfo=timezone.utc),
     )
     assert minimal_attendee.name is None
     assert minimal_attendee.email is None
     assert minimal_attendee.source == "webinar"
-    assert minimal_attendee.event_url is None
+    assert minimal_attendee.event_url == "https://example.com/webinar"
 
 
 def test_etl_get_file_name_with_email() -> None:
@@ -152,6 +153,7 @@ def test_etl_get_file_name_with_email() -> None:
         name="John Doe",
         email="john.doe@example.com",
         source="conference_2024",
+        event_url="https://example.com/event",
         created_at=datetime(2024, 3, 15, 10, 30, 0, tzinfo=timezone.utc),
     )
 
@@ -172,6 +174,7 @@ def test_etl_get_file_name_with_name_only() -> None:
     attendee: EventAttendee = EventAttendee(
         name="Jane Smith",
         source="webinar_2024",
+        event_url="https://example.com/webinar",
         created_at=datetime(2024, 3, 15, 14, 45, 30, tzinfo=timezone.utc),
     )
 
@@ -185,6 +188,7 @@ def test_etl_get_file_name_no_identifier() -> None:
 
     attendee: EventAttendee = EventAttendee(
         source="anonymous_event",
+        event_url="https://example.com/event",
         created_at=datetime(2024, 3, 15, 18, 0, 0, tzinfo=timezone.utc),
     )
 
@@ -200,6 +204,7 @@ def test_etl_get_file_name_special_characters() -> None:
     attendee_special_email: EventAttendee = EventAttendee(
         email="user+tag@sub.domain.com",
         source="special_event",
+        event_url="https://example.com/special",
         created_at=datetime(2024, 3, 15, 12, 0, 0, tzinfo=timezone.utc),
     )
     filename: str = attendee_special_email.etl_get_file_name()
@@ -210,6 +215,7 @@ def test_etl_get_file_name_special_characters() -> None:
     attendee_special_name: EventAttendee = EventAttendee(
         name="John O'Connor Jr.",
         source="irish_event",
+        event_url="https://example.com/irish",
         created_at=datetime(2024, 3, 15, 12, 0, 0, tzinfo=timezone.utc),
     )
     filename: str = attendee_special_name.etl_get_file_name()
@@ -225,6 +231,7 @@ def test_etl_get_file_name_filesystem_unsafe_characters() -> None:
     attendee: EventAttendee = EventAttendee(
         name="Test: User (With) <Special> Characters!",
         source="test/source",
+        event_url="https://example.com/test",
         created_at=datetime(2024, 3, 15, 12, 0, 0, tzinfo=timezone.utc),
     )
     filename: str = attendee.etl_get_file_name()
@@ -240,6 +247,7 @@ def test_etl_get_file_name_case_sensitivity() -> None:
     attendee: EventAttendee = EventAttendee(
         email="John.DOE@EXAMPLE.COM",
         source="UPPERCASE_EVENT",
+        event_url="https://example.com/event",
         created_at=datetime(2024, 3, 15, 12, 0, 0, tzinfo=timezone.utc),
     )
     filename: str = attendee.etl_get_file_name()
@@ -257,14 +265,22 @@ def test_event_attendee_pydantic_validation() -> None:
 
     # Test missing required fields
     with pytest.raises(ValidationError) as exc_info:
-        EventAttendee(source="test")  # type: ignore  # Missing created_at
+        EventAttendee(source="test")  # type: ignore  # Missing created_at and event_url
 
     assert "created_at" in str(exc_info.value)
 
     with pytest.raises(ValidationError) as exc_info:
-        EventAttendee(created_at=datetime.now(tz=timezone.utc))  # type: ignore  # Missing source
+        EventAttendee(created_at=datetime.now(tz=timezone.utc))  # type: ignore  # Missing source and event_url
 
     assert "source" in str(exc_info.value)
+
+    with pytest.raises(ValidationError) as exc_info:
+        EventAttendee(
+            source="test",
+            created_at=datetime.now(tz=timezone.utc),
+        )  # type: ignore  # Missing event_url
+
+    assert "event_url" in str(exc_info.value)
 
 
 def test_etl_get_file_name_datetime_formatting() -> None:
@@ -275,6 +291,7 @@ def test_etl_get_file_name_datetime_formatting() -> None:
     attendee: EventAttendee = EventAttendee(
         email="test@example.com",
         source="event",
+        event_url="https://example.com/event",
         created_at=datetime(2024, 1, 5, 8, 5, 5, tzinfo=timezone.utc),
     )
     filename: str = attendee.etl_get_file_name()
@@ -290,6 +307,7 @@ def test_etl_get_file_name_email_priority() -> None:
         name="John Doe",
         email="different.email@example.com",
         source="priority_test",
+        event_url="https://example.com/priority",
         created_at=datetime(2024, 3, 15, 12, 0, 0, tzinfo=timezone.utc),
     )
     filename: str = attendee.etl_get_file_name()
