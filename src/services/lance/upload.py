@@ -257,7 +257,7 @@ def upload_to_lance(
             Exception,
         ) as exception:
             print(
-                f"\n🔍 Caught exception during merge insert: {type(exception).__name__}"
+                f"Caught exception during merge insert: {type(exception).__name__}",
             )
             print(f"Exception message: {str(exception)[:200]}...")
             _handle_merge_insert_error(
