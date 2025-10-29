@@ -79,7 +79,13 @@ def _execute_merge_insert_with_retry(
                 new_data=data_to_upload,
             )
 
-        except (ValueError, RuntimeError, ConnectionError, TimeoutError, Exception) as e:
+        except (
+            ValueError,
+            RuntimeError,
+            ConnectionError,
+            TimeoutError,
+            Exception,
+        ) as e:
             # Parse the error to determine if it's rate limited
             # This catches both requests.HTTPError and LanceDB's HttpError/RetryError
             try:
@@ -243,8 +249,16 @@ def upload_to_lance(
                 data_to_upload=data_to_upload,
             )
 
-        except (ValueError, RuntimeError, ConnectionError, TimeoutError, Exception) as exception:
-            print(f"\n🔍 Caught exception during merge insert: {type(exception).__name__}")
+        except (
+            ValueError,
+            RuntimeError,
+            ConnectionError,
+            TimeoutError,
+            Exception,
+        ) as exception:
+            print(
+                f"\n🔍 Caught exception during merge insert: {type(exception).__name__}"
+            )
             print(f"Exception message: {str(exception)[:200]}...")
             _handle_merge_insert_error(
                 tbl=tbl,
