@@ -84,7 +84,7 @@ def _execute_merge_insert_with_retry(
             RuntimeError,
             ConnectionError,
             TimeoutError,
-            Exception,
+            Exception,  # trunk-ignore(ruff/BLE001): Need to catch all exceptions to parse LanceDB errors
         ) as e:
             # Parse the error to determine if it's rate limited
             # This catches both requests.HTTPError and LanceDB's HttpError/RetryError
@@ -178,10 +178,10 @@ def _get_or_create_table(
 
 
 def _handle_merge_insert_error(
-    tbl: Table,
+    _tbl: Table,
     primary_key: str,
-    primary_key_index_type: str,
-    data_to_upload: list[dict],
+    _primary_key_index_type: str,
+    _data_to_upload: list[dict],
     exception: Exception,
 ) -> None:
     """Handle merge insert errors by creating indexes if needed."""
@@ -254,17 +254,17 @@ def upload_to_lance(
             RuntimeError,
             ConnectionError,
             TimeoutError,
-            Exception,
+            Exception,  # trunk-ignore(ruff/BLE001): Need to catch all exceptions to parse LanceDB errors
         ) as exception:
             print(
                 f"Caught exception during merge insert: {type(exception).__name__}",
             )
             print(f"Exception message: {str(exception)[:200]}...")
             _handle_merge_insert_error(
-                tbl=tbl,
+                _tbl=tbl,
                 primary_key=primary_key,
-                primary_key_index_type=primary_key_index_type,
-                data_to_upload=data_to_upload,
+                _primary_key_index_type=primary_key_index_type,
+                _data_to_upload=data_to_upload,
                 exception=exception,
             )
 
@@ -445,10 +445,10 @@ def test_max_unindexed_rows_triggers_index_creation() -> None:
         match="number of un-indexed rows",
     ):
         _handle_merge_insert_error(
-            tbl=mock_table,
+            _tbl=mock_table,
             primary_key="id",
-            primary_key_index_type="BTREE",
-            data_to_upload=test_data,
+            _primary_key_index_type="BTREE",
+            _data_to_upload=test_data,
             exception=max_rows_exception,
         )
 
@@ -464,10 +464,10 @@ def test_unexpected_errors_are_reraised() -> None:
 
     with pytest.raises(RuntimeError, match="Some unexpected database error"):
         _handle_merge_insert_error(
-            tbl=Mock(),
+            _tbl=Mock(),
             primary_key="id",
-            primary_key_index_type="BTREE",
-            data_to_upload=test_data,
+            _primary_key_index_type="BTREE",
+            _data_to_upload=test_data,
             exception=unexpected_error,
         )
 
@@ -655,10 +655,10 @@ def test_index_creation_with_subsequent_failure() -> None:
     # Should re-raise the original exception
     with pytest.raises(ValueError, match="number of un-indexed rows"):
         _handle_merge_insert_error(
-            tbl=mock_table,
+            _tbl=mock_table,
             primary_key="id",
-            primary_key_index_type="BTREE",
-            data_to_upload=test_data,
+            _primary_key_index_type="BTREE",
+            _data_to_upload=test_data,
             exception=max_rows_exception,
         )
 

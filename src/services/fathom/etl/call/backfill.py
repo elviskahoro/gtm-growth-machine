@@ -324,7 +324,7 @@ def main(
         ProcessingStatus.FAILED.value,
     ) as failed_writer:
         for count, (recording_id, success) in enumerate(
-            process_recording.map(  # trunk-ignore(pyright/reportFunctionMemberAccess)
+            process_recording.map(
                 recording_ids,
             ),
             start=1,

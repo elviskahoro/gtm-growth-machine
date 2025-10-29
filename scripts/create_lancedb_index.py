@@ -16,6 +16,7 @@ import os
 import sys
 from datetime import timedelta
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 # Add src directory to path
 project_root = Path(__file__).parent.parent
@@ -26,15 +27,18 @@ from src.services.chalk_demo.marketplace_product.webhook import (  # noqa: E402
 )
 from src.services.lance.setup import init_client  # noqa: E402
 
+if TYPE_CHECKING:
+    from lancedb import DBConnection
+    from lancedb.table import Table
 
-def create_index() -> None:
-    """Create scalar index on the primary key column."""
-    # Get configuration from WebhookModel
-    project_name: str = WebhookModel.lance_get_project_name()
-    table_name: str = WebhookModel.lance_get_table_name()
-    primary_key: str = WebhookModel.lance_get_primary_key()
-    index_type: str = WebhookModel.lance_get_primary_key_index_type().upper()
 
+def print_configuration(
+    project_name: str,
+    table_name: str,
+    primary_key: str,
+    index_type: str,
+) -> None:
+    """Print configuration information."""
     print("=" * 80)
     print("LanceDB Index Creation Script")
     print("=" * 80)
@@ -45,33 +49,52 @@ def create_index() -> None:
     print(f"  Index Type:  {index_type}")
     print()
 
-    # Check for API key
+
+def check_api_key() -> None:
+    """Check if LANCEDB_API_KEY is set."""
     if not os.getenv("LANCEDB_API_KEY"):
         print("❌ Error: LANCEDB_API_KEY environment variable not set")
         print("\nPlease set your LanceDB API key:")
         print("  export LANCEDB_API_KEY='your-api-key-here'")
         sys.exit(1)
 
+
+def connect_to_database(project_name: str) -> DBConnection:
+    """Connect to LanceDB and return database client."""
     print("Connecting to LanceDB...")
     try:
         db = init_client(project_name=project_name)
-        print("✓ Connected successfully")
-    except Exception as e:
+    except (OSError, ConnectionError, RuntimeError) as e:
         print(f"❌ Failed to connect: {e}")
         sys.exit(1)
+    else:
+        print("✓ Connected successfully")
+        return db
 
+
+def open_table(db: DBConnection, table_name: str) -> Table:
+    """Open and return the specified table."""
     print(f"\nOpening table '{table_name}'...")
     try:
         table = db.open_table(name=table_name)
-        print("✓ Table opened successfully")
-    except Exception as e:
+    except (ValueError, KeyError, RuntimeError) as e:
         print(f"❌ Failed to open table: {e}")
         print("\nPossible reasons:")
         print("  - Table does not exist")
         print("  - Incorrect table name")
         print("  - Insufficient permissions")
         sys.exit(1)
+    else:
+        print("✓ Table opened successfully")
+        return table
 
+
+def create_scalar_index_on_table(
+    table: Table,
+    primary_key: str,
+    index_type: str,
+) -> None:
+    """Create scalar index on the primary key column."""
     print(
         f"\n⚙️  Creating scalar index on column '{primary_key}' with type '{index_type}'...",
     )
@@ -92,7 +115,7 @@ def create_index() -> None:
         print("=" * 80)
         print("\nYou can now run your data upload operations.")
 
-    except Exception as e:
+    except (ValueError, RuntimeError, TimeoutError) as e:
         print(f"❌ Failed to create index: {e}")
         print()
         print("Possible reasons:")
@@ -103,6 +126,39 @@ def create_index() -> None:
         print()
         print("If the error says the index already exists, your table is ready to use.")
         sys.exit(1)
+
+
+def create_index() -> None:
+    """Create scalar index on the primary key column."""
+    # Get configuration from WebhookModel
+    project_name: str = WebhookModel.lance_get_project_name()
+    table_name: str = WebhookModel.lance_get_table_name()
+    primary_key: str = WebhookModel.lance_get_primary_key()
+    index_type: str = WebhookModel.lance_get_primary_key_index_type().upper()
+
+    # Print configuration
+    print_configuration(
+        project_name=project_name,
+        table_name=table_name,
+        primary_key=primary_key,
+        index_type=index_type,
+    )
+
+    # Check for API key
+    check_api_key()
+
+    # Connect to database
+    db = connect_to_database(project_name=project_name)
+
+    # Open table
+    table = open_table(db=db, table_name=table_name)
+
+    # Create index
+    create_scalar_index_on_table(
+        table=table,
+        primary_key=primary_key,
+        index_type=index_type,
+    )
 
 
 if __name__ == "__main__":

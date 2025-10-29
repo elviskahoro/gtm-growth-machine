@@ -164,13 +164,13 @@ def _get_existing_primary_keys(
                     return None
                 raise
 
-        return existing_keys
-
     except ValueError as e:
         # Table doesn't exist yet
         if "was not found" in str(e):
             return None
         raise
+    else:
+        return existing_keys
 
 
 def _filter_new_base_models(
