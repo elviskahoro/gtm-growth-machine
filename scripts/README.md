@@ -7,7 +7,8 @@ Standalone script to create a scalar index on a LanceDB table's primary key colu
 ### Purpose
 
 This script fixes the error:
-```
+
+```text
 HttpError: Bad request: Merge insert cannot be performed because the number
 of un-indexed rows (10001) exceeds the maximum of 10000. Please create an
 index on the join column id
@@ -16,11 +17,13 @@ index on the join column id
 ### Prerequisites
 
 1. **LanceDB API Key**: Set the `LANCEDB_API_KEY` environment variable:
+
    ```bash
    export LANCEDB_API_KEY='your-api-key-here'
    ```
 
 2. **Python Environment**: Ensure you're in the project's virtual environment:
+
    ```bash
    source .venv/bin/activate
    ```
@@ -43,7 +46,7 @@ python scripts/create_lancedb_index.py
 
 ### Expected Output
 
-```
+```text
 ================================================================================
 LanceDB Index Creation Script
 ================================================================================
