@@ -4,6 +4,7 @@ import os
 from collections import deque
 from typing import TYPE_CHECKING
 
+from google.api_core.exceptions import BadRequest
 from google.cloud import aiplatform
 from vertexai.preview.language_models import (
     TextEmbedding,
@@ -26,6 +27,87 @@ def init_client(
     )
 
 
+MAX_VALUE_LENGTH: int = 50  # Maximum length for displaying field values in identifiers
+
+
+def _get_model_identifier(
+    base_model: BaseModel,
+) -> str:
+    """Extract an identifier from a base model for error reporting.
+
+    Tries to get a primary key or other identifying field from the model.
+    """
+    model_dict: dict[str, object] = base_model.model_dump()
+
+    # Try common primary key field names
+    for key_field in ["id", "primary_key", "pk", "key", "uuid"]:
+        if key_field in model_dict:
+            return f"{key_field}={model_dict[key_field]}"
+
+    # If no primary key found, return the first field with a value
+    for key, value in model_dict.items():
+        if value is not None:
+            value_str: str = str(value)
+            if len(value_str) > MAX_VALUE_LENGTH:
+                value_str = value_str[:MAX_VALUE_LENGTH] + "..."
+            return f"{key}={value_str}"
+
+    return "unknown_model"
+
+
+def _embed_single(
+    embedding_model: TextEmbeddingModel,
+    base_model: BaseModel,
+) -> dict[str, object] | None:
+    """Embed a single model and return the result, or None if it fails.
+
+    Returns:
+        Dictionary with model data and embedding, or None if embedding failed.
+    """
+    try:
+        text_to_embed: str | TextEmbeddingInput = (
+            base_model.gemini_get_column_to_embed()
+        )
+        embeddings: list[TextEmbedding] = embedding_model.get_embeddings(
+            texts=[text_to_embed],
+        )
+
+    except BadRequest as e:
+        error_msg: str = str(e)
+        model_id: str = _get_model_identifier(base_model=base_model)
+
+        # Handle token limit errors
+        if "token count" in error_msg.lower() or "input token" in error_msg.lower():
+            text_content: str = base_model.gemini_get_column_to_embed()
+            text_length: int = len(text_content) if isinstance(text_content, str) else 0
+
+            print(f"FAILED: Record {model_id} - text length: {text_length} chars")
+            print(f"  Reason: Text exceeds token limit (max 20,000 tokens)")
+            print(f"  Error: {error_msg}")
+            return None
+
+        # Handle empty text errors
+        if "text content is empty" in error_msg.lower() or "empty" in error_msg.lower():
+            text_content: str = base_model.gemini_get_column_to_embed()
+            text_length: int = len(text_content) if isinstance(text_content, str) else 0
+
+            print(f"FAILED: Record {model_id} - text is empty or whitespace only")
+            print(f"  Text length: {text_length} chars")
+            print(f"  Text repr: {text_content[:100]!r}")
+            print(f"  Full record: {base_model.model_dump_json(indent=2)[:500]}...")
+            return None
+
+        # Re-raise if it's a different type of error
+        raise
+    else:
+        data: dict[str, object] = base_model.model_dump(
+            mode="python",
+            exclude_unset=True,
+        )
+        data["embedding"] = embeddings[0].values
+        return data
+
+
 def _embed(
     embedding_model: TextEmbeddingModel,
     base_models: Iterable[BaseModel],
@@ -41,29 +123,79 @@ def _embed(
 
     texts_to_embed: list[str | TextEmbeddingInput] = list(texts_to_embed_deque)
 
-    embeddings: list[TextEmbedding] = embedding_model.get_embeddings(
-        texts=texts_to_embed,
-    )
-
-    # Use deque for building embedding vectors
-    embedding_vectors_deque: deque[list[float]] = deque()
-    for embedding in embeddings:
-        embedding_vectors_deque.append(embedding.values)
-
-    embedding_vectors: list[list[float]] = list(embedding_vectors_deque)
-
-    def add_embedding(
-        base_model: BaseModel,
-        embedding: list[float],
-    ) -> dict[str, object]:
-        data: dict[str, object] = base_model.model_dump(
-            mode="python",
-            exclude_unset=True,
+    try:
+        embeddings: list[TextEmbedding] = embedding_model.get_embeddings(
+            texts=texts_to_embed,
         )
-        data["embedding"] = embedding
-        return data
 
-    return list(map(add_embedding, base_models_list, embedding_vectors))
+        # Use deque for building embedding vectors
+        embedding_vectors_deque: deque[list[float]] = deque()
+        for embedding in embeddings:
+            embedding_vectors_deque.append(embedding.values)
+
+        embedding_vectors: list[list[float]] = list(embedding_vectors_deque)
+
+        def add_embedding(
+            base_model: BaseModel,
+            embedding: list[float],
+        ) -> dict[str, object]:
+            data: dict[str, object] = base_model.model_dump(
+                mode="python",
+                exclude_unset=True,
+            )
+            data["embedding"] = embedding
+            return data
+
+        return list(map(add_embedding, base_models_list, embedding_vectors))
+
+    except BadRequest as e:
+        error_msg: str = str(e)
+        is_token_error: bool = (
+            "token count" in error_msg.lower() or "input token" in error_msg.lower()
+        )
+        is_empty_error: bool = (
+            "text content is empty" in error_msg.lower() or "empty" in error_msg.lower()
+        )
+
+        if is_token_error or is_empty_error:
+            if is_token_error:
+                print(f"Batch embedding failed due to token limit: {error_msg}")
+            elif is_empty_error:
+                print(f"Batch embedding failed due to empty text: {error_msg}")
+
+            print(
+                f"Falling back to individual processing for {len(base_models_list)} records...",
+            )
+
+            # Process each model individually to identify which ones fail
+            results: list[dict[str, object]] = []
+            failed_count: int = 0
+
+            for idx, base_model in enumerate(base_models_list, start=1):
+                result: dict[str, object] | None = _embed_single(
+                    embedding_model=embedding_model,
+                    base_model=base_model,
+                )
+                if result is not None:
+                    results.append(result)
+                else:
+                    failed_count += 1
+
+                # Print progress every 50 records
+                if idx % 50 == 0 or idx == len(base_models_list):
+                    print(
+                        f"  Processed {idx}/{len(base_models_list)} records ({failed_count} failed)",
+                    )
+
+            if failed_count > 0:
+                print(
+                    f"WARNING: {failed_count} record(s) failed to embed and were skipped",
+                )
+
+            return results
+
+        # Re-raise if it's a different error
+        raise
 
 
 def embed_with_gemini(
@@ -102,6 +234,148 @@ def embed_with_gemini(
 
 
 # trunk-ignore-begin(ruff/PLR2004,ruff/S101)
+def test_get_model_identifier_with_id() -> None:
+    """Test _get_model_identifier when model has an id field."""
+    from pydantic import BaseModel
+
+    class TestModel(BaseModel):
+        id: str
+        name: str
+
+    model: TestModel = TestModel(id="test-123", name="Test Name")
+    result: str = _get_model_identifier(base_model=model)
+    assert result == "id=test-123"
+
+
+def test_get_model_identifier_without_id() -> None:
+    """Test _get_model_identifier when model has no id field."""
+    from pydantic import BaseModel
+
+    class TestModel(BaseModel):
+        name: str
+        value: int
+
+    model: TestModel = TestModel(name="Test Name", value=42)
+    result: str = _get_model_identifier(base_model=model)
+    assert result in {"name=Test Name", "value=42"}
+
+
+def test_get_model_identifier_with_long_value() -> None:
+    """Test _get_model_identifier truncates long values."""
+    from pydantic import BaseModel
+
+    class TestModel(BaseModel):
+        description: str
+
+    long_text: str = "a" * 100
+    model: TestModel = TestModel(description=long_text)
+    result: str = _get_model_identifier(base_model=model)
+    assert len(result) < len(long_text) + 20  # Should be truncated
+    assert "..." in result
+
+
+def test_embed_single_success() -> None:
+    """Test _embed_single successfully embeds a single record."""
+    from unittest.mock import Mock
+
+    from pydantic import BaseModel
+
+    class TestModel(BaseModel):
+        text: str
+
+        def gemini_get_column_to_embed(self) -> str:
+            return self.text
+
+    mock_model: Mock = Mock()
+    mock_embedding: Mock = Mock()
+    mock_embedding.values = [0.1, 0.2, 0.3]
+    mock_model.get_embeddings.return_value = [mock_embedding]
+
+    test_model: TestModel = TestModel(text="test")
+    result: dict[str, object] | None = _embed_single(
+        embedding_model=mock_model,
+        base_model=test_model,
+    )
+
+    assert result is not None
+    assert result["text"] == "test"
+    assert result["embedding"] == [0.1, 0.2, 0.3]
+
+
+def test_embed_single_token_limit_failure() -> None:
+    """Test _embed_single returns None when token limit is exceeded."""
+    from unittest.mock import Mock, patch
+
+    from pydantic import BaseModel
+
+    class TestModel(BaseModel):
+        id: str
+        text: str
+
+        def gemini_get_column_to_embed(self) -> str:
+            return self.text
+
+    mock_model: Mock = Mock()
+    mock_model.get_embeddings.side_effect = BadRequest(
+        "Unable to submit request because the input token count is 25000 but the model supports up to 20000",
+    )
+
+    test_model: TestModel = TestModel(id="test-123", text="very long text" * 1000)
+
+    with patch("builtins.print"):
+        result: dict[str, object] | None = _embed_single(
+            embedding_model=mock_model,
+            base_model=test_model,
+        )
+
+    assert result is None
+
+
+def test_embed_batch_fallback_to_individual() -> None:
+    """Test _embed falls back to individual processing on batch token limit error."""
+    from unittest.mock import Mock, patch
+
+    from pydantic import BaseModel
+
+    class TestModel(BaseModel):
+        id: str
+        text: str
+
+        def gemini_get_column_to_embed(self) -> str:
+            return self.text
+
+    mock_model: Mock = Mock()
+
+    # First call (batch) fails, individual calls succeed
+    batch_error: BadRequest = BadRequest(
+        "Unable to submit request because the input token count is 75000",
+    )
+    mock_embedding: Mock = Mock()
+    mock_embedding.values = [0.1, 0.2, 0.3]
+
+    # Set up side effects: batch fails, then individual calls succeed
+    mock_model.get_embeddings.side_effect = [
+        batch_error,
+        [mock_embedding],
+        [mock_embedding],
+    ]
+
+    test_models: list[TestModel] = [
+        TestModel(id="1", text="text1"),
+        TestModel(id="2", text="text2"),
+    ]
+
+    with patch("builtins.print"):
+        result: list[dict[str, object]] = _embed(
+            embedding_model=mock_model,
+            base_models=test_models,
+        )
+
+    assert len(result) == 2
+    assert result[0]["id"] == "1"
+    assert result[1]["id"] == "2"
+
+
 def test_init_client_with_default_location() -> None:
     """Test init_client with default location parameter."""
     from unittest.mock import patch

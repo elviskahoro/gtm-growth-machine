@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.services.chalk_demo.marketplace_product.webhook import (  # noqa: E402
+from src.services.chalk_demo.marketplace_product_description.webhook import (  # noqa: E402
     Webhook as WebhookModel,
 )
 from src.services.lance.setup import init_client  # noqa: E402

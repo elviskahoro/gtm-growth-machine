@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import time
-from itertools import chain
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -30,6 +29,9 @@ from src.services.chalk_demo.fraud_transactions.webhook import (
 from src.services.chalk_demo.marketplace_product.webhook import (
     Webhook as MarketplaceProductWebhook,  # noqa: F401
 )
+from src.services.chalk_demo.marketplace_product_description.webhook import (
+    Webhook as MarketplaceProductDescriptionWebhook,  # noqa: F401
+)
 from src.services.fathom.etl.message import (
     Webhook as FathomMessageWebhook,  # noqa: F401
 )
@@ -46,7 +48,7 @@ WebhookModel.model_rebuild()
 
 BUCKET_NAME: str = WebhookModel.etl_get_bucket_name()
 
-GEMINI_EMBED_BATCH_SIZE: int = 250  # Maximum allowed by Vertex AI text-embedding-005
+GEMINI_EMBED_BATCH_SIZE: int = 35  # Maximum allowed by Vertex AI text-embedding-005
 UPLOAD_DELAY_SECONDS: float = 0.1  # Delay between uploads to prevent rate limiting
 MAX_RETRY_ATTEMPTS: int = 3  # Maximum retry attempts for rate limited uploads
 
@@ -200,6 +202,57 @@ def _filter_new_base_models(
     return new_models
 
 
+def _validate_text_content(
+    base_model: BaseModel,
+) -> bool:
+    """Validate that a base model has non-empty text content to embed.
+
+    Args:
+        base_model: The base model to validate
+
+    Returns:
+        True if the model has valid text content, False otherwise
+    """
+    try:
+        text_content: str = base_model.gemini_get_column_to_embed()
+        return not (not text_content or not text_content.strip())
+    except (AttributeError, ValueError):
+        return False
+
+
+MAX_LOG_VALUE_LENGTH: int = 50  # Maximum length for displaying field values in logs
+
+
+def _get_model_identifier_for_logging(
+    base_model: BaseModel,
+) -> str:
+    """Get a human-readable identifier for a model for logging purposes.
+
+    Args:
+        base_model: The base model
+
+    Returns:
+        String identifier for the model
+    """
+    model_dict: dict[str, object] = base_model.model_dump()
+
+    # Try common primary key field names
+    for key_field in ["id", "primary_key", "pk", "key", "uuid"]:
+        if key_field in model_dict:
+            return f"{key_field}={model_dict[key_field]}"
+
+    # If no primary key found, return the first field with a value
+    for key, value in model_dict.items():
+        if value is not None:
+            value_str: str = str(value)
+            if len(value_str) > MAX_LOG_VALUE_LENGTH:
+                value_str = value_str[:MAX_LOG_VALUE_LENGTH] + "..."
+            return f"{key}={value_str}"
+
+    return "unknown_model"
+
+
+# trunk-ignore-begin(ruff/PLR0912,ruff/PLR0915)
 def embed_with_gemini_and_upload_to_lance(
     source_file_data: Iterator[SourceFileData],
     embed_batch_size: int,
@@ -221,16 +274,38 @@ def embed_with_gemini_and_upload_to_lance(
         primary_key=primary_key,
     )
 
-    all_base_models: list[BaseModel] = list(
-        chain.from_iterable(
-            source_file_data.base_model.etl_get_base_models(
-                storage=storage,
-            )
-            for source_file_data in source_file_data
-        ),
-    )
+    # Collect all base models with file path information for better error reporting
+    all_base_models_with_paths: list[tuple[BaseModel, str | None]] = []
+    for source_data in source_file_data:
+        file_path_str: str | None = str(source_data.path) if source_data.path else None
+        for base_model in source_data.base_model.etl_get_base_models(storage=storage):
+            all_base_models_with_paths.append((base_model, file_path_str))
+
     print(f"Batch size {embed_batch_size:04d}")
-    print(f"Total models to process: {len(all_base_models):07d}")
+    print(f"Total models to process: {len(all_base_models_with_paths):07d}")
+
+    # Validate text content and filter out invalid records
+    validated_models: list[BaseModel] = []
+    invalid_text_count: int = 0
+
+    for base_model, file_path in all_base_models_with_paths:
+        if not _validate_text_content(base_model=base_model):
+            invalid_text_count += 1
+            model_id: str = _get_model_identifier_for_logging(base_model=base_model)
+            text_content: str = base_model.gemini_get_column_to_embed()
+            print(f"SKIPPING: Record {model_id} - empty or whitespace-only text")
+            print(f"  File: {file_path or 'webhook/direct input'}")
+            print(
+                f"  Text length: {len(text_content)} chars, stripped: {len(text_content.strip())} chars",
+            )
+            print(f"  Full record: {base_model.model_dump_json(indent=2)[:300]}...")
+        else:
+            validated_models.append(base_model)
+
+    if invalid_text_count > 0:
+        print(f"Skipped {invalid_text_count:07d} records with empty text content")
+
+    all_base_models: list[BaseModel] = validated_models
 
     if existing_keys:
         print(f"Found {len(existing_keys):07d} existing records in LanceDB")
@@ -288,6 +363,9 @@ def embed_with_gemini_and_upload_to_lance(
         final_message += f" Skipped {skipped:07d} existing records."
 
     return final_message
+
+
+# trunk-ignore-end(ruff/PLR0912,ruff/PLR0915)
 
 
 @app.function(
