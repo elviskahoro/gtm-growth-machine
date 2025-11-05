@@ -439,7 +439,11 @@ def test_to_filesystem_local_multiple_files() -> None:
 
         # Verify each write call has the correct content
         for idx, (call, file_data) in enumerate(
-            zip(all_calls, file_data_list, strict=False)
+            zip(
+                all_calls,
+                file_data_list,
+                strict=False,
+            ),
         ):
             assert call == unittest.mock.call(
                 file_data.string,
