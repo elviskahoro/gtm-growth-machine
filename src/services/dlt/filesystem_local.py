@@ -438,7 +438,9 @@ def test_to_filesystem_local_multiple_files() -> None:
         assert len(all_calls) == len(file_data_list)
 
         # Verify each write call has the correct content
-        for idx, (call, file_data) in enumerate(zip(all_calls, file_data_list)):
+        for idx, (call, file_data) in enumerate(
+            zip(all_calls, file_data_list, strict=False)
+        ):
             assert call == unittest.mock.call(
                 file_data.string,
             ), f"Write call {idx} doesn't match expected content"
@@ -519,7 +521,12 @@ def test_to_filesystem_local_with_nested_paths() -> None:
 
         # Verify all calls used mode="w+"
         open_calls: list[Any] = [
-            call for call in m.call_args_list if call == unittest.mock.call(mode="w+")
+            call
+            for call in m.call_args_list
+            if call
+            == unittest.mock.call(
+                mode="w+",
+            )
         ]
         assert len(open_calls) == len(nested_file_data)
 
@@ -528,7 +535,11 @@ def test_to_filesystem_local_with_nested_paths() -> None:
             m.return_value.__enter__.return_value.write.call_args_list
         )
         for _idx, (call, file_data) in enumerate(
-            zip(all_write_calls, nested_file_data),
+            zip(
+                all_write_calls,
+                nested_file_data,
+                strict=False,
+            ),
         ):
             assert call == unittest.mock.call(file_data.string)
 
