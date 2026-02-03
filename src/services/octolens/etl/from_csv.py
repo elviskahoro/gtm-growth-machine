@@ -8,9 +8,10 @@ import polars as pl
 from modal import Image
 
 from src.services.local.filesystem import FileUtility
-from src.services.octolens import Mention, Webhook
+from src.services.octolens.etl.webhook import Webhook
+from src.services.octolens.mention import Mention
 
-BUCKET_NAME: str = "chalk-ai-devx-octolens-mentions-from_csv"
+BUCKET_NAME: str = "devx-octolens-mentions-from_csv"
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

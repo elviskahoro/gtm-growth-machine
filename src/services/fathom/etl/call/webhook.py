@@ -19,6 +19,9 @@ if TYPE_CHECKING:
     from src.services.fathom.etl.message.transcript_message import TranscriptMessage
 
 
+FATHOM_CALLS_BUCKET_NAME: str = "devx-fathom-calls-etl"
+
+
 class Webhook(BaseModel):
     id: int
     recording: Recording
@@ -34,11 +37,11 @@ class Webhook(BaseModel):
 
     @staticmethod
     def etl_get_bucket_name() -> str:
-        return "chalk-ai-devx-fathom-calls-etl-01"
+        return FATHOM_CALLS_BUCKET_NAME
 
     @staticmethod
     def storage_get_app_name() -> str:
-        return f"{Webhook.etl_get_bucket_name()}-storage"
+        return Webhook.etl_get_bucket_name()
 
     @staticmethod
     def storage_get_base_model_type() -> None:
@@ -176,12 +179,12 @@ def test_webhook_static_methods() -> None:
 
     # Test etl_get_bucket_name
     bucket_name: str = Webhook.etl_get_bucket_name()
-    assert bucket_name == "chalk-ai-devx-fathom-calls-etl-01"
+    assert bucket_name == FATHOM_CALLS_BUCKET_NAME
     assert isinstance(bucket_name, str)
 
     # Test storage_get_app_name
     app_name: str = Webhook.storage_get_app_name()
-    expected_app_name: str = f"{bucket_name}-storage"
+    expected_app_name: str = bucket_name
     assert app_name == expected_app_name
     assert isinstance(app_name, str)
 

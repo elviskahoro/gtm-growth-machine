@@ -24,7 +24,7 @@ class Webhook(BaseModel):
 
     @staticmethod
     def etl_get_bucket_name() -> str:
-        return "chalk-ai-devx-transaction-receipts"
+        return "devx-demo-transaction-receipts"
 
     @staticmethod
     def storage_get_app_name() -> str:

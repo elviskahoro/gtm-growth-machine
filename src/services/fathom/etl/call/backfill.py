@@ -709,6 +709,7 @@ def test_otel_connection() -> None:
     if not hyperdx_api_key:
         pytest.skip("HYPERDX_API_KEY environment variable not set")
 
+    assert hyperdx_api_key is not None  # Type narrowing after pytest.skip
     print("Setting up OpenTelemetry...")
     tracer: trace.Tracer = setup_otel(hyperdx_api_key)
 

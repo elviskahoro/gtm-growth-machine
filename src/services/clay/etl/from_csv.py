@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
-BUCKET_NAME: str = "chalk-ai-devx-clay-event-attendees"
+BUCKET_NAME: str = "devx-clay-event-attendees"
 MIN_PARTS_FOR_HYPHENATED_DATE: int = 4
 
 image: Image = modal.Image.debian_slim().pip_install(

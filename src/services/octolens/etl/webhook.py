@@ -4,6 +4,8 @@ from pydantic import BaseModel
 
 from src.services.octolens.mention import Mention
 
+OCTOLENS_MENTIONS_BUCKET_NAME: str = "devx-octolens-mentions-etl"
+
 
 class Webhook(BaseModel):
     action: str = "mention_created"
@@ -17,7 +19,7 @@ class Webhook(BaseModel):
 
     @staticmethod
     def etl_get_bucket_name() -> str:
-        return "chalk-ai-devx-octolens-mentions-etl"
+        return OCTOLENS_MENTIONS_BUCKET_NAME
 
     @staticmethod
     def storage_get_app_name() -> None:
@@ -136,7 +138,7 @@ def test_etl_get_bucket_name() -> None:
     bucket_name: str = Webhook.etl_get_bucket_name()
 
     assert isinstance(bucket_name, str)
-    assert bucket_name == "chalk-ai-devx-octolens-mentions-etl"
+    assert bucket_name == OCTOLENS_MENTIONS_BUCKET_NAME
 
 
 def test_storage_get_app_name_raises_not_implemented() -> None:

@@ -18,6 +18,8 @@ from src.services.local.filesystem import FileUtility
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+FATHOM_MESSAGES_BUCKET_NAME: str = "devx-fathom-messages-etl"
+
 
 class Webhook(BaseModel):
     id: int
@@ -34,11 +36,11 @@ class Webhook(BaseModel):
 
     @staticmethod
     def etl_get_bucket_name() -> str:
-        return "chalk-ai-devx-fathom-messages-etl-01"
+        return FATHOM_MESSAGES_BUCKET_NAME
 
     @staticmethod
     def storage_get_app_name() -> str:
-        return f"{Webhook.etl_get_bucket_name()}-storage"
+        return Webhook.etl_get_bucket_name()
 
     @staticmethod
     def storage_get_base_model_type() -> type[Storage]:
@@ -208,13 +210,13 @@ def test_modal_get_secret_collection_names() -> None:
 
 def test_etl_get_bucket_name() -> None:
     result: str = Webhook.etl_get_bucket_name()
-    assert result == "chalk-ai-devx-fathom-messages-etl-01"
+    assert result == FATHOM_MESSAGES_BUCKET_NAME
     assert isinstance(result, str)
 
 
 def test_storage_get_app_name() -> None:
     result: str = Webhook.storage_get_app_name()
-    expected: str = "chalk-ai-devx-fathom-messages-etl-01-storage"
+    expected: str = FATHOM_MESSAGES_BUCKET_NAME
     assert result == expected
     assert isinstance(result, str)
 
