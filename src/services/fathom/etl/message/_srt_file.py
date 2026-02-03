@@ -57,8 +57,15 @@ class SrtFile(NamedTuple):
                     year_to_use = FATHOM_TRANSITION_YEAR
 
             elif current_year >= FATHOM_FUTURE_YEAR:
-                # From 2026 onwards, always use the current year
-                year_to_use = current_year
+                # From 2026 onwards, assume recordings are from previous year
+                # Only use current year if the date is well into the future (more than ~6 months ahead)
+                year_to_use = FATHOM_TRANSITION_YEAR  # Default to 2025
+                date_in_current_year = date_without_year.replace(year=current_year)
+                # Check if date is more than 6 months in the future
+                from datetime import timedelta
+                far_future = now + timedelta(days=180)
+                if date_in_current_year > far_future:
+                    year_to_use = current_year
 
             else:
                 # For 2024 or earlier, use current year
@@ -215,9 +222,9 @@ def test_srt_file_from_file_content_duration_parsing_failure() -> None:
 
 
 def test_srt_file_from_file_content_year_logic_current_year() -> None:
-    """Test year assignment logic for dates before today in 2025."""
+    """Test year assignment logic for dates in the past from previous year."""
     lines: list[str] = [
-        "Meeting - April 1",  # April 1 is before August 15
+        "Meeting - April 1",  # April 1 is in the past when current date is Feb 3
         "VIEW RECORDING - 20 mins: https://fathom.video/calls/123",
         "---",
         "content",
@@ -228,16 +235,16 @@ def test_srt_file_from_file_content_year_logic_current_year() -> None:
 
     result: SrtFile = SrtFile.from_file_content(lines, path, full_text)
 
-    # April 1 is before August 15 in 2025, so it should use 2025
-    assert result.date.year == 2025
+    # April 1 is before Feb 3 (today), so use previous year (2025)
+    assert result.date.year == FATHOM_TRANSITION_YEAR  # 2025
     assert result.date.month == 4
     assert result.date.day == 1
 
 
 def test_srt_file_from_file_content_year_logic_early_months() -> None:
-    """Test year assignment logic for months < 4 (should use current year)."""
+    """Test year assignment logic for months that haven't occurred yet."""
     lines: list[str] = [
-        "Meeting - March 1",  # March is month 3, < 4
+        "Meeting - December 1",  # December is in the future relative to Feb 3
         "VIEW RECORDING - 20 mins: https://fathom.video/calls/123",
         "---",
         "content",
@@ -248,9 +255,10 @@ def test_srt_file_from_file_content_year_logic_early_months() -> None:
 
     result: SrtFile = SrtFile.from_file_content(lines, path, full_text)
 
+    # December 1 is more than 6 months away, so it should use current year (2026)
     current_year: int = datetime.now(tz=timezone.utc).year
     assert result.date.year == current_year
-    assert result.date.month == 3
+    assert result.date.month == 12
     assert result.date.day == 1
 
 
