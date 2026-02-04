@@ -64,6 +64,7 @@ class SrtFile(NamedTuple):
                 date_in_current_year = date_without_year.replace(year=current_year)
                 # Check if date is more than 6 months in the future
                 from datetime import timedelta
+
                 far_future = now + timedelta(days=180)
                 if date_in_current_year > far_future:
                     year_to_use = current_year
