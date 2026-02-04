@@ -39,9 +39,10 @@ class SrtFile(NamedTuple):
             current_year: int = now.year
 
             # Parse the month and day from the date string
+            # Use a dummy year to avoid deprecation warning (it gets replaced immediately)
             date_without_year = datetime.strptime(
-                date_str,
-                "%B %d",
+                f"{date_str} {FATHOM_START_YEAR}",
+                "%B %d %Y",
             ).replace(
                 year=current_year,
                 tzinfo=timezone.utc,
