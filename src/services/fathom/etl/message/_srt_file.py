@@ -19,7 +19,7 @@ class SrtFile(NamedTuple):
     full_text: str
 
     @classmethod
-    def from_file_content(  # trunk-ignore(ruff/PLR0912)
+    def from_file_content(  # trunk-ignore(ruff/PLR0912,ruff/PLR0915)
         cls: type[SrtFile],
         lines: list[str],
         path: Path,

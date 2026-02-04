@@ -12,6 +12,17 @@ class DestinationType(str, Enum):
 
     @classmethod
     def from_string(cls, value: str) -> DestinationType:
+        """Create a DestinationType from a string value.
+
+        Args:
+            value: The string value (e.g., "local" or "gcs")
+
+        Returns:
+            The corresponding DestinationType enum member
+
+        Raises:
+            ValueError: If the value doesn't match any valid destination type
+        """
         try:
             return cls(value)
 
@@ -50,18 +61,18 @@ class DestinationType(str, Enum):
 
 # trunk-ignore-begin(ruff/PLR2004,ruff/S101)
 def test_destination_type_enum_values() -> None:
-    """Check that LOCAL and GCP enum values are correctly defined."""
-    # Verify that the enum has LOCAL and GCP members
+    """Check that LOCAL and GCS enum values are correctly defined."""
+    # Verify that the enum has LOCAL and GCS members
     assert hasattr(DestinationType, "LOCAL")
-    assert hasattr(DestinationType, "GCP")
+    assert hasattr(DestinationType, "GCS")
 
     # Verify the string values of the enum members
     assert DestinationType.LOCAL.value == "local"
-    assert DestinationType.GCS.value == "gcp"
+    assert DestinationType.GCS.value == "gcs"
 
     # Additional check: verify these are the only members
     assert len(DestinationType) == 2
-    assert {member.value for member in DestinationType} == {"local", "gcp"}
+    assert {member.value for member in DestinationType} == {"local", "gcs"}
 
 
 def test_destination_type_is_string_enum() -> None:
@@ -78,15 +89,15 @@ def test_destination_type_is_string_enum() -> None:
 
     # Verify string behavior - enum members can be compared directly to strings
     assert DestinationType.LOCAL == "local"
-    assert DestinationType.GCS == "gcp"
+    assert DestinationType.GCS == "gcs"
 
     # Verify the .value attribute returns the string value
     assert DestinationType.LOCAL.value == "local"
-    assert DestinationType.GCS.value == "gcp"
+    assert DestinationType.GCS.value == "gcs"
 
     # Note: str() returns the full enum name, not just the value
     assert str(DestinationType.LOCAL) == "DestinationType.LOCAL"
-    assert str(DestinationType.GCS) == "DestinationType.GCP"
+    assert str(DestinationType.GCS) == "DestinationType.GCS"
 
 
 def test_get_bucket_url_from_bucket_name_for_local() -> None:
@@ -165,22 +176,22 @@ def test_get_bucket_url_from_bucket_name_local() -> None:
 
 
 def test_get_bucket_url_from_bucket_name_gcp() -> None:
-    """Test get_bucket_url_from_bucket_name for GCP destination type."""
+    """Test get_bucket_url_from_bucket_name for GCS destination type."""
     from unittest import mock
 
     # Mock CloudGoogle.bucket_url_from_bucket_name() to return a controlled value
     with mock.patch(
         "src.services.dlt.filesystem_gcp.CloudGoogle.bucket_url_from_bucket_name",
     ) as mock_bucket_url:
-        # Create a GCP DestinationType instance
-        gcp_destination: DestinationType = DestinationType.GCS
+        # Create a GCS DestinationType instance
+        gcs_destination: DestinationType = DestinationType.GCS
 
         # Test with a simple bucket name
         bucket_name: str = "test-bucket"
         expected_url: str = "gs://test-bucket"
         mock_bucket_url.return_value = expected_url
 
-        result: str = gcp_destination.get_bucket_url_from_bucket_name(bucket_name)
+        result: str = gcs_destination.get_bucket_url_from_bucket_name(bucket_name)
 
         # Assert the mocked CloudGoogle method was called with correct parameters
         mock_bucket_url.assert_called_once_with(bucket_name=bucket_name)
@@ -188,11 +199,11 @@ def test_get_bucket_url_from_bucket_name_gcp() -> None:
         assert result == expected_url
 
         # Test with different bucket names
-        bucket_name = "my-gcp-storage-bucket"
-        expected_url = "gs://my-gcp-storage-bucket"
+        bucket_name = "my-gcs-storage-bucket"
+        expected_url = "gs://my-gcs-storage-bucket"
         mock_bucket_url.return_value = expected_url
 
-        result = gcp_destination.get_bucket_url_from_bucket_name(bucket_name)
+        result = gcs_destination.get_bucket_url_from_bucket_name(bucket_name)
 
         # Check the method was called again with the new bucket name
         mock_bucket_url.assert_called_with(bucket_name=bucket_name)
@@ -203,7 +214,7 @@ def test_get_bucket_url_from_bucket_name_gcp() -> None:
         expected_url = "gs://project-123-data-bucket"
         mock_bucket_url.return_value = expected_url
 
-        result = gcp_destination.get_bucket_url_from_bucket_name(bucket_name)
+        result = gcs_destination.get_bucket_url_from_bucket_name(bucket_name)
 
         mock_bucket_url.assert_called_with(bucket_name=bucket_name)
         assert result == expected_url
@@ -213,7 +224,7 @@ def test_get_bucket_url_from_bucket_name_gcp() -> None:
         expected_url = "gs://company/department/project-data"
         mock_bucket_url.return_value = expected_url
 
-        result = gcp_destination.get_bucket_url_from_bucket_name(bucket_name)
+        result = gcs_destination.get_bucket_url_from_bucket_name(bucket_name)
 
         mock_bucket_url.assert_called_with(bucket_name=bucket_name)
         assert result == expected_url
@@ -223,7 +234,7 @@ def test_get_bucket_url_from_bucket_name_gcp() -> None:
         expected_url = "gs://"
         mock_bucket_url.return_value = expected_url
 
-        result = gcp_destination.get_bucket_url_from_bucket_name(bucket_name)
+        result = gcs_destination.get_bucket_url_from_bucket_name(bucket_name)
 
         mock_bucket_url.assert_called_with(bucket_name=bucket_name)
         assert result == expected_url
@@ -248,7 +259,7 @@ def test_get_bucket_url_from_bucket_name_invalid() -> None:
 
     # Configure the mock to make it behave like an enum member in the match statement
     # The match statement uses identity comparison, so we need to ensure it doesn't match
-    # LOCAL or GCP
+    # LOCAL or GCS
     invalid_destination.__eq__ = mock.Mock(return_value=False)
     invalid_destination.__ne__ = mock.Mock(return_value=True)
 

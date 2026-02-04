@@ -17,13 +17,14 @@ class GCPCredentials(NamedTuple):
     project_id: str | None
     private_key: str | None
     client_email: str | None
+    private_key_id: str | None
 
     @classmethod
     def get_env_vars(cls: type[GCPCredentials]) -> GCPCredentials:
         """Get GCP credentials from environment variables.
 
         Returns:
-            GCPCredentials containing project_id, private_key, and client_email
+            GCPCredentials containing project_id, private_key, client_email, and private_key_id
         """
         gcp_client_email = os.environ.get(
             "GCP_CLIENT_EMAIL",
@@ -37,17 +38,76 @@ class GCPCredentials(NamedTuple):
             "GCP_PRIVATE_KEY",
             None,
         )
+        gcp_private_key_id = os.environ.get(
+            "GCP_PRIVATE_KEY_ID",
+            None,
+        )
         if gcp_private_key:
-            gcp_private_key = gcp_private_key.replace(
-                "\\n",
-                "\n",
-            )
+            # Handle escaped newlines in the private key
+            # Strip quotes first
+            gcp_private_key = gcp_private_key.strip("\"'")
+            # Replace literal \n (backslash + n) with actual newlines
+            gcp_private_key = gcp_private_key.replace("\\n", "\n")
+            # Also remove any remaining backslashes before newlines (from double-escaping)
+            gcp_private_key = gcp_private_key.replace("\\\n", "\n")
 
         return cls(
             project_id=gcp_project_id,
             private_key=gcp_private_key,
             client_email=gcp_client_email,
+            private_key_id=gcp_private_key_id,
         )
+
+    @classmethod
+    def from_env_required(cls: type[GCPCredentials]) -> GCPCredentials:
+        """Get GCP credentials from environment variables (all required).
+
+        Returns:
+            GCPCredentials with all fields populated from environment
+
+        Raises:
+            ValueError: If any required environment variable is missing
+        """
+        credentials = cls.get_env_vars()
+        if (
+            credentials.project_id is None
+            or credentials.private_key is None
+            or credentials.client_email is None
+            or credentials.private_key_id is None
+        ):
+            error_msg = (
+                "All GCP credentials must be set via environment variables: "
+                "GCP_PROJECT_ID, GCP_PRIVATE_KEY, GCP_CLIENT_EMAIL, and GCP_PRIVATE_KEY_ID"
+            )
+            raise ValueError(error_msg)
+        return credentials
+
+    def to_service_account_token(self) -> dict[str, str]:
+        """Convert credentials to a service account token dictionary for gcsfs.
+
+        Returns:
+            Token dictionary suitable for gcsfs.GCSFileSystem
+
+        Raises:
+            ValueError: If any credential field is None
+        """
+        if (
+            self.project_id is None
+            or self.private_key is None
+            or self.client_email is None
+            or self.private_key_id is None
+        ):
+            error_msg = "Cannot create token from incomplete credentials"
+            raise ValueError(error_msg)
+
+        return {
+            "type": "service_account",
+            "project_id": self.project_id,
+            "private_key_id": self.private_key_id,
+            "private_key": self.private_key,
+            "client_email": self.client_email,
+            "token_uri": "https://oauth2.googleapis.com/token",
+        }
 
 
 class CloudGoogle:
@@ -143,34 +203,30 @@ class CloudGoogle:
     ) -> None:
         """Export data specifically to Google Cloud Storage.
 
+        IMPORTANT: This method ONLY uses credentials from environment variables.
+        No other authentication method is supported.
+
+        Required environment variables:
+        - GCP_PROJECT_ID: GCP project ID
+        - GCP_PRIVATE_KEY: Service account private key
+        - GCP_CLIENT_EMAIL: Service account email
+        - GCP_PRIVATE_KEY_ID: Service account private key ID
+
         Args:
             destination_file_data: Iterator of file data to export
 
         Raises:
-            ValueError: If GCP credentials are not properly set
+            ValueError: If any required GCP environment variable is not set
         """
-        credentials: GCPCredentials = GCPCredentials.get_env_vars()
-        if (
-            credentials.project_id is None
-            or credentials.private_key is None
-            or credentials.client_email is None
-        ):
-            error_msg: str = (
-                "GCP_PROJECT_ID, GCP_PRIVATE_KEY, and GCP_CLIENT_EMAIL must be set"
-            )
-            raise ValueError(
-                error_msg,
-            )
+        # Force use of environment variables only - will raise if any are missing
+        credentials: GCPCredentials = GCPCredentials.from_env_required()
 
+        # Create GCS filesystem with service account token from env vars
         fs: gcsfs.GCSFileSystem = gcsfs.GCSFileSystem(
             project=credentials.project_id,
-            token={
-                "client_email": credentials.client_email,
-                "private_key": credentials.private_key,
-                "project_id": credentials.project_id,
-                "token_uri": "https://oauth2.googleapis.com/token",
-            },
+            token=credentials.to_service_account_token(),
         )
+
         for file_data in destination_file_data:
             with fs.open(
                 path=file_data.path,
@@ -248,6 +304,7 @@ def test_get_env_vars_with_all_vars() -> None:
             "GCP_PROJECT_ID": "test-project",
             "GCP_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\\ntest-key\\n-----END PRIVATE KEY-----",
             "GCP_CLIENT_EMAIL": "test@test-project.iam.gserviceaccount.com",
+            "GCP_PRIVATE_KEY_ID": "test-key-id-123",
         },
     ):
         creds: GCPCredentials = GCPCredentials.get_env_vars()
@@ -257,6 +314,7 @@ def test_get_env_vars_with_all_vars() -> None:
             == "-----BEGIN PRIVATE KEY-----\ntest-key\n-----END PRIVATE KEY-----"
         )
         assert creds.client_email == "test@test-project.iam.gserviceaccount.com"
+        assert creds.private_key_id == "test-key-id-123"
 
 
 def test_get_env_vars_with_no_vars() -> None:
@@ -268,6 +326,7 @@ def test_get_env_vars_with_no_vars() -> None:
         assert creds.project_id is None
         assert creds.private_key is None
         assert creds.client_email is None
+        assert creds.private_key_id is None
 
 
 def test_get_env_vars_with_partial_vars() -> None:
@@ -282,6 +341,7 @@ def test_get_env_vars_with_partial_vars() -> None:
         assert creds.project_id == "test-project"
         assert creds.private_key is None
         assert creds.client_email is None
+        assert creds.private_key_id is None
 
 
 def test_get_env_vars_public_method() -> None:
@@ -292,6 +352,7 @@ def test_get_env_vars_public_method() -> None:
         project_id="test-project",
         private_key="-----BEGIN PRIVATE KEY-----\ntest-key\n-----END PRIVATE KEY-----",
         client_email="test@test-project.iam.gserviceaccount.com",
+        private_key_id="test-key-id-123",
     )
 
     with patch.dict(
@@ -300,6 +361,7 @@ def test_get_env_vars_public_method() -> None:
             "GCP_PROJECT_ID": "test-project",
             "GCP_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\\ntest-key\\n-----END PRIVATE KEY-----",
             "GCP_CLIENT_EMAIL": "test@test-project.iam.gserviceaccount.com",
+            "GCP_PRIVATE_KEY_ID": "test-key-id-123",
         },
     ):
         result: GCPCredentials = GCPCredentials.get_env_vars()
@@ -389,6 +451,7 @@ def test_to_filesystem_gcs_success() -> None:
                 "GCP_PROJECT_ID": "test-project",
                 "GCP_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\\ntest-key\\n-----END PRIVATE KEY-----",
                 "GCP_CLIENT_EMAIL": "test@test-project.iam.gserviceaccount.com",
+                "GCP_PRIVATE_KEY_ID": "test-key-id-123",
             },
         ),
         patch("gcsfs.GCSFileSystem") as mock_gcs_fs,
@@ -436,7 +499,7 @@ def test_to_filesystem_gcs_missing_credentials() -> None:
         patch.dict(os.environ, {}, clear=True),
         pytest.raises(
             ValueError,
-            match="GCP_PROJECT_ID, GCP_PRIVATE_KEY, and GCP_CLIENT_EMAIL must be set",
+            match="All GCP credentials must be set via environment variables",
         ),
     ):
         CloudGoogle.to_filesystem_gcs(iter(file_data))
@@ -462,7 +525,7 @@ def test_to_filesystem_gcs_partial_credentials() -> None:
         ),
         pytest.raises(
             ValueError,
-            match="GCP_PROJECT_ID, GCP_PRIVATE_KEY, and GCP_CLIENT_EMAIL must be set",
+            match="All GCP credentials must be set via environment variables",
         ),
     ):
         CloudGoogle.to_filesystem_gcs(iter(file_data))
@@ -479,6 +542,7 @@ def test_to_filesystem_gcs_empty_iterator() -> None:
                 "GCP_PROJECT_ID": "test-project",
                 "GCP_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\\ntest-key\\n-----END PRIVATE KEY-----",
                 "GCP_CLIENT_EMAIL": "test@test-project.iam.gserviceaccount.com",
+                "GCP_PRIVATE_KEY_ID": "test-key-id-123",
             },
         ),
         patch("gcsfs.GCSFileSystem") as mock_gcs_fs,
@@ -510,6 +574,7 @@ def test_to_filesystem_gcs_write_error() -> None:
                 "GCP_PROJECT_ID": "test-project",
                 "GCP_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\\ntest-key\\n-----END PRIVATE KEY-----",
                 "GCP_CLIENT_EMAIL": "test@test-project.iam.gserviceaccount.com",
+                "GCP_PRIVATE_KEY_ID": "test-key-id-123",
             },
         ),
         patch("gcsfs.GCSFileSystem") as mock_gcs_fs,
@@ -565,22 +630,26 @@ def test_gcp_credentials_namedtuple() -> None:
         project_id="test-project",
         private_key="test-key",
         client_email="test@example.com",
+        private_key_id="test-key-id",
     )
 
     assert creds.project_id == "test-project"
     assert creds.private_key == "test-key"
     assert creds.client_email == "test@example.com"
+    assert creds.private_key_id == "test-key-id"
 
     # Test with None values
     empty_creds: GCPCredentials = GCPCredentials(
         project_id=None,
         private_key=None,
         client_email=None,
+        private_key_id=None,
     )
 
     assert empty_creds.project_id is None
     assert empty_creds.private_key is None
     assert empty_creds.client_email is None
+    assert empty_creds.private_key_id is None
 
 
 def test_clean_bucket_name_parametrized() -> None:
@@ -650,6 +719,7 @@ def test_to_filesystem_gcs_with_various_file_types() -> None:
                 "GCP_PROJECT_ID": "test-project",
                 "GCP_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\\ntest-key\\n-----END PRIVATE KEY-----",
                 "GCP_CLIENT_EMAIL": "test@test-project.iam.gserviceaccount.com",
+                "GCP_PRIVATE_KEY_ID": "test-key-id-123",
             },
         ),
         patch("gcsfs.GCSFileSystem") as mock_gcs_fs,

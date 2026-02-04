@@ -18,8 +18,10 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
     from pathlib import Path
 
-BUCKET_NAME: str = "placeholder-bucket"
-MODAL_SECRET_COLLECTION_NAME: str = "devx-growth-gcp"  # trunk-ignore(ruff/S105)
+BUCKET_NAME: str = "devx-octolens-mention-raw"
+MODAL_SECRET_COLLECTION_NAME: str = (
+    "gcp-devx-gtm-growth-machine"  # trunk-ignore(ruff/S105)
+)
 
 
 image: Image = modal.Image.debian_slim().uv_pip_install(
@@ -142,7 +144,9 @@ def local(
     destination_type: str,
     bucket_name: str = BUCKET_NAME,
 ) -> None:
-    destination_type_enum: DestinationType = DestinationType(destination_type)
+    destination_type_enum: DestinationType = DestinationType.from_string(
+        destination_type,
+    )
     bucket_url: str = destination_type_enum.get_bucket_url_from_bucket_name(
         bucket_name=bucket_name,
     )
