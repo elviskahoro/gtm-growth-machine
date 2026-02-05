@@ -8,7 +8,20 @@ from src.services.dlt.filesystem_gcp import CloudGoogle
 
 class DestinationType(str, Enum):
     LOCAL = "local"
-    GCP = "gcp"
+    GCS = "gcs"
+
+    @classmethod
+    def from_string(cls, value: str) -> DestinationType:
+        try:
+            return cls(value)
+
+        except ValueError as e:
+            valid_values: str = ", ".join([member.value for member in cls])
+            error_msg: str = (
+                f"Invalid destination type: '{value}'. "
+                f"Valid values are: {valid_values}"
+            )
+            raise ValueError(error_msg) from e
 
     @staticmethod
     def get_bucket_url_from_bucket_name_for_local(
@@ -26,7 +39,7 @@ class DestinationType(str, Enum):
                 return DestinationType.get_bucket_url_from_bucket_name_for_local(
                     bucket_name=bucket_name,
                 )
-            case DestinationType.GCP:
+            case DestinationType.GCS:
                 return CloudGoogle.bucket_url_from_bucket_name(
                     bucket_name=bucket_name,
                 )
@@ -44,7 +57,7 @@ def test_destination_type_enum_values() -> None:
 
     # Verify the string values of the enum members
     assert DestinationType.LOCAL.value == "local"
-    assert DestinationType.GCP.value == "gcp"
+    assert DestinationType.GCS.value == "gcp"
 
     # Additional check: verify these are the only members
     assert len(DestinationType) == 2
@@ -60,20 +73,20 @@ def test_destination_type_is_string_enum() -> None:
     # Verify instances are both strings and enum members
     assert isinstance(DestinationType.LOCAL, str)
     assert isinstance(DestinationType.LOCAL, Enum)
-    assert isinstance(DestinationType.GCP, str)
-    assert isinstance(DestinationType.GCP, Enum)
+    assert isinstance(DestinationType.GCS, str)
+    assert isinstance(DestinationType.GCS, Enum)
 
     # Verify string behavior - enum members can be compared directly to strings
     assert DestinationType.LOCAL == "local"
-    assert DestinationType.GCP == "gcp"
+    assert DestinationType.GCS == "gcp"
 
     # Verify the .value attribute returns the string value
     assert DestinationType.LOCAL.value == "local"
-    assert DestinationType.GCP.value == "gcp"
+    assert DestinationType.GCS.value == "gcp"
 
     # Note: str() returns the full enum name, not just the value
     assert str(DestinationType.LOCAL) == "DestinationType.LOCAL"
-    assert str(DestinationType.GCP) == "DestinationType.GCP"
+    assert str(DestinationType.GCS) == "DestinationType.GCP"
 
 
 def test_get_bucket_url_from_bucket_name_for_local() -> None:
@@ -160,7 +173,7 @@ def test_get_bucket_url_from_bucket_name_gcp() -> None:
         "src.services.dlt.filesystem_gcp.CloudGoogle.bucket_url_from_bucket_name",
     ) as mock_bucket_url:
         # Create a GCP DestinationType instance
-        gcp_destination: DestinationType = DestinationType.GCP
+        gcp_destination: DestinationType = DestinationType.GCS
 
         # Test with a simple bucket name
         bucket_name: str = "test-bucket"
@@ -230,7 +243,6 @@ def test_get_bucket_url_from_bucket_name_invalid() -> None:
     invalid_destination: mock.Mock = mock.Mock(spec=DestinationType)
 
     # Set the mock to return an invalid value when converted to string
-    # This simulates a destination type that isn't LOCAL or GCP
     invalid_destination.__str__ = mock.Mock(return_value="DestinationType.INVALID")
     invalid_destination.value = "invalid"
 

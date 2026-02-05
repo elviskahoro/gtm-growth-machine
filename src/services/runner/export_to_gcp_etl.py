@@ -130,7 +130,7 @@ def web(
             ),
         ],
     )
-    bucket_url: str = DestinationType.GCP.get_bucket_url_from_bucket_name(
+    bucket_url: str = DestinationType.GCS.get_bucket_url_from_bucket_name(
         bucket_name=BUCKET_NAME,
     )
     storage_file_data: SourceFileData | None = _get_storage_source_file_data(

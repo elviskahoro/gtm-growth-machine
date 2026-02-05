@@ -197,7 +197,7 @@ def local(
                 bucket_name=BUCKET_NAME,
             )
 
-        case DestinationType.GCP:
+        case DestinationType.GCS:
             bucket_url = BUCKET_URL
 
         case _:

@@ -119,7 +119,7 @@ def web(
     json_data: str = orjson.dumps(json).decode(
         encoding="utf-8",
     )
-    bucket_url: str = DestinationType.GCP.get_bucket_url_from_bucket_name(
+    bucket_url: str = DestinationType.GCS.get_bucket_url_from_bucket_name(
         bucket_name=BUCKET_NAME,
     )
     data: Iterator[DestinationFileData] = iter(
