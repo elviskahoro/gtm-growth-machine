@@ -10,6 +10,7 @@ Usage:
 The script uses the configuration from the WebhookModel to connect to the
 correct LanceDB project and table.
 """
+
 from __future__ import annotations
 
 import os
